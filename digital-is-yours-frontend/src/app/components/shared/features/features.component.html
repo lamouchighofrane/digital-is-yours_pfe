@@ -1,0 +1,152 @@
+<section id="about" class="section bg-white">
+  <div class="container-diy">
+
+    <!-- ── CATÉGORIES ── -->
+    <div class="text-center mb-14 reveal">
+      <span class="eyebrow mb-5 block">Nos domaines d'expertise</span>
+      <h2 class="font-display text-[clamp(32px,4vw,52px)] font-bold text-[#1E1A16] mb-4">
+        Choisissez votre <em class="not-italic" style="color:#8B3A3A">spécialité</em>
+      </h2>
+      <p class="text-[#6B5F52] text-[17px] max-w-xl mx-auto leading-relaxed">
+        Des parcours structurés par des experts, adaptés à chaque niveau
+        — du débutant au professionnel confirmé.
+      </p>
+    </div>
+
+    <!-- Grille catégories avec images -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
+      <div *ngFor="let cat of categories; let i = index"
+           class="reveal card group cursor-pointer overflow-hidden flex flex-col"
+           [style.transition-delay]="(i*70)+'ms'">
+
+        <!-- Image -->
+        <div class="relative h-40 overflow-hidden">
+          <img [src]="cat.img" [alt]="cat.title"
+               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"/>
+          <!-- Overlay gradient -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+          <!-- Tag -->
+          <span class="absolute top-3 left-3 text-[10px] font-semibold px-2.5 py-1 rounded-full"
+                [style.background]="cat.accentBg"
+                [style.color]="cat.accentColor">
+            {{ cat.tag }}
+          </span>
+          <!-- Count -->
+          <span class="absolute bottom-3 right-3 text-[11px] text-white/80 font-medium">
+            {{ cat.count }} cours
+          </span>
+        </div>
+
+        <!-- Contenu -->
+        <div class="p-5 flex flex-col flex-1">
+          <h3 class="font-display font-bold text-lg text-[#1E1A16] mb-2 leading-tight
+                     group-hover:text-[#8B3A3A] transition-colors duration-300">
+            {{ cat.title }}
+          </h3>
+          <p class="text-[#6B5F52] text-xs leading-relaxed mb-4 flex-1">{{ cat.desc }}</p>
+          <div class="flex items-center gap-1.5 text-sm font-semibold
+                      group-hover:gap-3 transition-all duration-300"
+               [style.color]="cat.accentColor">
+            Explorer
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FORMATIONS ── -->
+    <div class="flex items-end justify-between mb-12 reveal">
+      <div>
+        <span class="eyebrow mb-4 block">Formations populaires</span>
+        <h2 class="font-display text-[clamp(28px,3.5vw,46px)] font-bold text-[#1E1A16]">
+          Les plus <em class="not-italic" style="color:#8B3A3A">suivies</em> en ce moment
+        </h2>
+      </div>
+      <a href="#" class="btn-ghost hidden md:inline-flex">Tout le catalogue →</a>
+    </div>
+
+    <!-- Grille formations avec images style Udemy -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
+      <div *ngFor="let f of formations; let i = index"
+           class="reveal card overflow-hidden group cursor-pointer flex flex-col"
+           [style.transition-delay]="(i*90)+'ms'">
+
+        <!-- Image cours -->
+        <div class="relative h-48 overflow-hidden">
+          <img [src]="f.img" [alt]="f.title"
+               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"/>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          <!-- Badge catégorie -->
+          <div class="absolute bottom-4 left-4">
+            <span class="text-xs font-semibold px-3 py-1.5 rounded-full text-white backdrop-blur-sm"
+                  [style.background]="f.accentColor + 'cc'">
+              {{ f.category }}
+            </span>
+          </div>
+          <!-- Durée -->
+          <div class="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs
+                      font-medium px-2.5 py-1 rounded-full">
+            {{ f.duration }}
+          </div>
+        </div>
+
+        <!-- Corps -->
+        <div class="p-6 flex flex-col flex-1">
+
+          <!-- Titre -->
+          <h3 class="font-display font-bold text-[19px] text-[#1E1A16] mb-2 leading-tight
+                     group-hover:text-[#8B3A3A] transition-colors duration-300">
+            {{ f.title }}
+          </h3>
+
+          <!-- Instructeur -->
+          <p class="text-[#9E9082] text-xs mb-3">par <span class="font-medium text-[#6B5F52]">{{ f.instructor }}</span></p>
+
+          <!-- Rating style Udemy -->
+          <div class="flex items-center gap-2 mb-4">
+            <span class="font-bold text-sm" style="color:#9B8B6E">{{ f.rating }}</span>
+            <div class="flex text-amber-500 text-sm">★★★★★</div>
+            <span class="text-[#9E9082] text-xs">({{ f.reviews }} avis)</span>
+          </div>
+
+          <!-- Meta -->
+          <div class="flex items-center gap-3 text-[#9E9082] text-xs mb-5">
+            <span class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              </svg>
+              {{ f.lessons }}
+            </span>
+            <span class="w-1 h-1 rounded-full bg-[#C8BEB2]"></span>
+            <span class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              {{ f.students }} inscrits
+            </span>
+            <span class="ml-auto px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#F5F3EF] text-[#6B5F52]">
+              {{ f.level }}
+            </span>
+          </div>
+
+          <button class="btn-primary w-full justify-center mt-auto text-sm py-3">
+            Voir la formation
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile voir tout -->
+    <div class="mt-10 text-center md:hidden reveal">
+      <a href="#" class="btn-ghost">Tout le catalogue →</a>
+    </div>
+
+  </div>
+</section>

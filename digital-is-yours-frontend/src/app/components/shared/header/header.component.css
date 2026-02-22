@@ -1,0 +1,13 @@
+.header-top {
+  background: rgba(250,250,247,0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid transparent;
+}
+.header-scrolled {
+  background: rgba(250,250,247,0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid #EDE8DF;
+  box-shadow: 0 2px 24px rgba(30,26,22,0.06);
+}

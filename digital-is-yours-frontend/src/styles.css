@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,900;1,400;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bordeaux:       #8B3A3A;
+    --bordeaux-light: #a84848;
+    --bordeaux-pale:  #f9f0f0;
+    --bordeaux-pale2: #f0d9d9;
+    --teal:           #4A7C7E;
+    --teal-light:     #5a9496;
+    --teal-pale:      #edf4f4;
+    --taupe:          #9B8B6E;
+    --cream:          #FAFAF7;
+    --cream2:         #F5F3EF;
+    --cream3:         #EDE8DF;
+    --cream4:         #E2DBD0;
+    --ink:            #1E1A16;
+    --ink2:           #3D362E;
+    --ink3:           #6B5F52;
+    --ink4:           #9E9082;
+    --ink5:           #C8BEB2;
+  }
+
+  html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    line-height: 1.08;
+  }
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--cream2); }
+  ::-webkit-scrollbar-thumb { background: var(--bordeaux); border-radius: 99px; }
+  ::selection { background: rgba(139,58,58,0.15); }
+}
+
+@layer components {
+
+  /* ── Bouton principal bordeaux ── */
+  .btn-primary {
+    @apply relative overflow-hidden inline-flex items-center gap-2 px-7 py-3.5
+           text-white font-semibold text-sm rounded-full
+           transition-all duration-300 cursor-pointer;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bordeaux);
+    box-shadow: 0 4px 20px rgba(139,58,58,0.28);
+  }
+  .btn-primary::after {
+    content: '';
+    @apply absolute inset-0 bg-white/20 -translate-x-full skew-x-[-18deg] transition-transform duration-500;
+  }
+  .btn-primary:hover {
+    @apply scale-[1.03];
+    background: var(--bordeaux-light);
+    box-shadow: 0 8px 32px rgba(139,58,58,0.38);
+  }
+  .btn-primary:hover::after { @apply translate-x-[200%]; }
+  .btn-primary:active { @apply scale-[0.98]; }
+
+  /* ── Bouton ghost ── */
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-7 py-3.5 bg-transparent
+           font-semibold text-sm rounded-full border transition-all duration-300 cursor-pointer;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    border-color: var(--cream4);
+  }
+  .btn-ghost:hover {
+    border-color: var(--bordeaux);
+    color: var(--bordeaux);
+    background: var(--bordeaux-pale);
+    @apply scale-[1.02];
+  }
+
+  /* ── Bouton teal ── */
+  .btn-teal {
+    @apply relative overflow-hidden inline-flex items-center gap-2 px-7 py-3.5
+           text-white font-semibold text-sm rounded-full
+           transition-all duration-300 cursor-pointer;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--teal);
+    box-shadow: 0 4px 20px rgba(74,124,126,0.28);
+  }
+  .btn-teal:hover { @apply scale-[1.03]; background: var(--teal-light); }
+
+  /* ── Card ── */
+  .card {
+    @apply bg-white rounded-2xl border transition-all duration-300;
+    border-color: var(--cream3);
+    box-shadow: 0 2px 12px rgba(30,26,22,0.05);
+  }
+  .card:hover {
+    @apply -translate-y-1.5;
+    box-shadow: 0 16px 48px rgba(30,26,22,0.10);
+    border-color: rgba(139,58,58,0.18);
+  }
+
+  /* ── Eyebrow label ── */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] uppercase;
+    color: var(--bordeaux);
+  }
+  .eyebrow::before { content: ''; @apply w-5 h-px; background: var(--bordeaux); }
+
+  /* ── Section ── */
+  .section { @apply py-24; }
+  .container-diy { @apply max-w-6xl mx-auto px-6; }
+
+  /* ── Badge pill ── */
+  .badge {
+    @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold;
+    background: var(--bordeaux-pale);
+    color: var(--bordeaux);
+    border: 1px solid var(--bordeaux-pale2);
+  }
+}
+
+/* ── Reveal on scroll ── */
+.reveal {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity .75s cubic-bezier(.22,.61,.36,1), transform .75s cubic-bezier(.22,.61,.36,1);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.d1{transition-delay:.08s} .d2{transition-delay:.16s} .d3{transition-delay:.24s}
+.d4{transition-delay:.32s} .d5{transition-delay:.40s} .d6{transition-delay:.48s}
+
+/* ── Keyframes ── */
+@keyframes floatA  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)} }
+@keyframes floatB  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes ticker  { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+@keyframes shimBar { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(26px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spinSlow{ from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes pulseDot{ 0%,100%{opacity:1} 50%{opacity:.3} }
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)}}
+
+.float-a  { animation: floatA 7s ease-in-out infinite; }
+.float-b  { animation: floatB 9s ease-in-out infinite; animation-delay:2s; }
+.float-c  { animation: floatA 6s ease-in-out infinite; animation-delay:4s; }
+.spin-slow{ animation: spinSlow 22s linear infinite; }
+.anim-up  { animation: fadeUp .7s ease forwards; }
+.pulse-dot{ animation: pulseDot 2.5s ease-in-out infinite; }
+.ticker-track { animation: ticker 42s linear infinite; }
+
+.bar-shimmer {
+  background: linear-gradient(90deg, #8B3A3A 0%, #a84848 50%, #8B3A3A 100%);
+  background-size: 200% 100%;
+  animation: shimBar 2.5s linear infinite;
+}
+
+.animate-on-scroll {
+  opacity:0; transform:translateY(28px);
+  transition:opacity .7s ease-out, transform .7s ease-out;
+}
+.animate-on-scroll.visible { opacity:1; transform:translateY(0); }

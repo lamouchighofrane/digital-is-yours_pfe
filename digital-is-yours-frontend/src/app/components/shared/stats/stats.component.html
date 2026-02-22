@@ -1,0 +1,84 @@
+<section class="section relative overflow-hidden" style="background:#1E1A16">
+
+  <!-- Décorations fond -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute top-0 left-0 right-0 h-px"
+         style="background:linear-gradient(90deg,transparent,rgba(139,58,58,0.4),transparent)"></div>
+    <div class="absolute bottom-0 left-0 right-0 h-px"
+         style="background:linear-gradient(90deg,transparent,rgba(74,124,126,0.3),transparent)"></div>
+    <div class="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full float-a"
+         style="background:radial-gradient(circle,rgba(139,58,58,0.09),transparent 65%)"></div>
+    <div class="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full float-b"
+         style="background:radial-gradient(circle,rgba(74,124,126,0.08),transparent 65%)"></div>
+    <!-- Grille subtile -->
+    <div class="absolute inset-0"
+         style="opacity:0.035;
+                background-image:linear-gradient(rgba(237,232,223,1) 1px,transparent 1px),
+                                 linear-gradient(90deg,rgba(237,232,223,1) 1px,transparent 1px);
+                background-size:60px 60px"></div>
+  </div>
+
+  <div class="container-diy relative z-10">
+
+    <!-- Header -->
+    <div class="text-center mb-16 reveal">
+      <span class="inline-flex items-center gap-2 text-[11px] font-semibold
+                   tracking-[0.16em] uppercase mb-5" style="color:#8B3A3A">
+        <span class="w-5 h-px" style="background:#8B3A3A"></span>
+        Nos résultats
+      </span>
+      <h2 class="font-display text-[clamp(36px,4.5vw,58px)] font-bold text-white">
+        Des chiffres qui
+        <em class="not-italic"
+            style="background:linear-gradient(135deg,#8B3A3A,#c87c7c);
+                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                   background-clip:text">
+          parlent
+        </em>
+      </h2>
+    </div>
+
+    <!-- Compteurs — les chiffres sont maintenant bien affichés -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-20">
+      <div *ngFor="let s of stats; let i = index"
+           class="reveal" [style.transition-delay]="(i*80)+'ms'">
+
+        <div class="rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 group"
+             style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.09)">
+
+          <!-- Ligne colorée en haut -->
+          <div class="h-1 rounded-full mb-6 mx-auto w-16"
+               [style.background]="'linear-gradient(90deg,' + s.color + ',' + s.gradEnd + ')'"></div>
+
+          <!-- Chiffre animé -->
+          <div class="font-display font-bold text-white mb-3"
+               style="font-size: clamp(44px,5vw,64px); line-height:1">
+            <span #counterEl
+                  [attr.data-target]="s.target"
+                  [attr.data-suffix]="s.suffix">
+              0{{ s.suffix }}
+            </span>
+          </div>
+
+          <!-- Label -->
+          <p class="text-sm font-medium" style="color:rgba(255,255,255,0.45)">{{ s.label }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature cards -->
+    <div class="grid md:grid-cols-3 gap-6">
+      <div *ngFor="let f of features; let i = index"
+           class="reveal" [style.transition-delay]="(i*90)+'ms'">
+        <div class="rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1 group"
+             style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08)">
+          <div class="w-8 h-0.5 mb-5 rounded-full transition-all duration-300 group-hover:w-14"
+               [style.background]="f.color"></div>
+          <h3 class="text-white font-semibold text-base mb-3">{{ f.title }}</h3>
+          <p class="text-sm leading-relaxed" style="color:rgba(255,255,255,0.40)">{{ f.desc }}</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

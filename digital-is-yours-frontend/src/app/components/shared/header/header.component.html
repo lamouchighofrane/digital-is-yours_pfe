@@ -1,0 +1,80 @@
+<header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        [class.header-scrolled]="isScrolled"
+        [class.header-top]="!isScrolled">
+
+  <nav class="max-w-6xl mx-auto px-6">
+    <div class="flex items-center justify-between h-[72px]">
+
+      <!-- Logo image -->
+      <a routerLink="/" class="flex items-center shrink-0 group">
+        <img src="assets/images/logo.png" alt="Digital Is Yours"
+             class="h-11 w-auto object-contain
+                    group-hover:scale-105 transition-transform duration-300"/>
+      </a>
+
+      <!-- Desktop nav -->
+      <div class="hidden md:flex items-center gap-1">
+        <a *ngFor="let link of navLinks" [href]="link.href"
+           class="px-4 py-2 rounded-full text-sm font-medium text-[#3D362E]
+                  hover:text-[#8B3A3A] hover:bg-[#f9f0f0] transition-all duration-200">
+          {{ link.label }}
+        </a>
+        <button (click)="navigateToCatalogue()"
+                class="px-4 py-2 rounded-full text-sm font-medium text-[#3D362E]
+                       hover:text-[#8B3A3A] hover:bg-[#f9f0f0] transition-all duration-200
+                       bg-transparent border-none cursor-pointer">
+          Catalogue
+        </button>
+      </div>
+
+      <!-- Desktop CTA -->
+      <div class="hidden md:flex items-center gap-3">
+        <button (click)="navigateToLogin()" class="btn-ghost">Connexion</button>
+        <button (click)="navigateToRegister()" class="btn-primary">
+          S'inscrire
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Burger -->
+      <button (click)="toggleMobileMenu()"
+              class="md:hidden w-9 h-9 flex flex-col items-center justify-center gap-[5px]
+                     rounded-xl hover:bg-[#F5F3EF] transition-colors">
+        <span [class]="mobileMenuOpen ? 'rotate-45 translate-y-[7px]' : ''"
+              class="w-5 h-0.5 bg-[#3D362E] rounded-full transition-all duration-300"></span>
+        <span [class]="mobileMenuOpen ? 'opacity-0' : ''"
+              class="w-5 h-0.5 bg-[#3D362E] rounded-full transition-all duration-300"></span>
+        <span [class]="mobileMenuOpen ? '-rotate-45 -translate-y-[7px]' : ''"
+              class="w-5 h-0.5 bg-[#3D362E] rounded-full transition-all duration-300"></span>
+      </button>
+    </div>
+
+    <!-- Mobile menu -->
+    <div *ngIf="mobileMenuOpen"
+         class="md:hidden absolute top-full left-0 right-0 bg-white border-b border-[#EDE8DF]
+                shadow-medium py-4 px-6 animate-slide-down z-50">
+      <div class="flex flex-col gap-1">
+        <a *ngFor="let link of navLinks" [href]="link.href" (click)="toggleMobileMenu()"
+           class="px-4 py-3 rounded-xl text-[#3D362E] font-medium
+                  hover:bg-[#f9f0f0] hover:text-[#8B3A3A] transition-all">
+          {{ link.label }}
+        </a>
+        <button (click)="navigateToCatalogue(); toggleMobileMenu()"
+                class="px-4 py-3 rounded-xl text-[#3D362E] font-medium text-left
+                       hover:bg-[#f9f0f0] hover:text-[#8B3A3A] transition-all
+                       bg-transparent border-none cursor-pointer">
+          Catalogue
+        </button>
+        <div class="h-px bg-[#EDE8DF] my-2"></div>
+        <div class="flex gap-3">
+          <button (click)="navigateToLogin(); toggleMobileMenu()"
+                  class="btn-ghost flex-1 justify-center">Connexion</button>
+          <button (click)="navigateToRegister(); toggleMobileMenu()"
+                  class="btn-primary flex-1 justify-center">S'inscrire</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>

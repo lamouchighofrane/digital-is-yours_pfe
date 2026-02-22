@@ -1,0 +1,147 @@
+<footer id="contact" style="background:#1E1A16; color:white">
+  <div class="h-px"
+       style="background:linear-gradient(90deg,transparent,rgba(139,58,58,0.4),transparent)"></div>
+
+  <div class="max-w-6xl mx-auto px-6 py-16">
+    <div class="grid lg:grid-cols-3 gap-12 mb-14">
+
+      <!-- ── Colonne Brand + Contacts ── -->
+      <div>
+        <div class="mb-6">
+          <img src="assets/images/logo.png" alt="Digital Is Yours" class="h-12 w-auto object-contain"/>
+        </div>
+
+        <p class="text-sm leading-relaxed mb-7 max-w-xs" style="color:rgba(255,255,255,0.40)">
+          La plateforme e-learning de référence pour les professionnels du marketing digital en Tunisie et en Afrique du Nord.
+        </p>
+
+        <!-- Contacts -->
+        <div class="space-y-3 mb-7">
+          <a href="mailto:contact@digitalisyours.com"
+             class="flex items-center gap-3 text-sm transition-all duration-200 group"
+             style="color:rgba(255,255,255,0.40)">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200"
+                 style="background:rgba(139,58,58,0.12); border:1px solid rgba(139,58,58,0.20)">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <span class="group-hover:text-[#c87c7c] transition-colors">contact&#64;digitalisyours.com</span>
+          </a>
+
+          <a href="tel:+21622513979"
+             class="flex items-center gap-3 text-sm transition-all duration-200 group"
+             style="color:rgba(255,255,255,0.40)">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                 style="background:rgba(139,58,58,0.12); border:1px solid rgba(139,58,58,0.20)">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+              </svg>
+            </div>
+            <span class="group-hover:text-[#c87c7c] transition-colors">+216 22 51 39 79</span>
+          </a>
+        </div>
+
+        <!-- Facebook -->
+        <a href="https://www.facebook.com/people/Digital-Is-Yours/100064176874264/"
+           target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm
+                  transition-all duration-300 group"
+           style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); color:rgba(255,255,255,0.45)">
+          <svg class="w-4 h-4 group-hover:text-[#6499f5] transition-colors" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+          <span class="group-hover:text-[#6499f5] transition-colors">Suivez-nous sur Facebook</span>
+        </a>
+      </div>
+
+      <!-- ── Liens ── -->
+      <div class="grid grid-cols-2 gap-8">
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-[0.14em] mb-6"
+              style="color:rgba(255,255,255,0.50)">Navigation</h4>
+          <ul class="space-y-3">
+            <li *ngFor="let l of quickLinks">
+              <a [href]="l.link"
+                 class="text-sm flex items-center gap-2 transition-colors group"
+                 style="color:rgba(255,255,255,0.35)">
+                <span class="w-0 h-px rounded-full transition-all duration-300 group-hover:w-3"
+                      style="background:#8B3A3A"></span>
+                <span class="group-hover:text-[#c87c7c] transition-colors">{{ l.name }}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-[0.14em] mb-6"
+              style="color:rgba(255,255,255,0.50)">Formations</h4>
+          <ul class="space-y-3">
+            <li *ngFor="let c of categories">
+              <a [href]="c.link"
+                 class="text-sm flex items-center gap-2 transition-colors group"
+                 style="color:rgba(255,255,255,0.35)">
+                <span class="w-0 h-px rounded-full transition-all duration-300 group-hover:w-3"
+                      style="background:#8B3A3A"></span>
+                <span class="group-hover:text-[#c87c7c] transition-colors">{{ c.name }}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ── Google Maps ── -->
+      <div>
+        <h4 class="text-xs font-semibold uppercase tracking-[0.14em] mb-6"
+            style="color:rgba(255,255,255,0.50)">Notre localisation</h4>
+
+        <!-- Map embedée -->
+        <div class="rounded-2xl overflow-hidden border mb-3"
+             style="border-color:rgba(255,255,255,0.10); height:180px">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3193.9346382775507!2d10.1815!3d36.8065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzbCsDQ4JzIzLjQiTiAxMMKwMTAnNTMuNCJF!5e0!3m2!1sfr!2stn!4v1708000000000!5m2!1sfr!2stn"
+            width="100%"
+            height="180"
+            style="border:0; filter:grayscale(30%) contrast(1.1)"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Digital Is Yours - Localisation">
+          </iframe>
+        </div>
+
+        <a href="https://maps.app.goo.gl/qfwC1Z1WPS9HBmkh8"
+           target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2 text-xs transition-colors group"
+           style="color:rgba(255,255,255,0.35)">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <span class="group-hover:text-[#c87c7c] transition-colors">
+            Tunis, Tunisie · Ouvrir dans Google Maps
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="pt-8" style="border-top:1px solid rgba(255,255,255,0.07)">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <p class="text-xs" style="color:rgba(255,255,255,0.22)">
+          © {{ currentYear }} Digital Is Yours · Tous droits réservés
+        </p>
+        <div class="flex gap-6">
+          <a *ngFor="let l of legal" [href]="l.link"
+             class="text-xs transition-colors group"
+             style="color:rgba(255,255,255,0.22)">
+            <span class="group-hover:text-[#c87c7c] transition-colors">{{ l.name }}</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>

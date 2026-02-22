@@ -1,0 +1,95 @@
+<div class="splash-wrapper" [class.leaving]="isLeaving">
+
+  <!-- Fond animé avec dégradé mesh -->
+  <div class="mesh-bg"></div>
+
+  <!-- Particules flottantes -->
+  <div class="particles-container">
+    <div *ngFor="let p of particles"
+         class="particle"
+         [style.left.%]="p.x"
+         [style.top.%]="p.y"
+         [style.width.px]="p.size"
+         [style.height.px]="p.size"
+         [style.animationDelay.s]="p.delay"
+         [style.animationDuration.s]="p.duration"
+         [style.opacity]="p.opacity">
+    </div>
+  </div>
+
+  <!-- Orbes de lumière -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Grille de fond subtile -->
+  <div class="grid-overlay"></div>
+
+  <!-- Contenu principal -->
+  <div class="splash-content">
+
+    <!-- Logo avec effet reveal -->
+    <div class="logo-container">
+      <div class="logo-ring logo-ring-1"></div>
+      <div class="logo-ring logo-ring-2"></div>
+      <div class="logo-ring logo-ring-3"></div>
+      <img src="assets/images/logo.png" alt="Digital Is Yours" class="splash-logo"/>
+    </div>
+
+    <!-- Nom lettre par lettre -->
+    <div class="brand-name">
+      <span *ngFor="let letter of letters; let i = index"
+            class="brand-letter"
+            [class.space]="letter === ' '"
+            [style.animationDelay]="(0.8 + i * 0.06) + 's'">
+        {{ letter === ' ' ? '&nbsp;' : letter }}
+      </span>
+    </div>
+
+    <!-- Tagline -->
+    <p class="tagline">Formez-vous. Évoluez. Réussissez.</p>
+
+    <!-- Barre de progression -->
+    <div class="progress-container">
+      <div class="progress-track">
+        <div class="progress-bar"></div>
+      </div>
+      <div class="progress-dots">
+        <span class="dot dot-1"></span>
+        <span class="dot dot-2"></span>
+        <span class="dot dot-3"></span>
+      </div>
+    </div>
+
+    <!-- Stats flottantes -->
+    <div class="floating-stats">
+      <div class="stat-chip stat-chip-1">
+        <span class="stat-num">500+</span>
+        <span class="stat-label">Apprenants</span>
+      </div>
+      <div class="stat-chip stat-chip-2">
+        <span class="stat-num">50+</span>
+        <span class="stat-label">Formations</span>
+      </div>
+      <div class="stat-chip stat-chip-3">
+        <span class="stat-num">95%</span>
+        <span class="stat-label">Satisfaction</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bouton skip -->
+  <button class="skip-btn" (click)="skip()">
+    Passer
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+    </svg>
+  </button>
+
+  <!-- Signature bas de page -->
+  <div class="splash-footer">
+    <span>Votre avenir digital commence ici</span>
+  </div>
+
+</div>

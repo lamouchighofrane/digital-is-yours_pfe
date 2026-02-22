@@ -1,0 +1,68 @@
+<div class="verify-page">
+
+  <nav class="verify-nav">
+    <img src="assets/images/logo.png" alt="Digital Is Yours" class="nav-logo"/>
+  </nav>
+
+  <div class="verify-card-wrapper">
+
+    <!-- LOADING -->
+    <div *ngIf="status === 'loading'" class="verify-card">
+      <div class="spinner-ring"></div>
+      <h2>Vérification en cours...</h2>
+      <p>Nous activons votre compte, veuillez patienter.</p>
+    </div>
+
+    <!-- SUCCESS -->
+    <div *ngIf="status === 'success'" class="verify-card success">
+      <div class="icon-circle success-circle">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h2>Compte activé ! 🎉</h2>
+      <p>Votre email a été vérifié avec succès. Bienvenue sur <strong>Digital Is Yours</strong> !</p>
+      <div class="countdown-badge">
+        Redirection dans <strong>{{ countdown }}s</strong>...
+      </div>
+      <button class="btn-bordeaux" (click)="goToLogin()">
+        Se connecter maintenant
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- ALREADY USED -->
+    <div *ngIf="status === 'already-used'" class="verify-card already">
+      <div class="icon-circle teal-circle">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h2>Déjà vérifié !</h2>
+      <p>{{ message }}</p>
+      <div class="countdown-badge">
+        Redirection dans <strong>{{ countdown }}s</strong>...
+      </div>
+      <button class="btn-teal" (click)="goToLogin()">
+        Se connecter
+      </button>
+    </div>
+
+    <!-- ERROR -->
+    <div *ngIf="status === 'error'" class="verify-card error">
+      <div class="icon-circle error-circle">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </div>
+      <h2>Lien invalide</h2>
+      <p>{{ message }}</p>
+      <button class="btn-bordeaux" (click)="goToLogin()">
+        Retour à la connexion
+      </button>
+    </div>
+
+  </div>
+</div>

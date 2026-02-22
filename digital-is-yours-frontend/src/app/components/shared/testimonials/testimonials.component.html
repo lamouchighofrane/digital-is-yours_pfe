@@ -1,0 +1,46 @@
+<section class="section" style="background:#F5F3EF">
+  <div class="container-diy">
+
+    <div class="text-center mb-16 reveal">
+      <span class="eyebrow mb-5 block">Témoignages</span>
+      <h2 class="font-display text-[clamp(32px,4vw,52px)] font-bold text-[#1E1A16] mb-4">
+        Ce que disent nos <em class="not-italic" style="color:#8B3A3A">apprenants</em>
+      </h2>
+      <p class="text-[#6B5F52] text-lg max-w-md mx-auto">
+        Découvrez comment nos formations ont transformé leur carrière.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-7">
+      <div *ngFor="let t of testimonials; let i = index"
+           class="reveal flex flex-col" [style.transition-delay]="(i*110)+'ms'">
+        <div class="bg-white rounded-2xl p-8 flex flex-col flex-1 border border-[#EDE8DF]
+                    hover:shadow-medium hover:-translate-y-1.5 hover:border-[#8B3A3A]/15
+                    transition-all duration-300 group">
+
+          <!-- Guillemet décoratif -->
+          <div class="font-display font-bold text-5xl leading-none mb-4
+                      group-hover:opacity-40 transition-opacity"
+               style="color:#8B3A3A; opacity:.15">"</div>
+
+          <p class="text-[#3D362E] text-sm leading-relaxed flex-1 mb-6 italic">{{ t.text }}</p>
+
+          <div class="text-amber-500 text-sm mb-5 tracking-wider">★★★★★</div>
+
+          <div class="h-px mb-5" style="background:#EDE8DF"></div>
+
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center
+                        text-white text-xs font-bold shrink-0"
+                 [style.background]="t.avatarBg">{{ t.initials }}</div>
+            <div>
+              <p class="text-[#1E1A16] font-semibold text-sm">{{ t.name }}</p>
+              <p class="text-[#9E9082] text-xs mt-0.5">{{ t.role }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
