@@ -100,7 +100,8 @@ public class AuthService implements RegisterUserUseCase, LoginUserUseCase,
             throw new RuntimeException("Ce compte n'est pas un compte " + request.getRole().name().toLowerCase());
         }
 
-        if (!user.isEmailVerifie()) {
+        // ADMIN n'a pas besoin de vérification email
+        if (user.getRole() != Role.ADMIN && !user.isEmailVerifie()) {
             throw new RuntimeException("Veuillez vérifier votre email avant de vous connecter");
         }
 

@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+* { box-sizing: border-box; }
+
+.admin-login-page {
+  min-height: 100vh;
+  background: #0D0A07;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+.font-display { font-family: 'Cormorant Garamond', serif; }
+
+/* Orbs background */
+.admin-bg { position: absolute; inset: 0; pointer-events: none; }
+.admin-orb-1 {
+  position: absolute; top: -20%; left: -10%;
+  width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,58,58,0.15), transparent 70%);
+}
+.admin-orb-2 {
+  position: absolute; bottom: -20%; right: -10%;
+  width: 500px; height: 500px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(74,124,126,0.12), transparent 70%);
+}
+
+.admin-login-container {
+  position: relative; z-index: 10;
+  width: 100%; max-width: 440px;
+}
+
+/* Badge admin */
+.admin-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(139,58,58,0.15);
+  border: 1px solid rgba(139,58,58,0.3);
+  color: #c87c7c;
+  font-size: 12px; font-weight: 600;
+  padding: 6px 14px; border-radius: 20px;
+}
+
+/* Card */
+.admin-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 40px 36px;
+  backdrop-filter: blur(20px);
+  animation: cardIn 0.5s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.admin-card h1 { color: #F5F1EB; }
+.admin-card p  { color: #6B6058; }
+
+/* Form */
+.form-group { margin-bottom: 18px; }
+.form-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: #9E9082; margin-bottom: 7px; letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.input-wrapper { position: relative; }
+.form-input {
+  width: 100%; padding: 12px 14px 12px 42px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; font-size: 14px;
+  color: #F5F1EB; outline: none;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+.form-input::placeholder { color: #4A4035; }
+.form-input:focus {
+  border-color: #8B3A3A;
+  background: rgba(139,58,58,0.08);
+  box-shadow: 0 0 0 3px rgba(139,58,58,0.15);
+}
+.form-input.error { border-color: #c0392b; }
+
+.input-icon {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%); color: #4A4035;
+  pointer-events: none; display: flex; align-items: center;
+}
+.input-icon svg { width: 16px; height: 16px; }
+
+.eye-btn {
+  position: absolute; right: 14px; top: 50%;
+  transform: translateY(-50%); background: none;
+  border: none; cursor: pointer; color: #4A4035;
+  display: flex; align-items: center; transition: color 0.2s;
+}
+.eye-btn:hover { color: #8B3A3A; }
+.eye-btn svg { width: 16px; height: 16px; }
+
+.error-msg { font-size: 11px; color: #c0392b; margin-top: 4px; display: block; }
+
+.error-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(192,57,43,0.1); border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 12px; padding: 12px 14px;
+  color: #e57373; font-size: 13px;
+}
+
+/* Bouton admin */
+.admin-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #8B3A3A, #a84848);
+  color: white; border: none; border-radius: 12px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.25s;
+  box-shadow: 0 4px 20px rgba(139,58,58,0.4);
+  margin-top: 8px;
+}
+.admin-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a84848, #c05050);
+  box-shadow: 0 8px 32px rgba(139,58,58,0.5);
+  transform: translateY(-1px);
+}
+.admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Spinner */
+.spinner {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

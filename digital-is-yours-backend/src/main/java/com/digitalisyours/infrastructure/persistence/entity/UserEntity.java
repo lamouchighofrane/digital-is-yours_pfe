@@ -42,6 +42,9 @@ public class UserEntity {
     private boolean emailVerifie = false;
 
     @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(nullable = false)
     private LocalDateTime dateInscription;
 
     private LocalDateTime derniereConnexion;

@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 
@@ -20,6 +20,9 @@ import { ForgotPasswordComponent } from './components/auth/forgot-password/forgo
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { SplashScreenComponent } from './components/splashScreen/splashScreen.component';
 import { VerifyEmailComponent } from './components/auth/verifyEmail/verifyEmail.component';
+import { AdminLoginComponent } from './components/admin/adminlogin/adminLogin.component';
+import { AdminDashboardComponent } from './components/admin/admindashboard/adminDashboard.component';
+
 
 
 
@@ -29,11 +32,12 @@ import { VerifyEmailComponent } from './components/auth/verifyEmail/verifyEmail.
     HeaderComponent, FooterComponent, HeroComponent,
     FeaturesComponent, StatsComponent, TestimonialsComponent,
     CtaComponent, RegisterComponent, LoginComponent,
-    ForgotPasswordComponent,SplashScreenComponent,VerifyEmailComponent,
+    ForgotPasswordComponent,SplashScreenComponent,VerifyEmailComponent,AdminLoginComponent,
+    AdminDashboardComponent,
   ],
   imports: [
     BrowserModule, AppRoutingModule,
-    ReactiveFormsModule, HttpClientModule, CommonModule,
+    ReactiveFormsModule, HttpClientModule, CommonModule,FormsModule,
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }

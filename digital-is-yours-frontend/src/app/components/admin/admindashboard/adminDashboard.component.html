@@ -1,0 +1,305 @@
+<div class="admin-layout">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/images/logo.png" alt="DIY" class="h-8 w-auto object-contain"/>
+      <span class="sidebar-admin-label">Admin</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item" [class.active]="activeSection === 'stats'" (click)="setSection('stats')">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        Statistiques
+      </button>
+
+      <button class="nav-item" [class.active]="activeSection === 'users'" (click)="setSection('users')">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Utilisateurs
+      </button>
+
+      <button class="nav-item" [class.active]="activeSection === 'formateurs'" (click)="setSection('formateurs')">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/>
+        </svg>
+        Formateurs
+        <span *ngIf="formateursNonVerifies.length > 0" class="badge-red">
+          {{ formateursNonVerifies.length }}
+        </span>
+      </button>
+
+      <button class="nav-item" [class.active]="activeSection === 'apprenants'" (click)="setSection('apprenants')">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l9-5-9-5-9 5 9 5z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055"/>
+        </svg>
+        Apprenants
+      </button>
+    </nav>
+
+    <button class="logout-btn" (click)="logout()">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+      </svg>
+      Déconnexion
+    </button>
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="admin-main">
+
+    <!-- Header -->
+    <div class="admin-header">
+      <div>
+        <h1 class="admin-title">
+          <span *ngIf="activeSection === 'stats'">Tableau de bord</span>
+          <span *ngIf="activeSection === 'users'">Tous les utilisateurs</span>
+          <span *ngIf="activeSection === 'formateurs'">Gestion formateurs</span>
+          <span *ngIf="activeSection === 'apprenants'">Gestion apprenants</span>
+        </h1>
+        <p class="admin-subtitle">Digital Is Yours — Panneau d'administration</p>
+      </div>
+      <div class="admin-user-chip">
+        <div class="admin-avatar">A</div>
+        <span>{{ adminUser?.prenom || 'Admin' }}</span>
+      </div>
+    </div>
+
+    <!-- ══ STATISTIQUES ══ -->
+    <div *ngIf="activeSection === 'stats'">
+      <div class="stats-grid">
+        <div class="stat-card bordeaux">
+          <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Total utilisateurs</p>
+            <p class="stat-value">{{ stats.totalUsers }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card teal">
+          <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 14l9-5-9-5-9 5 9 5z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Apprenants</p>
+            <p class="stat-value">{{ stats.apprenants }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card gold">
+          <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Formateurs</p>
+            <p class="stat-value">{{ stats.formateurs }}</p>
+          </div>
+        </div>
+
+        <div class="stat-card warning">
+          <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="stat-label">Non vérifiés</p>
+            <p class="stat-value">{{ stats.nonVerifies }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Demandes formateurs en attente -->
+      <div *ngIf="formateursNonVerifies.length > 0" class="pending-section">
+        <h2 class="section-title">
+          🔔 Demandes formateurs en attente ({{ formateursNonVerifies.length }})
+        </h2>
+        <div class="user-table-wrapper">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>Formateur</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let u of formateursNonVerifies">
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar formateur">{{ getInitials(u) }}</div>
+                    <span>{{ u.prenom }} {{ u.nom }}</span>
+                  </div>
+                </td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.telephone || '—' }}</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-approve" (click)="approveFormateur(u)">✅ Approuver</button>
+                    <button class="btn-reject" (click)="rejectFormateur(u)">❌ Refuser</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TOUS LES UTILISATEURS ══ -->
+    <div *ngIf="activeSection === 'users'">
+      <div class="table-controls">
+        <input type="text" class="search-input" placeholder="🔍 Rechercher..."
+               [(ngModel)]="searchTerm"/>
+        <select class="filter-select" [(ngModel)]="filterRole">
+          <option value="ALL">Tous les rôles</option>
+          <option value="APPRENANT">Apprenants</option>
+          <option value="FORMATEUR">Formateurs</option>
+        </select>
+      </div>
+
+      <div class="user-table-wrapper">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of filteredUsers">
+              <td>
+                <div class="user-cell">
+                  <div class="user-avatar" [class.formateur]="u.role === 'FORMATEUR'">{{ getInitials(u) }}</div>
+                  <span>{{ u.prenom }} {{ u.nom }}</span>
+                </div>
+              </td>
+              <td>{{ u.email }}</td>
+              <td>
+                <span class="role-chip" [class.formateur]="u.role === 'FORMATEUR'">
+                  {{ getRoleLabel(u.role) }}
+                </span>
+              </td>
+              <td>
+                <span class="status-chip" [class.active]="u.active && u.emailVerifie"
+                      [class.pending]="!u.emailVerifie" [class.inactive]="!u.active">
+                  {{ u.active && u.emailVerifie ? 'Actif' : !u.emailVerifie ? 'En attente' : 'Désactivé' }}
+                </span>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-toggle" (click)="toggleActive(u)">
+                    {{ u.active ? '🔴 Désactiver' : '🟢 Activer' }}
+                  </button>
+                  <button class="btn-delete" (click)="deleteUser(u)">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ FORMATEURS ══ -->
+    <div *ngIf="activeSection === 'formateurs'">
+      <div class="user-table-wrapper">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Formateur</th>
+              <th>Email</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of formateurs">
+              <td>
+                <div class="user-cell">
+                  <div class="user-avatar formateur">{{ getInitials(u) }}</div>
+                  <span>{{ u.prenom }} {{ u.nom }}</span>
+                </div>
+              </td>
+              <td>{{ u.email }}</td>
+              <td>
+                <span class="status-chip" [class.active]="u.emailVerifie" [class.pending]="!u.emailVerifie">
+                  {{ u.emailVerifie ? 'Approuvé' : 'En attente' }}
+                </span>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button *ngIf="!u.emailVerifie" class="btn-approve" (click)="approveFormateur(u)">✅ Approuver</button>
+                  <button *ngIf="!u.emailVerifie" class="btn-reject" (click)="rejectFormateur(u)">❌ Refuser</button>
+                  <button class="btn-toggle" (click)="toggleActive(u)">
+                    {{ u.active ? '🔴 Désactiver' : '🟢 Activer' }}
+                  </button>
+                  <button class="btn-delete" (click)="deleteUser(u)">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ APPRENANTS ══ -->
+    <div *ngIf="activeSection === 'apprenants'">
+      <div class="user-table-wrapper">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>Apprenant</th>
+              <th>Email</th>
+              <th>Téléphone</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of apprenants">
+              <td>
+                <div class="user-cell">
+                  <div class="user-avatar">{{ getInitials(u) }}</div>
+                  <span>{{ u.prenom }} {{ u.nom }}</span>
+                </div>
+              </td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.telephone || '—' }}</td>
+              <td>
+                <span class="status-chip" [class.active]="u.active && u.emailVerifie"
+                      [class.pending]="!u.emailVerifie" [class.inactive]="!u.active">
+                  {{ u.active && u.emailVerifie ? 'Actif' : !u.emailVerifie ? 'Non vérifié' : 'Désactivé' }}
+                </span>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-toggle" (click)="toggleActive(u)">
+                    {{ u.active ? '🔴 Désactiver' : '🟢 Activer' }}
+                  </button>
+                  <button class="btn-delete" (click)="deleteUser(u)">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>

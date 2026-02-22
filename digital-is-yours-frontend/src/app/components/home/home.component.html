@@ -18,3 +18,20 @@
 
 <!-- Footer -->
 <app-footer></app-footer>
+
+<!-- Modal secret admin -->
+<div *ngIf="showAdminModal" class="admin-modal-overlay" (click)="closeAdminModal()">
+  <div class="admin-modal-card" (click)="$event.stopPropagation()">
+    <div class="admin-modal-icon">🔐</div>
+    <h3 class="admin-modal-title">Espace Administrateur</h3>
+    <p class="admin-modal-text">Accès restreint — Digital Is Yours</p>
+    <div class="admin-modal-btns">
+      <button class="admin-modal-btn-primary" (click)="goToAdminLogin()">
+        Accéder au panneau admin
+      </button>
+      <button class="admin-modal-btn-secondary" (click)="closeAdminModal()">
+        Annuler
+      </button>
+    </div>
+  </div>
+</div>
