@@ -57,6 +57,7 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
                 .motDePasse(user.getMotDePasse())
                 .role(user.getRole())
                 .emailVerifie(user.isEmailVerifie())
+                .active(user.isActive())
                 .dateInscription(user.getDateInscription())
                 .derniereConnexion(user.getDerniereConnexion())
                 .build();
@@ -72,6 +73,7 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
                 .motDePasse(entity.getMotDePasse())
                 .role(entity.getRole())
                 .emailVerifie(entity.isEmailVerifie())
+                .active(entity.isActive())
                 .dateInscription(entity.getDateInscription())
                 .derniereConnexion(entity.getDerniereConnexion())
                 .build();

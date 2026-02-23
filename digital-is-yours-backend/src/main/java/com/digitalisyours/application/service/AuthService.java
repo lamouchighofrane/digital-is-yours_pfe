@@ -1,6 +1,6 @@
 package com.digitalisyours.application.service;
 
-import com.digitalisyours.domain.model.EmailVerificationToken;
+
 import com.digitalisyours.domain.model.OtpCode;
 import com.digitalisyours.domain.model.Role;
 import com.digitalisyours.domain.model.User;
@@ -46,12 +46,13 @@ public class AuthService implements RegisterUserUseCase, LoginUserUseCase,
                 .motDePasse(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .emailVerifie(false)
+                .active(true)  // ⚠️ IMPORTANT : Par défaut, le compte est actif
                 .build();
 
         userRepository.save(user);
         log.info("Nouvel utilisateur créé : {}", request.getEmail());
 
-        // ← MODIFIÉ : envoyer un lien de vérification au lieu d'un OTP
+        // Envoyer un lien de vérification
         emailService.sendVerificationLink(request.getEmail());
 
         return MessageResponse.ok("Compte créé ! Vérifiez votre email et cliquez sur le lien d'activation.");
@@ -100,9 +101,16 @@ public class AuthService implements RegisterUserUseCase, LoginUserUseCase,
             throw new RuntimeException("Ce compte n'est pas un compte " + request.getRole().name().toLowerCase());
         }
 
-        // ADMIN n'a pas besoin de vérification email
+        // ⚠️ VÉRIFICATION 1 : Compte désactivé par admin
+        // Cette vérification doit être AVANT la vérification email
+        // car un compte peut être désactivé même si l'email est vérifié
+        if (!user.isActive()) {
+            throw new RuntimeException("COMPTE_DESACTIVE");
+        }
+
+        // ⚠️ VÉRIFICATION 2 : Email non vérifié (sauf ADMIN)
         if (user.getRole() != Role.ADMIN && !user.isEmailVerifie()) {
-            throw new RuntimeException("Veuillez vérifier votre email avant de vous connecter");
+            throw new RuntimeException("EMAIL_NON_VERIFIE");
         }
 
         userRepository.updateLastLogin(user.getEmail());
@@ -128,7 +136,7 @@ public class AuthService implements RegisterUserUseCase, LoginUserUseCase,
             throw new RuntimeException("Cet email est déjà vérifié");
         }
 
-        // ← Renvoyer le lien de vérification au lieu d'un OTP
+        // Renvoyer le lien de vérification
         emailService.sendVerificationLink(email);
 
         return MessageResponse.ok("Lien de vérification renvoyé à " + email);
@@ -140,7 +148,7 @@ public class AuthService implements RegisterUserUseCase, LoginUserUseCase,
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Aucun compte avec cet email"));
 
-        // Le reset password garde le code OTP (comportement inchangé)
+        // Le reset password garde le code OTP
         String code = otpService.generateAndSave(request.getEmail(), OtpCode.OtpType.PASSWORD_RESET);
         emailSender.sendPasswordReset(request.getEmail(), user.getPrenom(), code);
 

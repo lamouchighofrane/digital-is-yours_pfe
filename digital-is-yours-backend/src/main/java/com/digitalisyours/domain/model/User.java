@@ -19,6 +19,7 @@ public class User {
     private String motDePasse;
     private Role role;
     private boolean emailVerifie;
+    private boolean active;
     private LocalDateTime dateInscription;
     private LocalDateTime derniereConnexion;
 }
