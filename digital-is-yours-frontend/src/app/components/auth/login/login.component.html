@@ -97,7 +97,7 @@
           </p>
         </div>
 
-        <!-- ══ BANDEAU SUCCÈS EMAIL VÉRIFIÉ (NOUVEAU) ══ -->
+        <!-- ══ BANDEAU SUCCÈS EMAIL VÉRIFIÉ ══ -->
         <div *ngIf="successMessage" class="success-banner">
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -141,11 +141,32 @@
         <!-- Formulaire -->
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
 
-          <!-- Bannière d'erreur -->
-          <div *ngIf="loginError" class="error-banner">
+          <!-- ══ BANNIÈRE ERREUR GÉNÉRIQUE ══ -->
+          <div *ngIf="loginError && errorType === 'generic'" class="error-banner">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            {{ errorMessage }}
+          </div>
+
+          <!-- ══ BANNIÈRE COMPTE DÉSACTIVÉ ══ -->
+          <div *ngIf="loginError && errorType === 'desactive'" class="error-banner-desactive">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+            </svg>
+            <div>
+              <p class="error-desactive-title">Compte désactivé</p>
+              <p class="error-desactive-body">{{ errorMessage }}</p>
+            </div>
+          </div>
+
+          <!-- ══ BANNIÈRE EMAIL NON VÉRIFIÉ ══ -->
+          <div *ngIf="loginError && errorType === 'non-verifie'" class="error-banner-warning">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
             {{ errorMessage }}
           </div>

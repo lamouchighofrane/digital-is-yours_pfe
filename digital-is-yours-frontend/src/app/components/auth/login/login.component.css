@@ -64,7 +64,6 @@
 @keyframes floatA { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)} }
 @keyframes floatB { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
 
-/* Testimonial card dans le visual */
 .visual-testimonial {
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.10);
@@ -142,9 +141,6 @@
   box-shadow: 0 2px 12px rgba(30,26,22,0.08);
 }
 
-.role-tab.active.apprenant .tab-dot { background: #8B3A3A; }
-.role-tab.active.formateur .tab-dot { background: #4A7C7E; }
-
 .tab-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
@@ -152,6 +148,9 @@
   transition: background .25s;
   flex-shrink: 0;
 }
+
+.role-tab.active.apprenant .tab-dot { background: #8B3A3A; }
+.role-tab.active.formateur .tab-dot { background: #4A7C7E; }
 
 /* ── Form ── */
 .form-group { margin-bottom: 20px; }
@@ -210,7 +209,7 @@
   margin-top: 5px; display: block;
 }
 
-/* ── Remember + Forgot ── */
+/* ── Remember ── */
 .form-footer-row {
   display: flex; align-items: center;
   justify-content: space-between; margin-bottom: 24px;
@@ -228,20 +227,90 @@
 .checkbox-box.checked { background: #8B3A3A; border-color: #8B3A3A; }
 .checkbox-box svg { width: 10px; height: 10px; }
 
-/* ── Error banner ── */
-.error-banner {
-  display: flex; align-items: center; gap: 10px;
-  background: #fff4f4; border: 1.5px solid #fecaca;
-  border-radius: 12px; padding: 12px 14px;
-  margin-bottom: 20px; color: #c0392b; font-size: 13px;
-  animation: shake .35s ease;
-}
+/* ══════════════════════════════════════════════════
+   BANNIERES D'ERREUR — 3 types
+══════════════════════════════════════════════════ */
+
+/* Animation shake commune */
 @keyframes shake {
   0%,100%{transform:translateX(0)}
   20%{transform:translateX(-6px)}
   40%{transform:translateX(6px)}
   60%{transform:translateX(-4px)}
   80%{transform:translateX(4px)}
+}
+
+/* 1. Erreur générique (mauvais mot de passe) */
+.error-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff4f4;
+  border: 1.5px solid #fecaca;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  color: #c0392b;
+  font-size: 13px;
+  animation: shake .35s ease;
+}
+
+/* 2. Compte désactivé — bordeaux avec bordure latérale */
+.error-banner-desactive {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: #fce4e4;
+  border: 1.5px solid #c0392b;
+  border-left: 4px solid #8B3A3A;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  color: #8B3A3A;
+  animation: shake .4s ease;
+}
+
+.error-desactive-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8B3A3A;
+  margin-bottom: 3px;
+}
+
+.error-desactive-body {
+  font-size: 12px;
+  color: #c0392b;
+  line-height: 1.5;
+}
+
+/* 3. Email non vérifié — orange */
+.error-banner-warning {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff8e1;
+  border: 1.5px solid #f39c12;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  color: #e67e22;
+  font-size: 13px;
+  animation: shake .35s ease;
+}
+
+/* ── Bannière succès email vérifié ── */
+.success-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #edf4f4;
+  border: 1.5px solid #4A7C7E;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #2d6163;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  animation: bannerIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes bannerIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Submit button ── */
@@ -267,6 +336,13 @@
 .btn-submit.formateur { background: #4A7C7E; box-shadow: 0 4px 20px rgba(74,124,126,0.28); }
 .btn-submit.formateur:hover:not(:disabled) { background: #5a9496; box-shadow: 0 8px 32px rgba(74,124,126,0.38); }
 
+/* ── Accent bar ── */
+.accent-bar {
+  height: 3px; border-radius: 99px;
+  margin-bottom: 28px;
+  transition: background .35s ease;
+}
+
 /* ── Divider ── */
 .or-divider {
   display: flex; align-items: center; gap: 12px;
@@ -286,14 +362,7 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Accent bar (role indicator) ── */
-.accent-bar {
-  height: 3px; border-radius: 99px;
-  margin-bottom: 28px;
-  transition: background .35s ease, width .35s ease;
-}
-
-/* ── Visual testimonial quote ── */
+/* ── Quote mark ── */
 .quote-mark {
   font-family: 'Cormorant Garamond', serif;
   font-size: 80px;
@@ -303,26 +372,6 @@
   margin-bottom: 12px;
 }
 
-/* ── Responsive ── */
 @media (max-width: 600px) {
   .login-form-panel { padding: 32px 20px; }
-}
-.success-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #edf4f4;
-  border: 1.5px solid #4A7C7E;
-  border-radius: 12px;
-  padding: 12px 14px;
-  color: #2d6163;
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 20px;
-  animation: bannerIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes bannerIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
 }

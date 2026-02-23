@@ -17,12 +17,13 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   loginError = false;
   errorMessage = '';
-  successMessage = '';   // ← message de succès après vérification email
+  errorType: 'generic' | 'desactive' | 'non-verifie' = 'generic';
+  successMessage = '';
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private route: ActivatedRoute,   // ← IMPORTANT pour lire les query params
+    private route: ActivatedRoute,
     private authService: AuthService
   ) {
     this.loginForm = this.fb.group({
@@ -33,7 +34,6 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Détecter si l'utilisateur vient de vérifier son email
     this.route.queryParams.subscribe(params => {
       if (params['verified'] === 'true') {
         this.successMessage = '✅ Email vérifié ! Vous pouvez maintenant vous connecter.';
@@ -65,7 +65,6 @@ export class LoginComponent implements OnInit {
     this.authService.login({ email, password, role: this.selectedRole }).subscribe({
       next: (response) => {
         this.isLoading = false;
-        // Redirection selon le rôle
         if (response.role === 'FORMATEUR') {
           this.router.navigate(['/dashboard-formateur']);
         } else {
@@ -75,20 +74,25 @@ export class LoginComponent implements OnInit {
       error: (err) => {
         this.isLoading = false;
         this.loginError = true;
-        this.errorMessage = err.error?.message || 'Email ou mot de passe incorrect.';
+
+        // Récupérer le message d'erreur du backend
+        const msg: string = err.error?.message || '';
+
+        if (msg === 'COMPTE_DESACTIVE' || err.status === 403) {
+          this.errorType = 'desactive';
+          this.errorMessage = "Votre compte a été désactivé par un administrateur. Contactez le support.";
+        } else if (msg.includes('vérifier votre email') || msg === 'EMAIL_NON_VERIFIE') {
+          this.errorType = 'non-verifie';
+          this.errorMessage = "Votre email n'est pas encore vérifié. Vérifiez votre boîte mail.";
+        } else {
+          this.errorType = 'generic';
+          this.errorMessage = msg || 'Email ou mot de passe incorrect.';
+        }
       }
     });
   }
 
-  goToRegister(): void {
-    this.router.navigate(['/register']);
-  }
-
-  goToForgotPassword(): void {
-    this.router.navigate(['/forgot-password']);
-  }
-
-  goToHome(): void {
-    this.router.navigate(['/home']);
-  }
+  goToRegister(): void { this.router.navigate(['/register']); }
+  goToForgotPassword(): void { this.router.navigate(['/forgot-password']); }
+  goToHome(): void { this.router.navigate(['/home']); }
 }

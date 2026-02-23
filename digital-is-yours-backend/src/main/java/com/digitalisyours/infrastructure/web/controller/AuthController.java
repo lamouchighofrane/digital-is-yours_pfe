@@ -4,6 +4,7 @@ package com.digitalisyours.infrastructure.web.controller;
 import com.digitalisyours.domain.model.EmailVerificationToken;
 import com.digitalisyours.domain.port.in.*;
 import com.digitalisyours.infrastructure.persistence.EmailVerificationTokenRepository;
+import com.digitalisyours.infrastructure.persistence.entity.UserEntity;
 import com.digitalisyours.infrastructure.persistence.repository.UserJpaRepository;
 import com.digitalisyours.infrastructure.web.dto.request.*;
 import com.digitalisyours.infrastructure.web.dto.response.AuthResponse;
@@ -35,12 +36,24 @@ public class AuthController {
     // ── Inscription ──────────────────────────────────────────────
     @PostMapping("/register")
     public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(registerUseCase.register(request));  // ← une seule ligne
+        return ResponseEntity.ok(registerUseCase.register(request));
     }
 
     // ── Connexion ────────────────────────────────────────────────
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+
+        // ⚠️ VÉRIFICATION COMPTE DÉSACTIVÉ avant de générer le token JWT
+        UserEntity userEntity = userRepository.findByEmail(request.getEmail()).orElse(null);
+
+        if (userEntity != null && !userEntity.isActive()) {
+            log.warn("Tentative connexion compte désactivé: {}", request.getEmail());
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "COMPTE_DESACTIVE"
+            ));
+        }
+
         return ResponseEntity.ok(loginUseCase.login(request));
     }
 
@@ -70,7 +83,7 @@ public class AuthController {
         return ResponseEntity.ok(forgotPasswordUseCase.resetPassword(request));
     }
 
-    // ── Vérification email via lien (NOUVEAU) ────────────────────
+    // ── Vérification email via lien ──────────────────────────────
     @GetMapping("/verify-email")
     public ResponseEntity<?> verifyEmail(@RequestParam String token) {
         try {
@@ -90,7 +103,6 @@ public class AuthController {
                         .build();
             }
 
-            // markEmailVerified = nom exact dans votre UserJpaRepository
             userRepository.markEmailVerified(verifToken.getEmail());
             verifToken.setUsed(true);
             tokenRepository.save(verifToken);
@@ -109,7 +121,7 @@ public class AuthController {
         }
     }
 
-    // ── Renvoyer le lien de vérification (NOUVEAU) ───────────────
+    // ── Renvoyer le lien de vérification ─────────────────────────
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resendVerification(@RequestBody Map<String, String> request) {
         String email = request.get("email");
