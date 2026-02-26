@@ -22,6 +22,7 @@ import { SplashScreenComponent } from './components/splashScreen/splashScreen.co
 import { VerifyEmailComponent } from './components/auth/verifyEmail/verifyEmail.component';
 import { AdminLoginComponent } from './components/admin/adminlogin/adminLogin.component';
 import { AdminDashboardComponent } from './components/admin/admindashboard/adminDashboard.component';
+import { CategoriesComponent } from './components/admin/categories/categories.component';
 
 
 
@@ -33,7 +34,7 @@ import { AdminDashboardComponent } from './components/admin/admindashboard/admin
     FeaturesComponent, StatsComponent, TestimonialsComponent,
     CtaComponent, RegisterComponent, LoginComponent,
     ForgotPasswordComponent,SplashScreenComponent,VerifyEmailComponent,AdminLoginComponent,
-    AdminDashboardComponent,
+    AdminDashboardComponent,CategoriesComponent,
   ],
   imports: [
     BrowserModule, AppRoutingModule,

@@ -1,422 +1,455 @@
-<!-- Toast notification -->
+<!-- Toast notifications -->
 <div *ngIf="toast" class="toast" [class.toast-error]="toast.type==='error'">
-  <span class="toast-icon">{{ toast.type==='success' ? '✓' : '✕' }}</span>
+  <svg *ngIf="toast.type==='success'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+  <svg *ngIf="toast.type==='error'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
   {{ toast.msg }}
 </div>
 
-<div class="layout">
+<div class="app-shell">
 
-  <!-- ══ SIDEBAR ══ -->
+  <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
   <aside class="sidebar">
+
+    <!-- Brand : "Digital Is Yours" — sans DIY -->
     <div class="sb-brand">
-      <div class="sb-logo">DIY</div>
+      <div class="sb-logo-mark"><span>D</span></div>
       <div>
-        <p class="sb-title">Digital Is Yours</p>
-        <p class="sb-sub">Administration</p>
+        <p class="sb-brand-name">Digital Is Yours</p>
+        <p class="sb-brand-role">Administration</p>
       </div>
     </div>
 
+    <!-- Profil admin -->
     <div class="sb-profile">
       <div class="sb-av">{{ adminInitials }}</div>
       <div>
-        <p class="sb-name">{{ adminUser?.prenom || 'Admin' }}</p>
-        <p class="sb-role">Administrateur</p>
+        <p class="sb-pname">{{ adminUser?.prenom || 'Admin' }} </p>
+        <p class="sb-prole">Super Admin</p>
       </div>
+      <div class="sb-online-dot"></div>
     </div>
 
+    <!-- Navigation -->
     <nav class="sb-nav">
-      <button class="sb-link" [class.active]="activeSection==='dashboard'" (click)="setSection('dashboard')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.5"/></svg>
-        Tableau de bord
-      </button>
-      <button class="sb-link" [class.active]="activeSection==='users'" (click)="setSection('users')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4" stroke-width="1.5"/><path stroke-width="1.5" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Utilisateurs
-        <span *ngIf="pendingFormateurs.length" class="sb-badge">{{ pendingFormateurs.length }}</span>
-      </button>
-      <button class="sb-link" [class.active]="activeSection==='formateurs'" (click)="setSection('formateurs')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M20 21v-2a4 4 0 0 0-4-4h-4"/><circle cx="9" cy="7" r="4" stroke-width="1.5"/><path stroke-width="1.5" d="M16 11l2 2 4-4"/></svg>
-        Formateurs
-        <span *ngIf="pendingFormateurs.length" class="sb-badge warn">{{ pendingFormateurs.length }}</span>
-      </button>
-      <button class="sb-link" [class.active]="activeSection==='apprenants'" (click)="setSection('apprenants')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M22 10v6M2 10l10-5 10 5-10 5z"/><path stroke-width="1.5" d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-        Apprenants
-      </button>
+
+      <!-- Tableau de bord -->
+      <div class="sb-group">
+        <span class="sb-group-label">Tableau de bord</span>
+        <button class="sb-item" [class.sb-active]="activeSection==='dashboard'" (click)="setSection('dashboard')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.6"/>
+              <rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.6"/>
+              <rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.6"/>
+              <rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.6"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Vue d'ensemble</span>
+        </button>
+      </div>
+
+      <!-- Utilisateurs -->
+      <div class="sb-group">
+        <span class="sb-group-label">Utilisateurs</span>
+        <button class="sb-item" [class.sb-active]="activeSection==='users'" (click)="setSection('users')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
+              <path stroke-width="1.6" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Tous les utilisateurs</span>
+          <span *ngIf="pendingFormateurs.length" class="sb-badge">{{ pendingFormateurs.length }}</span>
+        </button>
+        <button class="sb-item" [class.sb-active]="activeSection==='formateurs'" (click)="setSection('formateurs')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M20 21v-2a4 4 0 0 0-4-4h-4"/>
+              <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
+              <path stroke-width="1.6" d="M16 11l2 2 4-4"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Formateurs</span>
+          <span *ngIf="pendingFormateurs.length" class="sb-badge sb-badge-warn">{{ pendingFormateurs.length }}</span>
+        </button>
+        <button class="sb-item" [class.sb-active]="activeSection==='apprenants'" (click)="setSection('apprenants')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+              <path stroke-width="1.6" d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Apprenants</span>
+        </button>
+      </div>
+
+      <!-- Catalogue -->
+      <div class="sb-group">
+        <span class="sb-group-label">Catalogue</span>
+        <button class="sb-item" [class.sb-active]="activeSection==='categories'" (click)="setSection('categories')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Catégories</span>
+        </button>
+      </div>
+
     </nav>
 
     <button class="sb-logout" (click)="logout()">
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.8" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+      </svg>
       Déconnexion
     </button>
+
   </aside>
 
-  <!-- ══ MAIN ══ -->
-  <main class="main">
+  <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+  <main class="main-area">
 
     <!-- Topbar -->
     <header class="topbar">
       <div>
-        <h1 class="tb-title">
+        <p class="topbar-crumb">
+          Digital Is Yours
+          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 18l6-6-6-6"/></svg>
+          <span>
+            <ng-container *ngIf="activeSection==='dashboard'">Vue d'ensemble</ng-container>
+            <ng-container *ngIf="activeSection==='users'">Tous les utilisateurs</ng-container>
+            <ng-container *ngIf="activeSection==='formateurs'">Formateurs</ng-container>
+            <ng-container *ngIf="activeSection==='apprenants'">Apprenants</ng-container>
+            <ng-container *ngIf="activeSection==='categories'">Catégories</ng-container>
+          </span>
+        </p>
+        <h1 class="topbar-title">
           <ng-container *ngIf="activeSection==='dashboard'">Vue d'ensemble</ng-container>
-          <ng-container *ngIf="activeSection==='users'">Gestion des Utilisateurs</ng-container>
+          <ng-container *ngIf="activeSection==='users'">Tous les utilisateurs</ng-container>
           <ng-container *ngIf="activeSection==='formateurs'">Formateurs</ng-container>
           <ng-container *ngIf="activeSection==='apprenants'">Apprenants</ng-container>
+          <ng-container *ngIf="activeSection==='categories'">Catégories</ng-container>
         </h1>
-        <p class="tb-sub">Digital Is Yours — Panneau d'administration</p>
       </div>
-      <div class="tb-right">
-        <button *ngIf="activeSection!=='dashboard'" class="btn-primary" (click)="openCreateModal()">
-          + Créer un utilisateur
-        </button>
-        <div class="tb-chip">
-          <div class="tb-av">{{ adminInitials }}</div>
-          <span>{{ adminUser?.prenom || 'Admin' }}</span>
+
+      <div class="topbar-right">
+        <!-- ★ Bouton DYNAMIQUE selon section ★ -->
+        <ng-container [ngSwitch]="activeSection">
+          <button *ngSwitchCase="'users'" class="btn-cta" (click)="openCreateModal()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            Créer un utilisateur
+          </button>
+          <button *ngSwitchCase="'formateurs'" class="btn-cta" (click)="openCreateModal('FORMATEUR')">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            Créer un formateur
+          </button>
+          <button *ngSwitchCase="'apprenants'" class="btn-cta" (click)="openCreateModal('APPRENANT')">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            Créer un apprenant
+          </button>
+        </ng-container>
+
+        <!-- ★ Avatar — prénom SEULEMENT, pas de doublon ★ -->
+        <div class="topbar-avatar">
+          <div class="t-av">{{ adminInitials }}</div>
+          <div>
+            <span class="t-name">{{ adminUser?.prenom || 'Admin' }}</span>
+            <span class="t-role">Administrateur</span>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- ════════ DASHBOARD ════════ -->
-    <div *ngIf="activeSection==='dashboard'" class="page">
+    <!-- ──────────── DASHBOARD ──────────── -->
+    <section *ngIf="activeSection==='dashboard'" class="page-content">
 
-      <div class="kpi-grid">
-        <div class="kpi-card" style="--c:#8B3A3A">
-          <div class="kpi-icon" style="background:#f9f0f0">
-            <svg width="20" height="20" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.5" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4" stroke-width="1.5"/><path stroke-width="1.5" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <div class="kpi-row">
+
+        <div class="kpi" style="--accent:#8B3A3A">
+          <div class="kpi-top">
+            <div class="kpi-ico" style="background:#f9f0f0">
+              <svg width="18" height="18" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4" stroke-width="1.6"/><path stroke-width="1.6" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <span class="kpi-delta up">+{{ stats.totalUsers }}</span>
           </div>
-          <div>
-            <p class="kpi-lbl">Total utilisateurs</p>
-            <p class="kpi-num">{{ stats.totalUsers }}</p>
-            <p class="kpi-sub">{{ stats.apprenants }} app · {{ stats.formateurs }} form.</p>
-          </div>
+          <p class="kpi-val">{{ stats.totalUsers }}</p>
+          <p class="kpi-label">Utilisateurs totaux</p>
+          <div class="kpi-bar"><div class="kpi-fill" style="background:#8B3A3A;width:100%"></div></div>
         </div>
-        <div class="kpi-card" style="--c:#2D6A6A">
-          <div class="kpi-icon" style="background:#edf4f4">
-            <svg width="20" height="20" fill="none" stroke="#2D6A6A" viewBox="0 0 24 24"><path stroke-width="1.5" d="M22 10v6M2 10l10-5 10 5-10 5z"/><path stroke-width="1.5" d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+
+        <div class="kpi" style="--accent:#4A7C7E">
+          <div class="kpi-top">
+            <div class="kpi-ico" style="background:rgba(74,124,126,.1)">
+              <svg width="18" height="18" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24"><path stroke-width="1.6" d="M22 10v6M2 10l10-5 10 5-10 5z"/><path stroke-width="1.6" d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
           </div>
-          <div>
-            <p class="kpi-lbl">Apprenants</p>
-            <p class="kpi-num">{{ stats.apprenants }}</p>
-            <p class="kpi-sub">Inscrits</p>
-          </div>
+          <p class="kpi-val">{{ stats.apprenants }}</p>
+          <p class="kpi-label">Apprenants</p>
+          <div class="kpi-bar"><div class="kpi-fill" style="background:#4A7C7E" [style.width]="stats.totalUsers ? (stats.apprenants/stats.totalUsers*100)+'%' : '0%'"></div></div>
         </div>
-        <div class="kpi-card" style="--c:#8B6914">
-          <div class="kpi-icon" style="background:#fdf6ec">
-            <svg width="20" height="20" fill="none" stroke="#8B6914" viewBox="0 0 24 24"><path stroke-width="1.5" d="M20 21v-2a4 4 0 0 0-4-4h-4"/><circle cx="9" cy="7" r="4" stroke-width="1.5"/><path stroke-width="1.5" d="M16 11l2 2 4-4"/></svg>
+
+        <div class="kpi" style="--accent:#9B8B6E">
+          <div class="kpi-top">
+            <div class="kpi-ico" style="background:rgba(155,139,110,.1)">
+              <svg width="18" height="18" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24"><path stroke-width="1.6" d="M20 21v-2a4 4 0 0 0-4-4h-4"/><circle cx="9" cy="7" r="4" stroke-width="1.6"/><path stroke-width="1.6" d="M16 11l2 2 4-4"/></svg>
+            </div>
+            <span *ngIf="pendingFormateurs.length" class="kpi-delta warn">{{ pendingFormateurs.length }} en attente</span>
           </div>
-          <div>
-            <p class="kpi-lbl">Formateurs</p>
-            <p class="kpi-num">{{ stats.formateurs }}</p>
-            <p class="kpi-sub">{{ pendingFormateurs.length }} en attente</p>
-          </div>
+          <p class="kpi-val">{{ stats.formateurs }}</p>
+          <p class="kpi-label">Formateurs</p>
+          <div class="kpi-bar"><div class="kpi-fill" style="background:#9B8B6E" [style.width]="stats.totalUsers ? (stats.formateurs/stats.totalUsers*100)+'%' : '0%'"></div></div>
         </div>
-        <div class="kpi-card" style="--c:#C0392B">
-          <div class="kpi-icon" style="background:#fce4e4">
-            <svg width="20" height="20" fill="none" stroke="#C0392B" viewBox="0 0 24 24"><path stroke-width="1.5" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke-width="1.5"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2"/></svg>
+
+        <div class="kpi" style="--accent:#C0392B">
+          <div class="kpi-top">
+            <div class="kpi-ico" style="background:rgba(192,57,43,.1)">
+              <svg width="18" height="18" fill="none" stroke="#C0392B" viewBox="0 0 24 24"><path stroke-width="1.6" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke-width="1.6"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2"/></svg>
+            </div>
           </div>
-          <div>
-            <p class="kpi-lbl">Désactivés</p>
-            <p class="kpi-num">{{ stats.desactives }}</p>
-            <p class="kpi-sub">{{ stats.nonVerifies }} non vérifiés</p>
+          <p class="kpi-val">{{ stats.desactives }}</p>
+          <p class="kpi-label">Désactivés</p>
+          <div class="kpi-bar"><div class="kpi-fill" style="background:#C0392B" [style.width]="stats.totalUsers ? (stats.desactives/stats.totalUsers*100)+'%' : '0%'"></div></div>
+        </div>
+
+      </div>
+
+      <!-- Demandes en attente -->
+      <div *ngIf="pendingFormateurs.length" class="card-block">
+        <div class="cb-head">
+          <div class="cb-head-left">
+            <h2 class="cb-title">Demandes en attente</h2>
+            <span class="cb-badge">{{ pendingFormateurs.length }}</span>
+          </div>
+          <button class="cb-link" (click)="setSection('formateurs')">Voir tous →</button>
+        </div>
+        <div class="pending-rows">
+          <div *ngFor="let u of pendingFormateurs" class="pending-item">
+            <div class="pi-av">{{ getInitials(u) }}</div>
+            <div class="pi-info">
+              <p class="pi-name">{{ u.prenom }} {{ u.nom }}</p>
+              <p class="pi-email">{{ u.email }}</p>
+            </div>
+            <div class="pi-acts">
+              <button class="pi-btn pi-approve" (click)="approveFormateur(u)">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                Approuver
+              </button>
+              <button class="pi-btn pi-reject" (click)="rejectFormateur(u)">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                Refuser
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Demandes formateurs -->
-      <div *ngIf="pendingFormateurs.length" class="section-block">
-        <div class="block-head">
-          <h2 class="block-title">Demandes formateurs en attente
-            <span class="badge-pill red">{{ pendingFormateurs.length }}</span>
-          </h2>
-        </div>
-        <div class="pending-list">
-          <div *ngFor="let u of pendingFormateurs" class="pending-row">
-            <div class="pr-av teal">{{ getInitials(u) }}</div>
-            <div class="pr-info">
-              <p class="pr-name">{{ u.prenom }} {{ u.nom }}</p>
-              <p class="pr-email">{{ u.email }}</p>
-            </div>
-            <div class="pr-acts">
-              <button class="btn-approve" (click)="approveFormateur(u)">✓ Approuver</button>
-              <button class="btn-reject"  (click)="rejectFormateur(u)">✕ Refuser</button>
-            </div>
+      <!-- Utilisateurs récents -->
+      <div class="card-block">
+        <div class="cb-head">
+          <div class="cb-head-left">
+            <h2 class="cb-title">Utilisateurs récents</h2>
+            <span class="cb-count">{{ users.length }} au total</span>
           </div>
+          <button class="cb-link" (click)="setSection('users')">Tout voir →</button>
         </div>
-      </div>
-
-      <!-- Aperçu utilisateurs -->
-      <div class="section-block">
-        <div class="block-head">
-          <h2 class="block-title">Aperçu des utilisateurs</h2>
-          <button class="link-btn" (click)="setSection('users')">Voir tous →</button>
-        </div>
-        <div class="mini-table-wrap">
-          <table class="mini-table">
-            <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Statut</th></tr></thead>
-            <tbody>
-              <tr *ngFor="let u of users.slice(0,5)">
-                <td>
-                  <div class="ucell">
-                    <div class="uav" [class.teal]="u.role==='FORMATEUR'">{{ getInitials(u) }}</div>
-                    {{ u.prenom }} {{ u.nom }}
+        <table class="dash-table">
+          <thead><tr><th>Utilisateur</th><th>Email</th><th>Rôle</th><th>Statut</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let u of users.slice(0,6)">
+              <td>
+                <div class="user-cell">
+                  <div class="uc-av" [class.teal]="u.role==='FORMATEUR'">{{ getInitials(u) }}</div>
+                  <div>
+                    <p class="uc-name">{{ u.prenom }} {{ u.nom }}</p>
+                    <p class="uc-date" *ngIf="u.dateInscription">{{ u.dateInscription | date:'dd MMM yyyy' }}</p>
                   </div>
-                </td>
-                <td class="muted">{{ u.email }}</td>
-                <td><span class="chip-role" [class.teal]="u.role==='FORMATEUR'">{{ getRoleLabel(u.role) }}</span></td>
-                <td><span class="chip-status" [class]="getStatusClass(u)">{{ getStatusLabel(u) }}</span></td>
-              </tr>
-              <tr *ngIf="users.length===0">
-                <td colspan="4" class="empty-row">Aucun utilisateur</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </div>
+              </td>
+              <td class="td-muted">{{ u.email }}</td>
+              <td><span class="role-chip" [class.rc-formateur]="u.role==='FORMATEUR'" [class.rc-apprenant]="u.role==='APPRENANT'">{{ getRoleLabel(u.role) }}</span></td>
+              <td><span class="status-chip" [class]="getStatusClass(u)">{{ getStatusLabel(u) }}</span></td>
+            </tr>
+            <tr *ngIf="!users.length"><td colspan="4" class="empty-td">Aucun utilisateur</td></tr>
+          </tbody>
+        </table>
       </div>
-    </div>
 
-    <!-- ════════ USERS ════════ -->
-    <div *ngIf="activeSection==='users'" class="page">
-      <ng-container *ngTemplateOutlet="usersTable; context:{list: filteredUsers}"></ng-container>
-    </div>
+    </section>
 
-    <!-- ════════ FORMATEURS ════════ -->
-    <div *ngIf="activeSection==='formateurs'" class="page">
-      <ng-container *ngTemplateOutlet="usersTable; context:{list: formateurs}"></ng-container>
-    </div>
+    <!-- ──────────── USERS / FORMATEURS / APPRENANTS ──────────── -->
+    <section *ngIf="activeSection==='users' || activeSection==='formateurs' || activeSection==='apprenants'" class="page-content">
+      <ng-container *ngTemplateOutlet="tplUsers; context:{list: getCurrentList()}"></ng-container>
+    </section>
 
-    <!-- ════════ APPRENANTS ════════ -->
-    <div *ngIf="activeSection==='apprenants'" class="page">
-      <ng-container *ngTemplateOutlet="usersTable; context:{list: apprenants}"></ng-container>
-    </div>
+    <!-- ──────────── CATÉGORIES ──────────── -->
+    <section *ngIf="activeSection==='categories'" class="page-content">
+      <app-categories></app-categories>
+    </section>
 
   </main>
 </div>
 
-<!-- ══ TEMPLATE TABLE RÉUTILISABLE ══ -->
-<ng-template #usersTable let-list="list">
-
-  <!-- Mini KPI — expressions simples, sans pipe -->
-  <div class="mini-kpi-row">
-    <div class="mini-kpi">
-      <p class="mk-n">{{ list.length }}</p>
-      <p class="mk-l">Total affiché</p>
-    </div>
-    <div class="mini-kpi">
-      <p class="mk-n">{{ countActive(list) }}</p>
-      <p class="mk-l">Actifs</p>
-    </div>
-    <div class="mini-kpi">
-      <p class="mk-n">{{ countInactive(list) }}</p>
-      <p class="mk-l">Désactivés</p>
-    </div>
-    <div class="mini-kpi">
-      <p class="mk-n">{{ countPending(list) }}</p>
-      <p class="mk-l">En attente</p>
-    </div>
+<!-- ═══════════════════════════════════
+     TEMPLATE TABLE UTILISATEURS
+═══════════════════════════════════ -->
+<ng-template #tplUsers let-list="list">
+  <div class="mini-stats">
+    <div class="ms-card"><span class="ms-num">{{ list.length }}</span><span class="ms-lbl">Total</span></div>
+    <div class="ms-card"><span class="ms-num" style="color:#2e7d32">{{ countActive(list) }}</span><span class="ms-lbl">Actifs</span></div>
+    <div class="ms-card"><span class="ms-num" style="color:#e67e22">{{ countPending(list) }}</span><span class="ms-lbl">En attente</span></div>
+    <div class="ms-card"><span class="ms-num" style="color:#c0392b">{{ countInactive(list) }}</span><span class="ms-lbl">Désactivés</span></div>
   </div>
 
-  <!-- Barre de contrôle -->
-  <div class="ctrl-bar">
-    <div class="search-wrap">
-      <svg width="15" height="15" fill="none" stroke="#9E9082" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"/></svg>
-      <input class="ctrl-search" placeholder="Rechercher nom, email..." [(ngModel)]="searchTerm"/>
+  <div class="ctrl-row">
+    <div class="ctrl-search">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"/><path stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
+      <input placeholder="Rechercher nom, email..." [(ngModel)]="searchTerm"/>
     </div>
-    <select class="ctrl-select" [(ngModel)]="filterRole">
-      <option value="ALL">Tous les rôles</option>
-      <option value="APPRENANT">Apprenants</option>
-      <option value="FORMATEUR">Formateurs</option>
-    </select>
-    <select class="ctrl-select" [(ngModel)]="filterStatus">
+    <select class="ctrl-sel" [(ngModel)]="filterStatus">
       <option value="ALL">Tous les statuts</option>
       <option value="ACTIF">Actifs</option>
       <option value="DESACTIVE">Désactivés</option>
       <option value="ATTENTE">En attente</option>
     </select>
-    <button class="btn-export" (click)="exportCSV()">
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    <button class="ctrl-export" (click)="exportCSV()">
+      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       CSV
     </button>
-    <button class="btn-export btn-export-pdf" (click)="exportPDF()">
-      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline stroke-width="2" points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13" stroke-width="2"/><line x1="16" y1="17" x2="8" y2="17" stroke-width="2"/></svg>
+    <button class="ctrl-export ctrl-export-pdf" (click)="exportPDF()">
+      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline stroke-width="2" points="14 2 14 8 20 8"/></svg>
       PDF
     </button>
   </div>
 
-  <!-- Table -->
-  <div class="tbl-wrap">
-    <div *ngIf="isLoading" class="loading-row">Chargement...</div>
-    <table class="dtable" *ngIf="!isLoading">
+  <div class="table-wrap">
+    <div *ngIf="isLoading" class="loading-state"><div class="spinner"></div>&nbsp;Chargement...</div>
+    <table *ngIf="!isLoading" class="users-table">
       <thead>
-        <tr>
-          <th>Utilisateur</th>
-          <th>Email</th>
-          <th>Téléphone</th>
-          <th>Rôle</th>
-          <th>Statut compte</th>
-          <th>Actions</th>
-        </tr>
+        <tr><th>Utilisateur</th><th>Email</th><th>Téléphone</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr>
       </thead>
       <tbody>
-        <tr *ngFor="let u of list" [class.row-inactive]="!u.active">
+        <tr *ngFor="let u of list" [class.row-dim]="!u.active">
           <td>
-            <div class="ucell">
-              <div class="uav" [class.teal]="u.role==='FORMATEUR'" [class.inactive]="!u.active">{{ getInitials(u) }}</div>
+            <div class="user-cell">
+              <div class="uc-av" [class.teal]="u.role==='FORMATEUR'" [class.dim]="!u.active">{{ getInitials(u) }}</div>
               <div>
-                <p class="uname">{{ u.prenom }} {{ u.nom }}</p>
-                <p class="udate" *ngIf="u.dateInscription">Inscrit le {{ u.dateInscription | date:'dd/MM/yyyy' }}</p>
+                <p class="uc-name">{{ u.prenom }} {{ u.nom }}</p>
+                <p class="uc-date" *ngIf="u.dateInscription">{{ u.dateInscription | date:'dd/MM/yyyy' }}</p>
               </div>
             </div>
           </td>
-          <td class="muted">{{ u.email }}</td>
-          <td class="muted">{{ u.telephone || '—' }}</td>
-          <td>
-            <span class="chip-role" [class.teal]="u.role==='FORMATEUR'">{{ getRoleLabel(u.role) }}</span>
-          </td>
-          <td>
-            <span class="chip-status" [class]="getStatusClass(u)">{{ getStatusLabel(u) }}</span>
-          </td>
+          <td class="td-muted">{{ u.email }}</td>
+          <td class="td-muted">{{ u.telephone || '—' }}</td>
+          <td><span class="role-chip" [class.rc-formateur]="u.role==='FORMATEUR'" [class.rc-apprenant]="u.role==='APPRENANT'">{{ getRoleLabel(u.role) }}</span></td>
+          <td><span class="status-chip" [class]="getStatusClass(u)">{{ getStatusLabel(u) }}</span></td>
           <td>
             <div class="act-row">
-              <button class="act-btn" (click)="openEditModal(u)" title="Modifier">
+              <button class="act" (click)="openEditModal(u)" title="Modifier">
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke-width="2" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
-
-              <button class="act-btn"
-                      [class.act-deactivate]="u.active"
-                      [class.act-activate]="!u.active"
-                      (click)="toggleActive(u)"
-                      [title]="u.active ? 'Désactiver ce compte' : 'Activer ce compte'">
+              <button class="act" [class.act-off]="u.active" [class.act-on]="!u.active" (click)="toggleActive(u)" [title]="u.active ? 'Désactiver' : 'Activer'">
                 <svg *ngIf="u.active" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" stroke-width="2"/><circle cx="16" cy="12" r="3" fill="currentColor" stroke="none"/></svg>
                 <svg *ngIf="!u.active" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7" stroke-width="2"/><circle cx="8" cy="12" r="3" fill="currentColor" stroke="none"/></svg>
-                <span>{{ u.active ? 'Désactiver' : 'Activer' }}</span>
               </button>
-
-              <button *ngIf="u.role==='FORMATEUR' && !u.emailVerifie"
-                      class="act-btn act-approve" (click)="approveFormateur(u)">
-                ✓ Approuver
+              <button *ngIf="u.role==='FORMATEUR' && !u.emailVerifie" class="act act-approve" (click)="approveFormateur(u)" title="Approuver">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
               </button>
-
-              <button class="act-btn act-delete" (click)="deleteUser(u)" title="Supprimer">
+              <button class="act act-del" (click)="deleteUser(u)" title="Supprimer">
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" stroke-width="2"/><path stroke-width="2" d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
               </button>
             </div>
           </td>
         </tr>
-        <tr *ngIf="list.length === 0">
-          <td colspan="6" class="empty-row">Aucun utilisateur trouvé</td>
-        </tr>
+        <tr *ngIf="!list.length"><td colspan="6" class="empty-td">Aucun résultat trouvé</td></tr>
       </tbody>
     </table>
+    <p *ngIf="!isLoading" class="table-count">{{ list.length }} résultat{{ list.length!==1?'s':'' }}</p>
   </div>
-  <p class="result-count">{{ list.length }} résultat(s)</p>
 </ng-template>
 
-<!-- ══ MODAL CRÉER ══ -->
-<div *ngIf="showCreateModal" class="overlay" (click)="showCreateModal=false">
-  <div class="modal" (click)="$event.stopPropagation()">
-    <div class="modal-hd">
-      <h3>Créer un utilisateur</h3>
-      <button class="modal-x" (click)="showCreateModal=false">✕</button>
+<!-- ═══════════════════════════════════
+     MODAL CRÉER
+═══════════════════════════════════ -->
+<div *ngIf="showCreateModal" class="m-overlay" (click)="showCreateModal=false">
+  <div class="m-box" (click)="$event.stopPropagation()">
+    <div class="m-hd">
+      <div>
+        <h3 class="m-title">{{ getCreateTitle() }}</h3>
+        <p class="m-sub">Nouvel accès à la plateforme</p>
+      </div>
+      <button class="m-close" (click)="showCreateModal=false">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
-    <div *ngIf="createError" class="modal-err">{{ createError }}</div>
-    <div class="modal-bd">
-      <div class="f2col">
-        <div class="fgroup">
-          <label>Prénom <span class="req">*</span></label>
-          <input class="fi" [(ngModel)]="createForm.prenom" placeholder="Prénom"/>
-        </div>
-        <div class="fgroup">
-          <label>Nom <span class="req">*</span></label>
-          <input class="fi" [(ngModel)]="createForm.nom" placeholder="Nom"/>
-        </div>
+    <div *ngIf="createError" class="m-err">{{ createError }}</div>
+    <div class="m-bd">
+      <div class="m-two">
+        <div class="m-field"><label>Prénom <span class="m-req">*</span></label><input class="m-in" [(ngModel)]="createForm.prenom" placeholder="Prénom"/></div>
+        <div class="m-field"><label>Nom <span class="m-req">*</span></label><input class="m-in" [(ngModel)]="createForm.nom" placeholder="Nom"/></div>
       </div>
-      <div class="fgroup">
-        <label>Email <span class="req">*</span></label>
-        <input class="fi" [(ngModel)]="createForm.email" type="email" placeholder="email@exemple.com"/>
-      </div>
-      <div class="fgroup">
-        <label>Téléphone</label>
-        <input class="fi" [(ngModel)]="createForm.telephone" placeholder="+216 XX XXX XXX"/>
-      </div>
-      <div class="fgroup">
-        <label>Mot de passe <span class="req">*</span></label>
-        <input class="fi" [(ngModel)]="createForm.password" type="password" placeholder="Minimum 8 caractères"/>
-        <p class="fhint">Le compte sera créé activé et vérifié.</p>
-      </div>
-      <div class="fgroup">
-        <label>Rôle <span class="req">*</span></label>
-        <div class="role-picker">
-          <label class="role-opt" [class.selected]="createForm.role==='APPRENANT'">
+      <div class="m-field"><label>Email <span class="m-req">*</span></label><input class="m-in" type="email" [(ngModel)]="createForm.email" placeholder="email@exemple.com"/></div>
+      <div class="m-field"><label>Téléphone</label><input class="m-in" [(ngModel)]="createForm.telephone" placeholder="+216 XX XXX XXX"/></div>
+      <div class="m-field"><label>Mot de passe <span class="m-req">*</span></label><input class="m-in" type="password" [(ngModel)]="createForm.password" placeholder="Minimum 8 caractères"/></div>
+      <!-- Rôle seulement sur la section "Tous les utilisateurs" -->
+      <div *ngIf="activeSection==='users'" class="m-field">
+        <label>Rôle <span class="m-req">*</span></label>
+        <div class="role-pick">
+          <label class="rp-opt" [class.rp-sel]="createForm.role==='APPRENANT'">
             <input type="radio" [(ngModel)]="createForm.role" value="APPRENANT" style="display:none"/>
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
             Apprenant
           </label>
-          <label class="role-opt" [class.selected]="createForm.role==='FORMATEUR'">
+          <label class="rp-opt" [class.rp-sel]="createForm.role==='FORMATEUR'">
             <input type="radio" [(ngModel)]="createForm.role" value="FORMATEUR" style="display:none"/>
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M20 21v-2a4 4 0 0 0-4-4h-4"/><circle cx="9" cy="7" r="4" stroke-width="1.5"/><path stroke-width="1.5" d="M16 11l2 2 4-4"/></svg>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M20 21v-2a4 4 0 0 0-4-4h-4"/><circle cx="9" cy="7" r="4" stroke-width="2"/></svg>
             Formateur
           </label>
         </div>
       </div>
     </div>
-    <div class="modal-ft">
-      <button class="btn-cancel" (click)="showCreateModal=false">Annuler</button>
-      <button class="btn-save"   (click)="createUser()">Créer l'utilisateur</button>
+    <div class="m-ft">
+      <button class="m-cancel" (click)="showCreateModal=false">Annuler</button>
+      <button class="m-save" (click)="createUser()">{{ getCreateTitle() }}</button>
     </div>
   </div>
 </div>
 
-<!-- ══ MODAL MODIFIER ══ -->
-<div *ngIf="showEditModal" class="overlay" (click)="showEditModal=false">
-  <div class="modal" (click)="$event.stopPropagation()">
-    <div class="modal-hd">
+<!-- ═══════════════════════════════════
+     MODAL MODIFIER
+═══════════════════════════════════ -->
+<div *ngIf="showEditModal" class="m-overlay" (click)="showEditModal=false">
+  <div class="m-box" (click)="$event.stopPropagation()">
+    <div class="m-hd">
       <div>
-        <h3>Modifier l'utilisateur</h3>
-        <p class="modal-subtitle">{{ editingUser?.email }}</p>
+        <h3 class="m-title">Modifier l'utilisateur</h3>
+        <p class="m-sub">{{ editingUser?.email }}</p>
       </div>
-      <button class="modal-x" (click)="showEditModal=false">✕</button>
+      <button class="m-close" (click)="showEditModal=false">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
-    <div *ngIf="editError" class="modal-err">{{ editError }}</div>
-    <div class="modal-bd">
-      <div class="f2col">
-        <div class="fgroup">
-          <label>Prénom <span class="req">*</span></label>
-          <input class="fi" [(ngModel)]="editForm.prenom"/>
-        </div>
-        <div class="fgroup">
-          <label>Nom <span class="req">*</span></label>
-          <input class="fi" [(ngModel)]="editForm.nom"/>
-        </div>
+    <div *ngIf="editError" class="m-err">{{ editError }}</div>
+    <div class="m-bd">
+      <div class="m-two">
+        <div class="m-field"><label>Prénom <span class="m-req">*</span></label><input class="m-in" [(ngModel)]="editForm.prenom"/></div>
+        <div class="m-field"><label>Nom <span class="m-req">*</span></label><input class="m-in" [(ngModel)]="editForm.nom"/></div>
       </div>
-      <div class="fgroup">
-        <label>Email <span class="req">*</span></label>
-        <input class="fi" [(ngModel)]="editForm.email" type="email"/>
-      </div>
-      <div class="fgroup">
-        <label>Téléphone</label>
-        <input class="fi" [(ngModel)]="editForm.telephone"/>
-      </div>
-      <div class="fgroup">
-        <label>Nouveau mot de passe</label>
-        <input class="fi" [(ngModel)]="editForm.password" type="password" placeholder="Laisser vide pour ne pas modifier"/>
-      </div>
-      <div class="fgroup">
-        <label>Rôle <span class="req">*</span></label>
-        <div class="role-picker">
-          <label class="role-opt" [class.selected]="editForm.role==='APPRENANT'">
-            <input type="radio" [(ngModel)]="editForm.role" value="APPRENANT" style="display:none"/>
-            Apprenant
-          </label>
-          <label class="role-opt" [class.selected]="editForm.role==='FORMATEUR'">
-            <input type="radio" [(ngModel)]="editForm.role" value="FORMATEUR" style="display:none"/>
-            Formateur
-          </label>
+      <div class="m-field"><label>Email <span class="m-req">*</span></label><input class="m-in" type="email" [(ngModel)]="editForm.email"/></div>
+      <div class="m-field"><label>Téléphone</label><input class="m-in" [(ngModel)]="editForm.telephone"/></div>
+      <div class="m-field"><label>Nouveau mot de passe</label><input class="m-in" type="password" [(ngModel)]="editForm.password" placeholder="Laisser vide = inchangé"/></div>
+      <div class="m-field">
+        <label>Rôle</label>
+        <div class="role-pick">
+          <label class="rp-opt" [class.rp-sel]="editForm.role==='APPRENANT'"><input type="radio" [(ngModel)]="editForm.role" value="APPRENANT" style="display:none"/>Apprenant</label>
+          <label class="rp-opt" [class.rp-sel]="editForm.role==='FORMATEUR'"><input type="radio" [(ngModel)]="editForm.role" value="FORMATEUR" style="display:none"/>Formateur</label>
         </div>
       </div>
     </div>
-    <div class="modal-ft">
-      <button class="btn-cancel" (click)="showEditModal=false">Annuler</button>
-      <button class="btn-save"   (click)="updateUser()">Enregistrer</button>
+    <div class="m-ft">
+      <button class="m-cancel" (click)="showEditModal=false">Annuler</button>
+      <button class="m-save" (click)="updateUser()">Enregistrer les modifications</button>
     </div>
   </div>
 </div>

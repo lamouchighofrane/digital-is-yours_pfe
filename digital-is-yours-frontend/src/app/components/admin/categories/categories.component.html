@@ -1,0 +1,189 @@
+<!-- Toast -->
+<div *ngIf="toast" class="toast" [class.toast-error]="toast.type==='error'">
+  <svg *ngIf="toast.type==='success'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+  <svg *ngIf="toast.type==='error'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+  {{ toast.msg }}
+</div>
+
+<div class="cat-page">
+
+  <!-- Header -->
+  <div class="cat-header">
+    <div>
+      <h1 class="cat-title">Catégories</h1>
+      <p class="cat-subtitle">{{ categories.length }} catégorie{{ categories.length!==1?'s':'' }} · {{ visibleCount }} visible{{ visibleCount!==1?'s':'' }}</p>
+    </div>
+    <button class="btn-new" (click)="openCreateModal()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      Nouvelle catégorie
+    </button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="cat-toolbar">
+    <div class="search-box">
+      <svg width="14" height="14" fill="none" stroke="#6B5F52" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Rechercher une catégorie..."/>
+    </div>
+    <div class="pills">
+      <span class="pill pill-green"><i></i>{{ visibleCount }} visible{{ visibleCount!==1?'s':'' }}</span>
+      <span class="pill pill-red"><i></i>{{ hiddenCount }} masquée{{ hiddenCount!==1?'s':'' }}</span>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div class="cat-grid">
+    <article *ngFor="let cat of filteredCategories; let i=index" class="cat-card" [style.--i]="i">
+      <div class="cat-cover" [ngStyle]="getCoverStyle(cat)">
+        <div class="cat-cover-overlay"></div>
+        <span class="cat-badge-vis" [class.vis-on]="cat.visibleCatalogue" [class.vis-off]="!cat.visibleCatalogue">
+          {{ cat.visibleCatalogue ? 'Visible' : 'Masqué' }}
+        </span>
+        <div class="cat-cover-actions">
+          <button class="ca-btn" (click)="openEditModal(cat)" title="Modifier">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+          <button class="ca-btn ca-danger" (click)="deleteCategorie(cat.id!)" title="Supprimer">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+        <div class="cat-color-bar" [style.background]="cat.couleur"></div>
+      </div>
+      <div class="cat-body">
+        <h3 class="cat-name">{{ cat.nom }}</h3>
+        <p class="cat-desc">{{ cat.description || 'Aucune description.' }}</p>
+        <div class="cat-meta">
+          <span class="cat-order">
+            <svg width="9" height="9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+            #{{ cat.ordreAffichage }}
+          </span>
+          <span class="cat-dot" [style.background]="cat.couleur"></span>
+          <span class="cat-date">{{ cat.dateCreation | date:'dd MMM yyyy' }}</span>
+        </div>
+      </div>
+    </article>
+
+    <div *ngIf="filteredCategories.length===0" class="cat-empty">
+      <div class="empty-ring">
+        <svg width="28" height="28" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+      </div>
+      <p class="empty-title">Aucune catégorie trouvée</p>
+      <p class="empty-sub">Créez votre première catégorie</p>
+      <button class="btn-new" style="margin-top:8px" (click)="openCreateModal()">+ Créer une catégorie</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL ═══════════ -->
+<div *ngIf="showModal" class="modal-backdrop" (click)="closeModal()">
+  <div class="modal-sheet" (click)="$event.stopPropagation()">
+
+    <div class="ms-header">
+      <div class="ms-header-left">
+        <div class="ms-icon-preview" [style.background]="form.couleur + '18'" [style.border-color]="form.couleur + '44'">
+          <span class="ms-icon-text" [style.color]="form.couleur">{{ form.nom ? form.nom.charAt(0).toUpperCase() : '?' }}</span>
+        </div>
+        <div>
+          <h2 class="ms-title">{{ modalMode==='create' ? 'Nouvelle catégorie' : 'Modifier la catégorie' }}</h2>
+          <p class="ms-sub">{{ modalMode==='create' ? 'Remplissez les informations' : form.nom }}</p>
+        </div>
+      </div>
+      <button class="ms-close" (click)="closeModal()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="ms-body">
+
+      <div class="ms-two">
+        <div class="ms-field">
+          <label class="ms-label">Nom <span class="ms-req">*</span></label>
+          <input type="text" class="ms-input" [(ngModel)]="form.nom" placeholder="Ex: Marketing Digital"/>
+        </div>
+        <div class="ms-field">
+          <label class="ms-label">Couleur <span class="ms-req">*</span></label>
+          <div class="color-row">
+            <button *ngFor="let c of availableColors" type="button" class="color-dot" [class.color-sel]="form.couleur===c" [style.background]="c" (click)="form.couleur=c">
+              <svg *ngIf="form.couleur===c" width="10" height="10" fill="white" viewBox="0 0 20 20"><path fill-rule="evenodd" clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ms-field">
+        <label class="ms-label">Description</label>
+        <textarea class="ms-textarea" [(ngModel)]="form.description" rows="3" placeholder="Décrivez cette catégorie..."></textarea>
+      </div>
+
+      <div class="ms-field">
+        <label class="ms-label">Image de couverture <span class="ms-opt">(optionnel)</span></label>
+        <div class="upload-zone" [class.uz-has]="imagePreview" [class.uz-drag]="isDragOver"
+             (dragover)="onDragOver($event)" (dragleave)="isDragOver=false" (drop)="onDrop($event)"
+             (click)="!imagePreview && triggerFileInput()">
+          <ng-container *ngIf="imagePreview">
+            <img [src]="imagePreview" class="uz-img" alt="Aperçu"/>
+            <div class="uz-overlay">
+              <button type="button" class="uz-btn" (click)="$event.stopPropagation(); triggerFileInput()">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/></svg>
+                Changer
+              </button>
+              <button type="button" class="uz-btn uz-del" (click)="$event.stopPropagation(); removeImage()">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                Supprimer
+              </button>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="!imagePreview">
+            <div class="uz-empty">
+              <div class="uz-icon">
+                <svg width="24" height="24" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
+              <span class="uz-main">Glissez une image ici</span>
+              <span class="uz-or">ou</span>
+              <span class="uz-cta">Parcourir les fichiers</span>
+              <span class="uz-hint">PNG, JPG, WEBP · max 5 MB</span>
+            </div>
+          </ng-container>
+        </div>
+        <input #fileInput type="file" accept="image/*" style="display:none" (change)="onFileSelected($event)"/>
+        <div class="url-row">
+          <span class="url-lbl">URL directe :</span>
+          <input type="text" class="ms-input ms-input-sm" [(ngModel)]="form.imageCouverture" (input)="onUrlInput()" placeholder="https://..."/>
+        </div>
+      </div>
+
+      <div class="ms-field">
+        <label class="ms-label">Meta description SEO <span class="ms-opt">(optionnel)</span></label>
+        <textarea class="ms-textarea" [(ngModel)]="form.metaDescription" rows="2" placeholder="Description courte pour les moteurs de recherche..."></textarea>
+        <p class="ms-hint">{{ (form.metaDescription?.length||0) }} / 160 caractères</p>
+      </div>
+
+      <div class="ms-two">
+        <div class="ms-field">
+          <label class="ms-label">Ordre d'affichage</label>
+          <input type="number" class="ms-input" [(ngModel)]="form.ordreAffichage" min="0" placeholder="1"/>
+        </div>
+        <div class="ms-field">
+          <label class="ms-label">Visibilité dans le catalogue</label>
+          <div class="toggle-row">
+            <label class="tog"><input type="checkbox" [(ngModel)]="form.visibleCatalogue"/><span class="tog-track"></span></label>
+            <span class="tog-lbl" [class.lbl-on]="form.visibleCatalogue">{{ form.visibleCatalogue ? 'Visible' : 'Masqué' }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ★ FOOTER — bouton save VISIBLE ★ -->
+    <div class="ms-footer">
+      <button class="ms-cancel" (click)="closeModal()">Annuler</button>
+      <button class="ms-save" (click)="saveCategorie()" [disabled]="isSaving">
+        <span *ngIf="isSaving" class="ms-spin"></span>
+        <ng-container *ngIf="!isSaving">
+          {{ modalMode==='create' ? 'Créer la catégorie' : 'Enregistrer les modifications' }}
+        </ng-container>
+      </button>
+    </div>
+
+  </div>
+</div>
