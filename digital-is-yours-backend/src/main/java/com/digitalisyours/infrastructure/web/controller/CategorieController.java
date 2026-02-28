@@ -61,7 +61,6 @@ public class CategorieController {
         CategorieEntity categorie = CategorieEntity.builder()
                 .nom(nom)
                 .description((String) payload.get("description"))
-                .icone((String) payload.get("icone"))
                 .couleur((String) payload.get("couleur"))
                 .imageCouverture((String) payload.get("imageCouverture"))
                 .metaDescription((String) payload.get("metaDescription"))
@@ -108,7 +107,6 @@ public class CategorieController {
 
         categorie.setNom(nouveauNom);
         categorie.setDescription((String) payload.get("description"));
-        categorie.setIcone((String) payload.get("icone"));
         categorie.setCouleur((String) payload.get("couleur"));
         categorie.setImageCouverture((String) payload.get("imageCouverture"));
         categorie.setMetaDescription((String) payload.get("metaDescription"));

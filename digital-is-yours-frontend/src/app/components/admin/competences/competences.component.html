@@ -1,0 +1,326 @@
+<!-- Toast -->
+<div *ngIf="toast" class="toast" [class.toast-error]="toast.type==='error'">
+  <svg *ngIf="toast.type==='success'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+  </svg>
+  <svg *ngIf="toast.type==='error'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+  </svg>
+  {{ toast.msg }}
+</div>
+
+<div class="cp-page">
+
+  <!-- Header -->
+  <div class="cp-header">
+    <div>
+      <h1 class="cp-title">Compétences & Formations</h1>
+      <p class="cp-subtitle">
+        <span class="txt-accent">{{ competences.length }} compétence{{ competences.length !== 1 ? 's' : '' }}</span>
+        · {{ formations.length }} formation{{ formations.length !== 1 ? 's' : '' }}
+      </p>
+    </div>
+    <button class="btn-new" (click)="openCreateComp()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nouvelle compétence
+    </button>
+  </div>
+
+  <!-- Deux colonnes -->
+  <div class="cp-layout">
+
+    <!-- Colonne gauche : Compétences -->
+    <div class="col-card">
+      <div class="col-head">
+        <div class="col-head-left">
+          <div class="col-icon" style="background:#fce4e4">
+            <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+              <path stroke-width="1.7" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="col-title">Compétences</h2>
+            <p class="col-sub">{{ filteredCompetences.length }} / {{ competences.length }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-filters">
+        <div class="search-box">
+          <svg width="13" height="13" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" [(ngModel)]="searchComp" placeholder="Rechercher..."/>
+        </div>
+        <select class="ctrl-sel" [(ngModel)]="filterCat">
+          <option value="ALL">Toutes</option>
+          <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner"></div> Chargement...
+      </div>
+
+      <div *ngIf="!isLoading" class="comp-list">
+        <div *ngFor="let c of filteredCompetences; let i = index" class="comp-item" [style.--i]="i">
+          <div class="comp-left">
+            <div class="comp-av" [style.background]="getCatBg(c.categorie)" [style.color]="getCatColor(c.categorie)">
+              {{ getInitiales(c.nom) }}
+            </div>
+            <div>
+              <p class="comp-nom">{{ c.nom }}</p>
+              <span class="comp-cat" [style.background]="getCatBg(c.categorie)" [style.color]="getCatColor(c.categorie)">
+                {{ c.categorie || 'Sans catégorie' }}
+              </span>
+            </div>
+          </div>
+          <div class="comp-acts">
+            <button class="act-btn" (click)="openEditComp(c)" title="Modifier">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+            </button>
+            <button class="act-btn act-del" (click)="deleteCompetence(c)" title="Supprimer">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredCompetences.length === 0" class="col-empty">
+          <div class="empty-ring">
+            <svg width="24" height="24" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+              <path stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0z"/>
+            </svg>
+          </div>
+          <p class="empty-title">Aucune compétence</p>
+          <p class="empty-sub">Créez votre première compétence</p>
+          <button class="btn-new-sm" (click)="openCreateComp()">+ Ajouter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonne droite : Formations -->
+    <div class="col-card">
+      <div class="col-head">
+        <div class="col-head-left">
+          <div class="col-icon" style="background:rgba(74,124,126,.1)">
+            <svg width="16" height="16" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+              <path stroke-width="1.7" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="col-title">Formations</h2>
+            <p class="col-sub">Cliquez pour associer des compétences</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-list">
+        <div *ngFor="let f of formations; let i = index" class="form-item" [style.--i]="i" (click)="openAssocModal(f)">
+          <div class="form-left">
+            <div class="form-av" [style.background]="(f.categorieCouleur || '#8B3A3A') + '1A'" [style.color]="f.categorieCouleur || '#8B3A3A'">
+              {{ getInitiales(f.titre) }}
+            </div>
+            <div class="form-info">
+              <p class="form-nom">{{ f.titre }}</p>
+              <div class="form-tags">
+                <span *ngIf="f.categorieNom" class="ftag ftag-cat"
+                      [style.background]="(f.categorieCouleur || '#8B3A3A') + '1A'"
+                      [style.color]="f.categorieCouleur || '#8B3A3A'">
+                  {{ f.categorieNom }}
+                </span>
+                <span class="ftag" [class.ftag-publie]="f.statut==='PUBLIE'" [class.ftag-draft]="f.statut==='BROUILLON'">
+                  {{ f.statut === 'PUBLIE' ? 'Publié' : 'Brouillon' }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <button class="assoc-btn">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            Associer
+          </button>
+        </div>
+
+        <div *ngIf="formations.length === 0" class="col-empty">
+          <div class="empty-ring">
+            <svg width="24" height="24" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+              <path stroke-width="1.5" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <p class="empty-title">Aucune formation</p>
+          <p class="empty-sub">Créez d'abord des formations</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL COMPÉTENCE -->
+<div *ngIf="showCompModal" class="modal-backdrop" (click)="closeCompModal()">
+  <div class="modal-sheet modal-sm" (click)="$event.stopPropagation()">
+    <div class="ms-head">
+      <div class="ms-head-left">
+        <div class="ms-head-icon" style="background:#fce4e4">
+          <svg width="18" height="18" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+            <path stroke-width="1.7" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="ms-title">{{ compModalMode === 'create' ? 'Nouvelle compétence' : 'Modifier' }}</h2>
+          <p class="ms-sub">{{ compModalMode === 'create' ? 'Ajoutez au catalogue' : compForm.nom }}</p>
+        </div>
+      </div>
+      <button class="ms-close" (click)="closeCompModal()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div *ngIf="compError" class="ms-error">{{ compError }}</div>
+
+    <div class="ms-body">
+      <div class="ms-field">
+        <label class="ms-label">Nom <span class="ms-req">*</span></label>
+        <input type="text" class="ms-input" [(ngModel)]="compForm.nom" placeholder="Ex: SEO, JavaScript..."/>
+      </div>
+      <div class="ms-field">
+        <label class="ms-label">Catégorie</label>
+        <ng-container *ngIf="!showNewCat">
+          <select class="ms-input" [(ngModel)]="compForm.categorie">
+            <option value="">— Sans catégorie —</option>
+            <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+          </select>
+          <button type="button" class="btn-new-cat" (click)="showNewCat = true">
+            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nouvelle catégorie
+          </button>
+        </ng-container>
+        <ng-container *ngIf="showNewCat">
+          <div class="new-cat-row">
+            <input type="text" class="ms-input" [(ngModel)]="newCatInput" placeholder="Nom de la catégorie"/>
+            <button type="button" class="btn-cancel-cat" (click)="showNewCat = false">✕</button>
+          </div>
+        </ng-container>
+      </div>
+
+      <div *ngIf="compForm.nom" class="preview-section">
+        <p class="ms-label">Aperçu</p>
+        <div class="comp-item" style="cursor:default">
+          <div class="comp-left">
+            <div class="comp-av"
+                 [style.background]="getCatBg(showNewCat ? newCatInput : compForm.categorie)"
+                 [style.color]="getCatColor(showNewCat ? newCatInput : compForm.categorie)">
+              {{ getInitiales(compForm.nom) }}
+            </div>
+            <div>
+              <p class="comp-nom">{{ compForm.nom }}</p>
+              <span class="comp-cat"
+                    [style.background]="getCatBg(showNewCat ? newCatInput : compForm.categorie)"
+                    [style.color]="getCatColor(showNewCat ? newCatInput : compForm.categorie)">
+                {{ (showNewCat ? newCatInput : compForm.categorie) || 'Sans catégorie' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ms-footer">
+      <button class="ms-cancel" (click)="closeCompModal()">Annuler</button>
+      <button class="ms-save" (click)="saveCompetence()" [disabled]="isSaving">
+        <span *ngIf="isSaving" class="ms-spin"></span>
+        <ng-container *ngIf="!isSaving">{{ compModalMode === 'create' ? 'Créer' : 'Enregistrer' }}</ng-container>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASSOCIATION -->
+<div *ngIf="showAssocModal" class="modal-backdrop" (click)="closeAssocModal()">
+  <div class="modal-sheet modal-lg" (click)="$event.stopPropagation()">
+    <div class="ms-head">
+      <div class="ms-head-left">
+        <div class="ms-head-icon" [style.background]="(selectedFormation?.categorieCouleur || '#4A7C7E') + '1A'">
+          <svg width="18" height="18" fill="none" [attr.stroke]="selectedFormation?.categorieCouleur || '#4A7C7E'" viewBox="0 0 24 24">
+            <path stroke-width="1.7" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="ms-title">Associer des compétences</h2>
+          <p class="ms-sub">{{ selectedFormation?.titre }}</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="selected-count">{{ selectedIds.size }} sélectionnée{{ selectedIds.size !== 1 ? 's' : '' }}</span>
+        <button class="ms-close" (click)="closeAssocModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="assoc-toolbar">
+      <div class="search-box">
+        <svg width="13" height="13" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="text" [(ngModel)]="assocSearch" placeholder="Rechercher..."/>
+      </div>
+      <select class="ctrl-sel" [(ngModel)]="assocFilterCat">
+        <option value="ALL">Toutes les catégories</option>
+        <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+      </select>
+      <button class="quick-btn" (click)="selectAll()">Tout sélectionner</button>
+      <button class="quick-btn quick-btn-clear" (click)="clearAll()">Tout désélectionner</button>
+    </div>
+
+    <div class="ms-body">
+      <div class="assoc-grid">
+        <div *ngFor="let c of filteredAssocComp"
+             class="assoc-item" [class.assoc-selected]="isSelected(c.id!)"
+             (click)="toggleSelection(c.id!)">
+          <div class="assoc-check" [class.assoc-check-on]="isSelected(c.id!)">
+            <svg *ngIf="isSelected(c.id!)" width="10" height="10" fill="white" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+            </svg>
+          </div>
+          <div class="assoc-av" [style.background]="getCatBg(c.categorie)" [style.color]="getCatColor(c.categorie)">
+            {{ getInitiales(c.nom) }}
+          </div>
+          <div class="assoc-info">
+            <p class="assoc-nom">{{ c.nom }}</p>
+            <span class="assoc-cat" [style.background]="getCatBg(c.categorie)" [style.color]="getCatColor(c.categorie)">
+              {{ c.categorie || 'Sans catégorie' }}
+            </span>
+          </div>
+        </div>
+        <div *ngIf="filteredAssocComp.length === 0" class="assoc-empty">
+          <p>Aucune compétence trouvée</p>
+          <button class="btn-new-sm" (click)="closeAssocModal(); openCreateComp()">+ Créer une compétence</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ms-footer">
+      <button class="ms-cancel" (click)="closeAssocModal()">Annuler</button>
+      <button class="ms-save" (click)="saveAssociation()" [disabled]="isSavingAssoc">
+        <span *ngIf="isSavingAssoc" class="ms-spin"></span>
+        <ng-container *ngIf="!isSavingAssoc">
+          Enregistrer l'association ({{ selectedIds.size }})
+        </ng-container>
+      </button>
+    </div>
+  </div>
+</div>

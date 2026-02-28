@@ -1,16 +1,18 @@
 <!-- Toast notifications -->
 <div *ngIf="toast" class="toast" [class.toast-error]="toast.type==='error'">
-  <svg *ngIf="toast.type==='success'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-  <svg *ngIf="toast.type==='error'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+  <svg *ngIf="toast.type==='success'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+  </svg>
+  <svg *ngIf="toast.type==='error'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+  </svg>
   {{ toast.msg }}
 </div>
 
 <div class="app-shell">
 
-  <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+  <!-- ═══════════ SIDEBAR ═══════════ -->
   <aside class="sidebar">
-
-    <!-- Brand : "Digital Is Yours" — sans DIY -->
     <div class="sb-brand">
       <div class="sb-logo-mark"><span>D</span></div>
       <div>
@@ -19,20 +21,17 @@
       </div>
     </div>
 
-    <!-- Profil admin -->
     <div class="sb-profile">
       <div class="sb-av">{{ adminInitials }}</div>
       <div>
-        <p class="sb-pname">{{ adminUser?.prenom || 'Admin' }} </p>
+        <p class="sb-pname">{{ adminUser?.prenom || 'Admin' }}</p>
         <p class="sb-prole">Super Admin</p>
       </div>
       <div class="sb-online-dot"></div>
     </div>
 
-    <!-- Navigation -->
     <nav class="sb-nav">
 
-      <!-- Tableau de bord -->
       <div class="sb-group">
         <span class="sb-group-label">Tableau de bord</span>
         <button class="sb-item" [class.sb-active]="activeSection==='dashboard'" (click)="setSection('dashboard')">
@@ -48,7 +47,6 @@
         </button>
       </div>
 
-      <!-- Utilisateurs -->
       <div class="sb-group">
         <span class="sb-group-label">Utilisateurs</span>
         <button class="sb-item" [class.sb-active]="activeSection==='users'" (click)="setSection('users')">
@@ -84,7 +82,6 @@
         </button>
       </div>
 
-      <!-- Catalogue -->
       <div class="sb-group">
         <span class="sb-group-label">Catalogue</span>
         <button class="sb-item" [class.sb-active]="activeSection==='categories'" (click)="setSection('categories')">
@@ -94,6 +91,22 @@
             </svg>
           </span>
           <span class="sb-item-label">Catégories</span>
+        </button>
+        <button class="sb-item" [class.sb-active]="activeSection==='formations'" (click)="setSection('formations')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Formations</span>
+        </button>
+        <button class="sb-item" [class.sb-active]="activeSection==='competences'" (click)="setSection('competences')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Compétences</span>
         </button>
       </div>
 
@@ -105,24 +118,26 @@
       </svg>
       Déconnexion
     </button>
-
   </aside>
 
-  <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+  <!-- ═══════════ MAIN ═══════════ -->
   <main class="main-area">
 
-    <!-- Topbar -->
     <header class="topbar">
       <div>
         <p class="topbar-crumb">
           Digital Is Yours
-          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 18l6-6-6-6"/></svg>
+          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+          </svg>
           <span>
             <ng-container *ngIf="activeSection==='dashboard'">Vue d'ensemble</ng-container>
             <ng-container *ngIf="activeSection==='users'">Tous les utilisateurs</ng-container>
             <ng-container *ngIf="activeSection==='formateurs'">Formateurs</ng-container>
             <ng-container *ngIf="activeSection==='apprenants'">Apprenants</ng-container>
             <ng-container *ngIf="activeSection==='categories'">Catégories</ng-container>
+            <ng-container *ngIf="activeSection==='formations'">Formations</ng-container>
+            <ng-container *ngIf="activeSection==='competences'">Compétences</ng-container>
           </span>
         </p>
         <h1 class="topbar-title">
@@ -131,27 +146,31 @@
           <ng-container *ngIf="activeSection==='formateurs'">Formateurs</ng-container>
           <ng-container *ngIf="activeSection==='apprenants'">Apprenants</ng-container>
           <ng-container *ngIf="activeSection==='categories'">Catégories</ng-container>
+          <ng-container *ngIf="activeSection==='formations'">Formations</ng-container>
+          <ng-container *ngIf="activeSection==='competences'">Compétences</ng-container>
         </h1>
       </div>
-
       <div class="topbar-right">
-        <!-- ★ Bouton DYNAMIQUE selon section ★ -->
         <ng-container [ngSwitch]="activeSection">
           <button *ngSwitchCase="'users'" class="btn-cta" (click)="openCreateModal()">
-            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
             Créer un utilisateur
           </button>
           <button *ngSwitchCase="'formateurs'" class="btn-cta" (click)="openCreateModal('FORMATEUR')">
-            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
             Créer un formateur
           </button>
           <button *ngSwitchCase="'apprenants'" class="btn-cta" (click)="openCreateModal('APPRENANT')">
-            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
             Créer un apprenant
           </button>
         </ng-container>
-
-        <!-- ★ Avatar — prénom SEULEMENT, pas de doublon ★ -->
         <div class="topbar-avatar">
           <div class="t-av">{{ adminInitials }}</div>
           <div>
@@ -162,38 +181,44 @@
       </div>
     </header>
 
-    <!-- ──────────── DASHBOARD ──────────── -->
+    <!-- DASHBOARD -->
     <section *ngIf="activeSection==='dashboard'" class="page-content">
-
       <div class="kpi-row">
-
         <div class="kpi" style="--accent:#8B3A3A">
           <div class="kpi-top">
             <div class="kpi-ico" style="background:#f9f0f0">
-              <svg width="18" height="18" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4" stroke-width="1.6"/><path stroke-width="1.6" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <svg width="18" height="18" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+                <path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
+                <path stroke-width="1.6" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
             </div>
-            <span class="kpi-delta up">+{{ stats.totalUsers }}</span>
           </div>
           <p class="kpi-val">{{ stats.totalUsers }}</p>
           <p class="kpi-label">Utilisateurs totaux</p>
           <div class="kpi-bar"><div class="kpi-fill" style="background:#8B3A3A;width:100%"></div></div>
         </div>
-
         <div class="kpi" style="--accent:#4A7C7E">
           <div class="kpi-top">
             <div class="kpi-ico" style="background:rgba(74,124,126,.1)">
-              <svg width="18" height="18" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24"><path stroke-width="1.6" d="M22 10v6M2 10l10-5 10 5-10 5z"/><path stroke-width="1.6" d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+              <svg width="18" height="18" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+                <path stroke-width="1.6" d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                <path stroke-width="1.6" d="M6 12v5c3 3 9 3 12 0v-5"/>
+              </svg>
             </div>
           </div>
           <p class="kpi-val">{{ stats.apprenants }}</p>
           <p class="kpi-label">Apprenants</p>
           <div class="kpi-bar"><div class="kpi-fill" style="background:#4A7C7E" [style.width]="stats.totalUsers ? (stats.apprenants/stats.totalUsers*100)+'%' : '0%'"></div></div>
         </div>
-
         <div class="kpi" style="--accent:#9B8B6E">
           <div class="kpi-top">
             <div class="kpi-ico" style="background:rgba(155,139,110,.1)">
-              <svg width="18" height="18" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24"><path stroke-width="1.6" d="M20 21v-2a4 4 0 0 0-4-4h-4"/><circle cx="9" cy="7" r="4" stroke-width="1.6"/><path stroke-width="1.6" d="M16 11l2 2 4-4"/></svg>
+              <svg width="18" height="18" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24">
+                <path stroke-width="1.6" d="M20 21v-2a4 4 0 0 0-4-4h-4"/>
+                <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
+                <path stroke-width="1.6" d="M16 11l2 2 4-4"/>
+              </svg>
             </div>
             <span *ngIf="pendingFormateurs.length" class="kpi-delta warn">{{ pendingFormateurs.length }} en attente</span>
           </div>
@@ -201,21 +226,22 @@
           <p class="kpi-label">Formateurs</p>
           <div class="kpi-bar"><div class="kpi-fill" style="background:#9B8B6E" [style.width]="stats.totalUsers ? (stats.formateurs/stats.totalUsers*100)+'%' : '0%'"></div></div>
         </div>
-
         <div class="kpi" style="--accent:#C0392B">
           <div class="kpi-top">
             <div class="kpi-ico" style="background:rgba(192,57,43,.1)">
-              <svg width="18" height="18" fill="none" stroke="#C0392B" viewBox="0 0 24 24"><path stroke-width="1.6" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke-width="1.6"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2"/></svg>
+              <svg width="18" height="18" fill="none" stroke="#C0392B" viewBox="0 0 24 24">
+                <path stroke-width="1.6" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13" stroke-width="1.6"/>
+                <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2"/>
+              </svg>
             </div>
           </div>
           <p class="kpi-val">{{ stats.desactives }}</p>
           <p class="kpi-label">Désactivés</p>
           <div class="kpi-bar"><div class="kpi-fill" style="background:#C0392B" [style.width]="stats.totalUsers ? (stats.desactives/stats.totalUsers*100)+'%' : '0%'"></div></div>
         </div>
-
       </div>
 
-      <!-- Demandes en attente -->
       <div *ngIf="pendingFormateurs.length" class="card-block">
         <div class="cb-head">
           <div class="cb-head-left">
@@ -245,7 +271,6 @@
         </div>
       </div>
 
-      <!-- Utilisateurs récents -->
       <div class="card-block">
         <div class="cb-head">
           <div class="cb-head-left">
@@ -275,25 +300,32 @@
           </tbody>
         </table>
       </div>
-
     </section>
 
-    <!-- ──────────── USERS / FORMATEURS / APPRENANTS ──────────── -->
+    <!-- USERS / FORMATEURS / APPRENANTS -->
     <section *ngIf="activeSection==='users' || activeSection==='formateurs' || activeSection==='apprenants'" class="page-content">
       <ng-container *ngTemplateOutlet="tplUsers; context:{list: getCurrentList()}"></ng-container>
     </section>
 
-    <!-- ──────────── CATÉGORIES ──────────── -->
+    <!-- CATÉGORIES -->
     <section *ngIf="activeSection==='categories'" class="page-content">
       <app-categories></app-categories>
+    </section>
+
+    <!-- FORMATIONS -->
+    <section *ngIf="activeSection==='formations'" class="page-content">
+      <app-formations></app-formations>
+    </section>
+
+    <!-- COMPÉTENCES -->
+    <section *ngIf="activeSection==='competences'" class="page-content">
+      <app-competences></app-competences>
     </section>
 
   </main>
 </div>
 
-<!-- ═══════════════════════════════════
-     TEMPLATE TABLE UTILISATEURS
-═══════════════════════════════════ -->
+<!-- TEMPLATE UTILISATEURS -->
 <ng-template #tplUsers let-list="list">
   <div class="mini-stats">
     <div class="ms-card"><span class="ms-num">{{ list.length }}</span><span class="ms-lbl">Total</span></div>
@@ -301,7 +333,6 @@
     <div class="ms-card"><span class="ms-num" style="color:#e67e22">{{ countPending(list) }}</span><span class="ms-lbl">En attente</span></div>
     <div class="ms-card"><span class="ms-num" style="color:#c0392b">{{ countInactive(list) }}</span><span class="ms-lbl">Désactivés</span></div>
   </div>
-
   <div class="ctrl-row">
     <div class="ctrl-search">
       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"/><path stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
@@ -322,7 +353,6 @@
       PDF
     </button>
   </div>
-
   <div class="table-wrap">
     <div *ngIf="isLoading" class="loading-state"><div class="spinner"></div>&nbsp;Chargement...</div>
     <table *ngIf="!isLoading" class="users-table">
@@ -369,9 +399,7 @@
   </div>
 </ng-template>
 
-<!-- ═══════════════════════════════════
-     MODAL CRÉER
-═══════════════════════════════════ -->
+<!-- MODAL CRÉER -->
 <div *ngIf="showCreateModal" class="m-overlay" (click)="showCreateModal=false">
   <div class="m-box" (click)="$event.stopPropagation()">
     <div class="m-hd">
@@ -392,7 +420,6 @@
       <div class="m-field"><label>Email <span class="m-req">*</span></label><input class="m-in" type="email" [(ngModel)]="createForm.email" placeholder="email@exemple.com"/></div>
       <div class="m-field"><label>Téléphone</label><input class="m-in" [(ngModel)]="createForm.telephone" placeholder="+216 XX XXX XXX"/></div>
       <div class="m-field"><label>Mot de passe <span class="m-req">*</span></label><input class="m-in" type="password" [(ngModel)]="createForm.password" placeholder="Minimum 8 caractères"/></div>
-      <!-- Rôle seulement sur la section "Tous les utilisateurs" -->
       <div *ngIf="activeSection==='users'" class="m-field">
         <label>Rôle <span class="m-req">*</span></label>
         <div class="role-pick">
@@ -416,9 +443,7 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════
-     MODAL MODIFIER
-═══════════════════════════════════ -->
+<!-- MODAL MODIFIER -->
 <div *ngIf="showEditModal" class="m-overlay" (click)="showEditModal=false">
   <div class="m-box" (click)="$event.stopPropagation()">
     <div class="m-hd">

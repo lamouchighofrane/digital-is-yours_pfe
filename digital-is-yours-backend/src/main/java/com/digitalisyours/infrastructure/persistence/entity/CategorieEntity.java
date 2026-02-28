@@ -25,8 +25,6 @@ public class CategorieEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 10)
-    private String icone;  // Emoji
 
     @Column(length = 20)
     private String couleur;  // Hex color

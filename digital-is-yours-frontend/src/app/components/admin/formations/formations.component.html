@@ -1,0 +1,432 @@
+<!-- Toast -->
+<div *ngIf="toast" class="toast" [class.toast-error]="toast.type==='error'">
+  <svg *ngIf="toast.type==='success'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+  </svg>
+  <svg *ngIf="toast.type==='error'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+  </svg>
+  {{ toast.msg }}
+</div>
+
+<div class="form-page">
+
+  <!-- Header -->
+  <div class="form-header">
+    <div>
+      <h1 class="form-title">Formations</h1>
+      <p class="form-subtitle">
+        {{ stats.total }} formation{{ stats.total !== 1 ? 's' : '' }} ·
+        <span class="txt-green">{{ stats.publiees }} publiée{{ stats.publiees !== 1 ? 's' : '' }}</span> ·
+        <span class="txt-warn">{{ stats.brouillons }} brouillon{{ stats.brouillons !== 1 ? 's' : '' }}</span>
+      </p>
+    </div>
+    <button class="btn-new" (click)="openCreateModal()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nouvelle formation
+    </button>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip">
+    <div class="kpi-mini" style="--accent:#8B3A3A">
+      <div class="kpi-mini-icon" style="background:#fce4e4">
+        <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+          <path stroke-width="1.7" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      </div>
+      <div><p class="kpi-mini-val">{{ stats.total }}</p><p class="kpi-mini-lbl">Total</p></div>
+    </div>
+    <div class="kpi-mini" style="--accent:#27ae60">
+      <div class="kpi-mini-icon" style="background:#e8f5e9">
+        <svg width="16" height="16" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+          <path stroke-width="1.7" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div><p class="kpi-mini-val" style="color:#27ae60">{{ stats.publiees }}</p><p class="kpi-mini-lbl">Publiées</p></div>
+    </div>
+    <div class="kpi-mini" style="--accent:#e67e22">
+      <div class="kpi-mini-icon" style="background:#fff3cd">
+        <svg width="16" height="16" fill="none" stroke="#e67e22" viewBox="0 0 24 24">
+          <path stroke-width="1.7" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+      </div>
+      <div><p class="kpi-mini-val" style="color:#e67e22">{{ stats.brouillons }}</p><p class="kpi-mini-lbl">Brouillons</p></div>
+    </div>
+    <div class="kpi-mini" style="--accent:#4A7C7E">
+      <div class="kpi-mini-icon" style="background:rgba(74,124,126,.1)">
+        <svg width="16" height="16" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <path stroke-width="1.7" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+        </svg>
+      </div>
+      <div><p class="kpi-mini-val" style="color:#4A7C7E">{{ categories.length }}</p><p class="kpi-mini-lbl">Catégories</p></div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-box">
+      <svg width="14" height="14" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Rechercher une formation..."/>
+    </div>
+    <select class="ctrl-sel" [(ngModel)]="filterStatut">
+      <option value="ALL">Tous les statuts</option>
+      <option value="PUBLIE">Publiées</option>
+      <option value="BROUILLON">Brouillons</option>
+    </select>
+    <select class="ctrl-sel" [(ngModel)]="filterCat">
+      <option value="ALL">Toutes les catégories</option>
+      <option *ngFor="let c of categories" [value]="c.id">{{ c.nom }}</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <span>Chargement des formations...</span>
+  </div>
+
+  <!-- Grid -->
+  <div *ngIf="!isLoading" class="form-grid">
+
+    <div class="form-card form-card-new" (click)="openCreateModal()">
+      <div class="new-card-inner">
+        <div class="new-card-icon">
+          <svg width="28" height="28" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+          </svg>
+        </div>
+        <p class="new-card-title">Créer une formation</p>
+        <p class="new-card-sub">Cliquez pour commencer</p>
+      </div>
+    </div>
+
+    <article *ngFor="let f of filteredFormations; let i=index" class="form-card" [style.--i]="i">
+      <div class="fc-cover" [ngStyle]="getCoverStyle(f)">
+        <div class="fc-cover-overlay"></div>
+        <span class="fc-badge" [class.fc-badge-publie]="f.statut==='PUBLIE'" [class.fc-badge-draft]="f.statut==='BROUILLON'">
+          <i class="fc-badge-dot"></i>
+          {{ f.statut === 'PUBLIE' ? 'Publié' : 'Brouillon' }}
+        </span>
+        <div class="fc-actions">
+          <button class="fca" (click)="openEditModal(f)" title="Modifier">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+          </button>
+          <button class="fca" (click)="toggleStatut(f)" [title]="f.statut==='PUBLIE' ? 'Dépublier' : 'Publier'">
+            <svg *ngIf="f.statut==='BROUILLON'" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <svg *ngIf="f.statut==='PUBLIE'" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+            </svg>
+          </button>
+          <button class="fca fca-del" (click)="deleteFormation(f)" title="Supprimer">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+        <div class="fc-color-bar" [style.background]="f.categorieCouleur || '#8B3A3A'"></div>
+      </div>
+      <div class="fc-body">
+        <div class="fc-meta-top">
+          <span class="fc-cat-chip" [style.background]="(f.categorieCouleur || '#8B3A3A') + '18'" [style.color]="f.categorieCouleur || '#8B3A3A'">
+            {{ f.categorieNom || 'Sans catégorie' }}
+          </span>
+          <span class="fc-niveau-chip" [style.background]="getNiveauInfo(f.niveau).bg" [style.color]="getNiveauInfo(f.niveau).color">
+            {{ getNiveauInfo(f.niveau).label }}
+          </span>
+        </div>
+        <h3 class="fc-titre">{{ f.titre }}</h3>
+        <p class="fc-desc">{{ f.description || 'Aucune description.' }}</p>
+        <div class="fc-stats">
+          <span class="fc-stat">
+            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.8"/><path stroke-width="1.8" d="M12 6v6l4 2"/></svg>
+            {{ f.dureeEstimee }}h
+          </span>
+          <span class="fc-stat">
+            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            {{ f.nombreInscrits || 0 }} inscrits
+          </span>
+          <span *ngIf="f.noteMoyenne" class="fc-stat fc-stat-star">
+            <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            {{ f.noteMoyenne | number:'1.1-1' }}
+          </span>
+        </div>
+      </div>
+    </article>
+
+    <div *ngIf="filteredFormations.length === 0 && formations.length > 0" class="form-empty" style="grid-column:1/-1">
+      <div class="empty-ring">
+        <svg width="26" height="26" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+      <p class="empty-title">Aucun résultat</p>
+      <p class="empty-sub">Essayez d'autres filtres ou termes de recherche</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODAL ═══════════════════ -->
+<div *ngIf="showModal" class="modal-backdrop" (click)="closeModal()">
+  <div class="modal-sheet" (click)="$event.stopPropagation()">
+
+    <!-- Head -->
+    <div class="ms-head">
+      <div class="ms-head-left">
+        <div class="ms-head-icon" [style.background]="getCategorieColor(form.categorieId) + '18'">
+          <svg width="20" height="20" fill="none" [attr.stroke]="getCategorieColor(form.categorieId)" viewBox="0 0 24 24">
+            <path stroke-width="1.6" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="ms-title">{{ modalMode === 'create' ? 'Nouvelle formation' : 'Modifier la formation' }}</h2>
+          <p class="ms-sub">{{ modalMode === 'create' ? 'Remplissez les informations' : form.titre }}</p>
+        </div>
+      </div>
+      <div class="ms-head-right">
+        <button class="statut-toggle"
+                [class.st-publie]="form.statut==='PUBLIE'"
+                [class.st-draft]="form.statut==='BROUILLON'"
+                (click)="form.statut = form.statut==='PUBLIE' ? 'BROUILLON' : 'PUBLIE'">
+          <i class="st-dot"></i>
+          {{ form.statut === 'PUBLIE' ? 'Publié' : 'Brouillon' }}
+          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <button class="ms-close" (click)="closeModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Onglets -->
+    <div class="ms-tabs">
+      <button class="ms-tab" [class.ms-tab-active]="activeTab==='info'" (click)="activeTab='info'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Informations générales
+      </button>
+      <button class="ms-tab" [class.ms-tab-active]="activeTab==='details'" (click)="activeTab='details'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        Détails additionnels
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="ms-body">
+
+      <!-- Onglet Infos générales -->
+      <div *ngIf="activeTab==='info'" class="tab-content">
+
+        <div class="ms-two">
+          <div class="ms-field ms-field-grow">
+            <label class="ms-label">Titre <span class="ms-req">*</span></label>
+            <input type="text" class="ms-input" [(ngModel)]="form.titre" placeholder="Ex: Marketing Digital Complet"/>
+          </div>
+          <div class="ms-field">
+            <label class="ms-label">Durée (h) <span class="ms-req">*</span></label>
+            <div class="dur-input">
+              <button type="button" class="dur-btn" (click)="form.dureeEstimee = form.dureeEstimee > 1 ? form.dureeEstimee - 1 : 1">−</button>
+              <input type="number" class="ms-input dur-val" [(ngModel)]="form.dureeEstimee" min="1"/>
+              <button type="button" class="dur-btn" (click)="form.dureeEstimee = form.dureeEstimee + 1">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ms-two">
+          <div class="ms-field">
+            <label class="ms-label">Catégorie</label>
+            <select class="ms-input" [(ngModel)]="form.categorieId">
+              <option [ngValue]="null">— Aucune catégorie —</option>
+              <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.nom }}</option>
+            </select>
+          </div>
+          <div class="ms-field">
+            <label class="ms-label">Niveau <span class="ms-req">*</span></label>
+            <div class="niveau-pick">
+              <button *ngFor="let n of niveaux" type="button" class="niv-opt"
+                      [class.niv-sel]="form.niveau === n.value"
+                      [style.border-color]="form.niveau === n.value ? n.color : '#E8E3DB'"
+                      [style.background]="form.niveau === n.value ? n.bg : '#F5F1EB'"
+                      [style.color]="form.niveau === n.value ? n.color : '#6B5F52'"
+                      (click)="form.niveau = n.value">
+                {{ n.label }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ms-field">
+          <label class="ms-label">Description complète</label>
+          <textarea class="ms-textarea" [(ngModel)]="form.description" rows="3"
+                    placeholder="Décrivez le contenu et les objectifs généraux de la formation..."></textarea>
+        </div>
+
+        <!-- ─── CE QUE LES APPRENANTS VONT APPRENDRE ─── -->
+        <div class="ms-field">
+          <label class="ms-label">
+            Ce que les apprenants vont apprendre
+            <span *ngIf="competencesSelectionnees.length" class="comp-count-badge">
+              {{ competencesSelectionnees.length }} sélectionnée{{ competencesSelectionnees.length > 1 ? 's' : '' }}
+            </span>
+          </label>
+
+          <!-- Liste des compétences disponibles -->
+          <div *ngIf="competencesDispo.length > 0" class="comp-picker">
+            <ng-container *ngFor="let group of competencesParCategorie">
+              <!-- Titre de catégorie -->
+              <div class="comp-group-title">{{ group.categorie }}</div>
+              <!-- Items de la catégorie -->
+              <div *ngFor="let c of group.items"
+                   class="comp-pick-item"
+                   [class.comp-pick-selected]="isCompSelected(c.id)"
+                   (click)="toggleCompetence(c.id)">
+                <div class="comp-pick-check" [class.comp-pick-check-on]="isCompSelected(c.id)">
+                  <svg *ngIf="isCompSelected(c.id)" width="9" height="9" fill="white" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                  </svg>
+                </div>
+                <span class="comp-pick-nom">{{ c.nom }}</span>
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- Aucune compétence -->
+          <div *ngIf="competencesDispo.length === 0" class="comp-picker-empty">
+            <svg width="18" height="18" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+              <path stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0z"/>
+            </svg>
+            <p>Aucune compétence disponible.</p>
+            <p style="font-size:11px;color:#6B5F52">Créez-en dans la section <strong>Compétences</strong>.</p>
+          </div>
+
+          <!-- Résumé des sélectionnées -->
+          <div *ngIf="competencesSelectionnees.length > 0" class="comp-selected-summary">
+            <span *ngFor="let id of competencesSelectionnees" class="comp-selected-chip">
+              ✓ {{ getCompNom(id) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Image de couverture -->
+        <div class="ms-field">
+          <label class="ms-label">Image de couverture <span class="ms-opt">(optionnel)</span></label>
+          <div class="upload-zone"
+               [class.uz-has]="imagePreview"
+               [class.uz-drag]="isDragOver"
+               (dragover)="onDragOver($event)"
+               (dragleave)="isDragOver=false"
+               (drop)="onDrop($event)"
+               (click)="!imagePreview && triggerFileInput()">
+            <ng-container *ngIf="imagePreview">
+              <img [src]="imagePreview" class="uz-img" alt="Aperçu"/>
+              <div class="uz-overlay">
+                <button type="button" class="uz-btn" (click)="$event.stopPropagation(); triggerFileInput()">Changer</button>
+                <button type="button" class="uz-btn uz-del" (click)="$event.stopPropagation(); removeImage()">Supprimer</button>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="!imagePreview">
+              <div class="uz-empty">
+                <div class="uz-icon">
+                  <svg width="24" height="24" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <span class="uz-main">Glissez votre image ici</span>
+                <span class="uz-or">ou</span>
+                <span class="uz-cta">Parcourir les fichiers</span>
+                <span class="uz-hint">JPG, PNG, WebP · max 5 MB · 1200×675 recommandé</span>
+              </div>
+            </ng-container>
+          </div>
+          <input #fileInput type="file" accept="image/*" style="display:none" (change)="onFileSelected($event)"/>
+          <div class="url-row">
+            <span class="url-lbl">URL directe :</span>
+            <input type="text" class="ms-input ms-input-sm" [(ngModel)]="form.imageCouverture" (input)="onUrlInput()" placeholder="https://..."/>
+          </div>
+        </div>
+
+      </div><!-- /tab info -->
+
+      <!-- Onglet Détails additionnels -->
+      <div *ngIf="activeTab==='details'" class="tab-content">
+
+        <div class="ms-field">
+          <label class="ms-label">Prérequis <span class="ms-opt">(optionnel)</span></label>
+          <textarea class="ms-textarea" [(ngModel)]="form.prerequis" rows="3"
+                    placeholder="Ex: Connaissances de base en marketing..."></textarea>
+        </div>
+
+        <div class="ms-field">
+          <label class="ms-label">Pour qui est cette formation ? <span class="ms-opt">(optionnel)</span></label>
+          <textarea class="ms-textarea" [(ngModel)]="form.pourQui" rows="3"
+                    placeholder="Ex: Entrepreneurs, Marketeurs, Étudiants..."></textarea>
+        </div>
+
+        <!-- Aperçu carte -->
+        <div class="preview-section">
+          <p class="preview-label">Aperçu de la carte</p>
+          <div class="preview-card">
+            <div class="preview-cover" [ngStyle]="getCoverStyle(form)">
+              <span class="fc-badge" [class.fc-badge-publie]="form.statut==='PUBLIE'" [class.fc-badge-draft]="form.statut==='BROUILLON'">
+                <i class="fc-badge-dot"></i>
+                {{ form.statut === 'PUBLIE' ? 'Publié' : 'Brouillon' }}
+              </span>
+            </div>
+            <div class="preview-body">
+              <div class="fc-meta-top" style="margin-bottom:6px">
+                <span class="fc-cat-chip" [style.background]="getCategorieColor(form.categorieId) + '18'" [style.color]="getCategorieColor(form.categorieId)">
+                  {{ getCategorieNom(form.categorieId) }}
+                </span>
+                <span class="fc-niveau-chip" [style.background]="getNiveauInfo(form.niveau).bg" [style.color]="getNiveauInfo(form.niveau).color">
+                  {{ getNiveauInfo(form.niveau).label }}
+                </span>
+              </div>
+              <p class="preview-titre">{{ form.titre || 'Titre de la formation' }}</p>
+              <div class="fc-stats" style="margin-top:8px">
+                <span class="fc-stat">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.8"/><path stroke-width="1.8" d="M12 6v6l4 2"/></svg>
+                  {{ form.dureeEstimee }}h
+                </span>
+                <span class="fc-stat">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                  0 inscrits
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tab details -->
+
+    </div><!-- /ms-body -->
+
+    <!-- Footer -->
+    <div class="ms-footer">
+      <button class="ms-cancel" (click)="closeModal()">Annuler</button>
+      <button class="ms-save" (click)="saveFormation()" [disabled]="isSaving">
+        <span *ngIf="isSaving" class="ms-spin"></span>
+        <ng-container *ngIf="!isSaving">
+          {{ modalMode === 'create' ? 'Créer la formation' : 'Enregistrer les modifications' }}
+        </ng-container>
+      </button>
+    </div>
+
+  </div>
+</div>

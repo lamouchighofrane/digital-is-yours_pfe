@@ -23,6 +23,8 @@ import { VerifyEmailComponent } from './components/auth/verifyEmail/verifyEmail.
 import { AdminLoginComponent } from './components/admin/adminlogin/adminLogin.component';
 import { AdminDashboardComponent } from './components/admin/admindashboard/adminDashboard.component';
 import { CategoriesComponent } from './components/admin/categories/categories.component';
+import { FormationsComponent } from './components/admin/formations/formations.component';
+import { CompetencesComponent } from './components/admin/competences/competences.component';
 
 
 
@@ -34,7 +36,7 @@ import { CategoriesComponent } from './components/admin/categories/categories.co
     FeaturesComponent, StatsComponent, TestimonialsComponent,
     CtaComponent, RegisterComponent, LoginComponent,
     ForgotPasswordComponent,SplashScreenComponent,VerifyEmailComponent,AdminLoginComponent,
-    AdminDashboardComponent,CategoriesComponent,
+    AdminDashboardComponent,CategoriesComponent, FormationsComponent,CompetencesComponent,
   ],
   imports: [
     BrowserModule, AppRoutingModule,
