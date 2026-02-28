@@ -53,6 +53,11 @@ public class FormationEntity {
     @JoinColumn(name = "categorie_id")
     private CategorieEntity categorie;
 
+    // ★★★ AJOUT : Relation avec Formateur ★★★
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "formateur_id")
+    private UserEntity formateur;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "formation_competences",

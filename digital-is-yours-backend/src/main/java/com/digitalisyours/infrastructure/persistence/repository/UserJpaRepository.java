@@ -33,6 +33,10 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Long> {
     List<UserEntity> findAllByRoleNot(Role role);
     List<UserEntity> findAllByRole(Role role);
 
+    // ★★★ AJOUT : Récupérer les formateurs actifs pour l'affectation ★★★
+    List<UserEntity> findByRoleAndActiveTrue(Role role);
+
+
     long countByRole(Role role);
     long countByEmailVerifieFalse();
 

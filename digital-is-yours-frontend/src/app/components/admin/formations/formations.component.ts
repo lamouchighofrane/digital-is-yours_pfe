@@ -13,6 +13,14 @@ interface Competence {
   categorie: string;
 }
 
+interface Formateur {
+  id: number;
+  prenom: string;
+  nom: string;
+  email: string;
+  active: boolean;
+}
+
 interface Formation {
   id?: number;
   titre: string;
@@ -27,6 +35,10 @@ interface Formation {
   categorieId?: number | null;
   categorieNom?: string;
   categorieCouleur?: string;
+  formateurId?: number | null;
+  formateurNom?: string;
+  formateurPrenom?: string;
+  formateurEmail?: string;
   dateCreation?: string;
   datePublication?: string;
   nombreInscrits?: number;
@@ -50,6 +62,7 @@ export class FormationsComponent implements OnInit {
 
   formations:  Formation[]  = [];
   categories:  Categorie[]  = [];
+  formateurs:  Formateur[]  = [];
   competencesDispo: Competence[] = [];
   competencesSelectionnees: number[] = [];
 
@@ -64,6 +77,11 @@ export class FormationsComponent implements OnInit {
   modalMode: 'create' | 'edit' = 'create';
   form: Formation = this.emptyForm();
   editingId: number | null = null;
+
+  // ★★★ Modal affectation formateur ★★★
+  showFormateurModal = false;
+  selectedFormationForFormateur: Formation | null = null;
+  searchFormateur = '';
 
   imagePreview: string | null = null;
   isDragOver   = false;
@@ -86,6 +104,7 @@ export class FormationsComponent implements OnInit {
   ngOnInit() {
     this.loadFormations();
     this.loadCategories();
+    this.loadFormateurs();
     this.loadStats();
     this.loadCompetences();
   }
@@ -113,6 +132,11 @@ export class FormationsComponent implements OnInit {
       .subscribe({ next: d => this.categories = d });
   }
 
+  loadFormateurs() {
+    this.http.get<Formateur[]>(`${this.apiUrl}/formateurs`, { headers: this.headers() })
+      .subscribe({ next: d => this.formateurs = d });
+  }
+
   loadStats() {
     this.http.get<any>(`${this.apiUrl}/stats`, { headers: this.headers() })
       .subscribe({ next: d => this.stats = d });
@@ -136,7 +160,17 @@ export class FormationsComponent implements OnInit {
     });
   }
 
-  // ── Modal ─────────────────────────────────────────────────
+  get filteredFormateurs(): Formateur[] {
+    if (!this.searchFormateur) return this.formateurs;
+    const t = this.searchFormateur.toLowerCase();
+    return this.formateurs.filter(f =>
+      f.prenom.toLowerCase().includes(t) ||
+      f.nom.toLowerCase().includes(t) ||
+      f.email.toLowerCase().includes(t)
+    );
+  }
+
+  // ── Modal Formation ───────────────────────────────────────
   openCreateModal() {
     this.modalMode               = 'create';
     this.form                    = this.emptyForm();
@@ -156,7 +190,6 @@ export class FormationsComponent implements OnInit {
     this.selectedFile = null;
     this.activeTab    = 'info';
     this.competencesSelectionnees = [];
-    // Charger les compétences déjà associées
     this.http.get<Competence[]>(`${this.apiComp}/formation/${f.id}`, { headers: this.headers() }).subscribe({
       next: comps => this.competencesSelectionnees = comps.map(c => c.id)
     });
@@ -168,6 +201,122 @@ export class FormationsComponent implements OnInit {
     this.imagePreview = null;
     this.selectedFile = null;
     this.competencesSelectionnees = [];
+  }
+
+  // ── Modal Affectation Formateur ──────────────────────────
+  openFormateurModal(f: Formation) {
+    this.selectedFormationForFormateur = f;
+    this.searchFormateur = '';
+    this.showFormateurModal = true;
+  }
+
+  closeFormateurModal() {
+    this.showFormateurModal = false;
+    this.selectedFormationForFormateur = null;
+    this.searchFormateur = '';
+  }
+
+  affecterFormateur(formateur: Formateur) {
+    if (!this.selectedFormationForFormateur?.id) return;
+
+    const formationId = this.selectedFormationForFormateur.id;
+
+    this.http.patch<Formation>(
+      `${this.apiUrl}/${formationId}/affecter-formateur`,
+      { formateurId: formateur.id },
+      { headers: this.headers() }
+    ).subscribe({
+      next: (formationMiseAJour) => {
+        // ✅ Mettre à jour localement sans recharger toute la liste
+        const idx = this.formations.findIndex(f => f.id === formationId);
+        if (idx !== -1) {
+          this.formations[idx] = {
+            ...this.formations[idx],
+            formateurId:     formateur.id,
+            formateurPrenom: formateur.prenom,
+            formateurNom:    formateur.nom,
+            formateurEmail:  formateur.email
+          };
+          // Si le backend renvoie les données complètes, les utiliser directement
+          if (formationMiseAJour?.formateurId) {
+            this.formations[idx] = { ...this.formations[idx], ...formationMiseAJour };
+          }
+        }
+        this.showToast(`${formateur.prenom} ${formateur.nom} affecté(e) ✓`);
+        this.closeFormateurModal();
+      },
+      error: (err) => {
+        console.error('Erreur affectation formateur:', err);
+        const msg = err.error?.message || err.error?.error || `Erreur ${err.status}`;
+        this.showToast(msg, 'error');
+      }
+    });
+  }
+
+  retirerFormateur(formation: Formation) {
+    if (!formation?.id) return;
+    if (!confirm('Retirer le formateur de cette formation ?')) return;
+
+    const formationId = formation.id;
+
+    // ✅ Utiliser DELETE ou PATCH selon ce que supporte votre backend
+    this.http.delete<any>(
+      `${this.apiUrl}/${formationId}/affecter-formateur`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        // Mettre à jour localement
+        const idx = this.formations.findIndex(f => f.id === formationId);
+        if (idx !== -1) {
+          this.formations[idx] = {
+            ...this.formations[idx],
+            formateurId:     null,
+            formateurPrenom: undefined,
+            formateurNom:    undefined,
+            formateurEmail:  undefined
+          };
+        }
+        this.showToast('Formateur retiré ✓');
+        if (this.showFormateurModal) this.closeFormateurModal();
+      },
+      error: (err) => {
+        // ✅ Fallback : essayer avec PATCH { formateurId: null } si DELETE ne marche pas
+        console.warn('DELETE échoué, tentative PATCH avec formateurId: null', err);
+        this.retirerFormateurViaPatch(formationId);
+      }
+    });
+  }
+
+  // ✅ Méthode fallback pour retirer via PATCH
+  private retirerFormateurViaPatch(formationId: number) {
+    this.http.patch<any>(
+      `${this.apiUrl}/${formationId}/affecter-formateur`,
+      { formateurId: null },
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        const idx = this.formations.findIndex(f => f.id === formationId);
+        if (idx !== -1) {
+          this.formations[idx] = {
+            ...this.formations[idx],
+            formateurId:     null,
+            formateurPrenom: undefined,
+            formateurNom:    undefined,
+            formateurEmail:  undefined
+          };
+        }
+        this.showToast('Formateur retiré ✓');
+        if (this.showFormateurModal) this.closeFormateurModal();
+      },
+      error: (err) => {
+        const msg = err.error?.message || `Erreur ${err.status}`;
+        this.showToast(msg, 'error');
+      }
+    });
+  }
+
+  getFormateurInitiales(f: Formateur): string {
+    return ((f.prenom?.[0] || '') + (f.nom?.[0] || '')).toUpperCase() || '?';
   }
 
   // ── Compétences ───────────────────────────────────────────
@@ -186,7 +335,6 @@ export class FormationsComponent implements OnInit {
     return c ? c.nom : '';
   }
 
-  // Grouper les compétences disponibles par catégorie
   get competencesParCategorie(): { categorie: string; items: Competence[] }[] {
     const map = new Map<string, Competence[]>();
     this.competencesDispo.forEach(c => {
@@ -197,7 +345,7 @@ export class FormationsComponent implements OnInit {
     return Array.from(map.entries()).map(([categorie, items]) => ({ categorie, items }));
   }
 
-  // ── Sauvegarde ────────────────────────────────────────────
+  // ── Sauvegarde Formation ──────────────────────────────────
   saveFormation() {
     if (!this.form.titre?.trim()) { this.showToast('Le titre est obligatoire', 'error'); return; }
     if (!this.form.niveau)        { this.showToast('Choisissez un niveau', 'error'); return; }
@@ -218,7 +366,6 @@ export class FormationsComponent implements OnInit {
     (this.http as any)[method](url, this.form, { headers: this.headers() }).subscribe({
       next: (res: any) => {
         const formationId = res.id || res.data?.id || this.editingId;
-        // Associer les compétences après sauvegarde
         if (formationId) {
           this.http.put(
             `${this.apiComp}/formation/${formationId}`,
@@ -344,7 +491,7 @@ export class FormationsComponent implements OnInit {
       titre: '', description: '', objectifsApprentissage: '',
       prerequis: '', pourQui: '', imageCouverture: '',
       dureeEstimee: 1, niveau: 'DEBUTANT', statut: 'BROUILLON',
-      categorieId: null
+      categorieId: null, formateurId: null
     };
   }
 }

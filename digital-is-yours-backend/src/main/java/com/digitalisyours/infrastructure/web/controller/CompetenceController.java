@@ -81,11 +81,18 @@ public class CompetenceController {
         return ResponseEntity.ok(Map.of("success", true, "message", "Compétence mise à jour"));
     }
 
+    // ✅ CORRIGÉ : supprimer d'abord les liens formation_competences avant de supprimer la compétence
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<?> delete(@PathVariable Long id) {
         if (!competenceRepository.existsById(id)) return ResponseEntity.notFound().build();
+
+        // Étape 1 : supprimer les liens dans formation_competences
+        competenceRepository.deleteFormationLinks(id);
+
+        // Étape 2 : supprimer la compétence
         competenceRepository.deleteById(id);
+
         return ResponseEntity.ok(Map.of("success", true, "message", "Compétence supprimée"));
     }
 

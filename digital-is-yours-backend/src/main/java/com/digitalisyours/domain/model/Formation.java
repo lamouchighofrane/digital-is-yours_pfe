@@ -1,5 +1,6 @@
 package com.digitalisyours.domain.model;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,8 +23,18 @@ public class Formation {
     private Integer dureeEstimee;
     private String niveau;
     private String statut;
+
+    // Catégorie
     private Long categorieId;
     private String categorieNom;
+
+    // ★★★ AJOUT : Formateur ★★★
+    private Long formateurId;
+    private String formateurNom;
+    private String formateurPrenom;
+    private String formateurEmail;
+
+    // Stats
     private LocalDateTime dateCreation;
     private LocalDateTime datePublication;
     private Integer nombreInscrits;
