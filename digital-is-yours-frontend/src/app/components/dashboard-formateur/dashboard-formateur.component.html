@@ -1,0 +1,310 @@
+<div class="app-shell" (click)="closeNotifPanel()">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar" (click)="$event.stopPropagation()">
+    <div class="sb-brand">
+      <div class="sb-logo-mark"><span>D</span></div>
+      <div>
+        <p class="sb-brand-name">Digital Is Yours</p>
+        <p class="sb-brand-role">Espace Formateur</p>
+      </div>
+    </div>
+
+    <div class="sb-profile">
+      <div class="sb-av">{{ getFormateurInitiales() }}</div>
+      <div>
+        <p class="sb-pname">{{ formateurUser?.prenom }} {{ formateurUser?.nom }}</p>
+        <p class="sb-prole">Formateur</p>
+      </div>
+      <div class="sb-online-dot"></div>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-group">
+        <span class="sb-group-label">Navigation</span>
+
+        <button class="sb-item" [class.sb-active]="activeSection==='dashboard'"
+                (click)="setSection('dashboard')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.6"/>
+              <rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.6"/>
+              <rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.6"/>
+              <rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.6"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Tableau de bord</span>
+        </button>
+
+        <button class="sb-item" [class.sb-active]="activeSection==='mes-formations'"
+                (click)="setSection('mes-formations')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Mes formations</span>
+          <span *ngIf="formations.length" class="sb-count-badge">{{ formations.length }}</span>
+        </button>
+      </div>
+    </nav>
+
+    <button class="sb-logout" (click)="logout()">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.8" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+      </svg>
+      Déconnexion
+    </button>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main-area">
+
+    <!-- TOPBAR -->
+    <header class="topbar" (click)="$event.stopPropagation()">
+      <div>
+        <p class="topbar-crumb">
+          Digital Is Yours
+          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+          </svg>
+          <span>{{ activeSection === 'dashboard' ? 'Tableau de bord' : 'Mes formations' }}</span>
+        </p>
+        <h1 class="topbar-title">
+          {{ activeSection === 'dashboard' ? 'Bonjour, ' + (formateurUser?.prenom || '') : 'Mes formations' }}
+        </h1>
+        <p *ngIf="activeSection === 'mes-formations'" class="section-subtitle">
+          {{ formations.length }} formation(s) vous ont été affectée(s) par l'administrateur
+        </p>
+      </div>
+
+      <div class="topbar-right">
+
+        <!-- ══ CLOCHE NOTIFICATIONS ══ -->
+        <div class="notif-wrapper">
+          <button class="notif-bell" (click)="toggleNotifPanel($event)"
+                  [class.notif-bell-active]="showNotifPanel">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.7"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <span *ngIf="notifNonLues > 0" class="notif-badge">
+              {{ notifNonLues > 9 ? '9+' : notifNonLues }}
+            </span>
+          </button>
+
+          <!-- Panel notifications -->
+          <div *ngIf="showNotifPanel" class="notif-panel" (click)="$event.stopPropagation()">
+            <div class="notif-panel-head">
+              <div>
+                <h3 class="notif-panel-title">Notifications</h3>
+                <p class="notif-panel-sub">
+                  {{ notifNonLues }} non lue{{ notifNonLues !== 1 ? 's' : '' }}
+                </p>
+              </div>
+              <div class="notif-panel-actions">
+                <button *ngIf="notifNonLues > 0"
+                        class="notif-tout-lire"
+                        (click)="marquerToutesLues($event)">
+                  Tout marquer comme lu
+                </button>
+                <button class="notif-close" (click)="closeNotifPanel()">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Loading -->
+            <div *ngIf="notifLoading" class="notif-loading">
+              <div class="notif-spinner"></div>
+            </div>
+
+            <!-- Liste -->
+            <div *ngIf="!notifLoading" class="notif-list">
+
+              <div *ngIf="notifications.length === 0" class="notif-empty">
+                <svg width="32" height="32" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+                  <path stroke-width="1.4"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                <p>Aucune notification</p>
+              </div>
+
+              <div *ngFor="let notif of notifications"
+                   class="notif-item"
+                   [class.notif-item-unread]="!notif.lu"
+                   (click)="marquerLue(notif)">
+
+                <div class="notif-icon"
+                     [style.background]="getNotifBg(notif.type)"
+                     [style.color]="getNotifColor(notif.type)">
+                  <svg *ngIf="notif.type === 'FORMATION_AFFECTEE'"
+                       width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-width="1.8"
+                          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  <svg *ngIf="notif.type === 'FORMATION_RETIREE'"
+                       width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  <svg *ngIf="notif.type !== 'FORMATION_AFFECTEE' && notif.type !== 'FORMATION_RETIREE'"
+                       width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+
+                <div class="notif-content">
+                  <p class="notif-titre">{{ notif.titre }}</p>
+                  <p class="notif-msg">{{ notif.message }}</p>
+                  <p class="notif-time">{{ getTimeAgo(notif.dateCreation) }}</p>
+                </div>
+
+                <div *ngIf="!notif.lu" class="notif-dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ══ FIN CLOCHE ══ -->
+
+        <div class="topbar-avatar">
+          <div class="t-av">{{ getFormateurInitiales() }}</div>
+          <div>
+            <span class="t-name">{{ formateurUser?.prenom }}</span>
+            <span class="t-role">Formateur</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <section *ngIf="activeSection==='dashboard'" class="page-content">
+
+      <div class="kpi-row">
+        <div class="kpi" style="--accent:#4A7C7E">
+          <div class="kpi-ico" style="background:rgba(74,124,126,.1)">
+            <svg width="18" height="18" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
+            </svg>
+          </div>
+          <p class="kpi-val">{{ stats.totalApprenants }}</p>
+          <p class="kpi-label">Apprenants au total</p>
+        </div>
+        <div class="kpi" style="--accent:#8B3A3A">
+          <div class="kpi-ico" style="background:#fce4e4">
+            <svg width="18" height="18" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <p class="kpi-val">{{ formations.length }}</p>
+          <p class="kpi-label">Formations assignées</p>
+        </div>
+        <div class="kpi" style="--accent:#27ae60">
+          <div class="kpi-ico" style="background:#e8f5e9">
+            <svg width="18" height="18" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <p class="kpi-val">{{ stats.tauxReussite || 0 }}%</p>
+          <p class="kpi-label">Taux de réussite</p>
+        </div>
+        <div class="kpi" style="--accent:#f39c12">
+          <div class="kpi-ico" style="background:#fff3cd">
+            <svg width="18" height="18" fill="#f39c12" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <p class="kpi-val">{{ stats.noteMoyenne ? (stats.noteMoyenne | number:'1.1-1') : '—' }}</p>
+          <p class="kpi-label">Note moyenne</p>
+        </div>
+      </div>
+
+      <div class="card-block" *ngIf="formations.length > 0">
+        <div class="cb-head">
+          <h2 class="cb-title">Mes formations récentes</h2>
+          <button *ngIf="formations.length > 3" class="btn-voir-tout"
+                  (click)="setSection('mes-formations')">
+            Voir toutes ({{ formations.length }}) →
+          </button>
+        </div>
+        <div class="formations-preview-grid">
+          <div *ngFor="let f of formations.slice(0,4)" class="fc-preview">
+            <div class="fc-cover" [ngStyle]="getCoverStyle(f)">
+              <span class="fc-statut-badge"
+                    [class.badge-publie]="f.statut==='PUBLIE'"
+                    [class.badge-draft]="f.statut!='PUBLIE'">
+                <span class="badge-dot"></span>
+                {{ f.statut === 'PUBLIE' ? 'Publié' : 'Brouillon' }}
+              </span>
+            </div>
+            <div class="fc-info">
+              <p class="fc-titre">{{ f.titre }}</p>
+              <div class="fc-meta">
+                <span class="fc-niveau niveau-{{ (f.niveau || 'DEBUTANT').toLowerCase() }}">
+                  {{ getNiveauLabel(f.niveau) }}
+                </span>
+                <span class="fc-stat-sm">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/>
+                  </svg>
+                  {{ f.nombreInscrits || 0 }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="formations.length === 0" class="empty-state-card">
+        <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+          <path stroke-width="1.4" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <p class="empty-title">Aucune formation assignée</p>
+        <p class="empty-sub">L'administrateur n'a pas encore affecté de formation à votre compte.</p>
+      </div>
+
+    </section>
+
+    <!-- ═══ MES FORMATIONS ═══ -->
+    <section *ngIf="activeSection==='mes-formations'" class="page-content">
+      <div *ngIf="formations.length === 0" class="empty-state-card">
+        <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+          <path stroke-width="1.4" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <p class="empty-title">Aucune formation</p>
+        <p class="empty-sub">L'administrateur n'a pas encore affecté de formation à votre compte.</p>
+      </div>
+
+      <div class="formations-grid">
+        <div *ngFor="let f of formations" class="fc-card">
+          <div class="fc-cover" [ngStyle]="getCoverStyle(f)">
+            <span class="fc-statut-badge"
+                  [class.badge-publie]="f.statut==='PUBLIE'"
+                  [class.badge-draft]="f.statut!='PUBLIE'">
+              <span class="badge-dot"></span>
+              {{ f.statut === 'PUBLIE' ? 'Publié' : 'Brouillon' }}
+            </span>
+          </div>
+          <div class="fc-body">
+            <h3 class="fc-titre">{{ f.titre }}</h3>
+            <p class="fc-desc">{{ f.description || 'Aucune description.' }}</p>
+            <div class="fc-footer">
+              <span class="fc-niveau niveau-{{ (f.niveau || 'DEBUTANT').toLowerCase() }}">
+                {{ getNiveauLabel(f.niveau) }}
+              </span>
+              <span class="fc-stat-sm">
+                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/>
+                </svg>
+                {{ f.nombreInscrits || 0 }} inscrits
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>

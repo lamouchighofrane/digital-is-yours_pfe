@@ -4,9 +4,11 @@ package com.digitalisyours.infrastructure.web.controller;
 import com.digitalisyours.domain.model.Role;
 import com.digitalisyours.infrastructure.persistence.entity.CategorieEntity;
 import com.digitalisyours.infrastructure.persistence.entity.FormationEntity;
+import com.digitalisyours.infrastructure.persistence.entity.NotificationEntity;
 import com.digitalisyours.infrastructure.persistence.entity.UserEntity;
 import com.digitalisyours.infrastructure.persistence.repository.CategorieJpaRepository;
 import com.digitalisyours.infrastructure.persistence.repository.FormationJpaRepository;
+import com.digitalisyours.infrastructure.persistence.repository.NotificationJpaRepository;
 import com.digitalisyours.infrastructure.persistence.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ public class FormationController {
     private final FormationJpaRepository formationRepository;
     private final CategorieJpaRepository categorieRepository;
     private final UserJpaRepository userRepository;
+    private final NotificationJpaRepository notifRepository;
 
     // ══ STATS ════════════════════════════════════════════════════
     @GetMapping("/stats")
@@ -165,16 +168,35 @@ public class FormationController {
         Object formateurIdObj = payload.get("formateurId");
 
         if (formateurIdObj == null) {
-            // Retirer le formateur
+            // ── Retirer le formateur ────────────────────────────────
+            UserEntity ancienFormateur = formation.getFormateur();
+
+            // Notification "retrait" si un formateur était affecté
+            if (ancienFormateur != null) {
+                NotificationEntity notif = NotificationEntity.builder()
+                        .user(ancienFormateur)
+                        .type("FORMATION_RETIREE")
+                        .titre("Formation retirée de votre portfolio")
+                        .message("La formation \"" + formation.getTitre()
+                                + "\" vous a été retirée par l'administrateur.")
+                        .formationId(formation.getId())
+                        .formationTitre(formation.getTitre())
+                        .build();
+                notifRepository.save(notif);
+                log.info("Notification RETRAIT envoyée au formateur: {}", ancienFormateur.getEmail());
+            }
+
             formation.setFormateur(null);
             formationRepository.save(formation);
             log.info("Formateur retiré de la formation: {}", formation.getTitre());
+
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "Formateur retiré avec succès"
             ));
         }
 
+        // ── Affecter un formateur ───────────────────────────────────
         Long formateurId = Long.valueOf(formateurIdObj.toString());
         UserEntity formateur = userRepository.findById(formateurId)
                 .orElseThrow(() -> new RuntimeException("Formateur non trouvé"));
@@ -184,6 +206,40 @@ public class FormationController {
                     "success", false,
                     "message", "L'utilisateur sélectionné n'est pas un formateur"
             ));
+        }
+
+        // Vérifie si c'est un changement de formateur
+        boolean estRemplacement = formation.getFormateur() != null
+                && !formation.getFormateur().getId().equals(formateurId);
+
+        // Notification au nouveau formateur
+        NotificationEntity notif = NotificationEntity.builder()
+                .user(formateur)
+                .type("FORMATION_AFFECTEE")
+                .titre("Nouvelle formation assignée")
+                .message("L'administrateur vous a affecté(e) à la formation \""
+                        + formation.getTitre() + "\"."
+                        + (estRemplacement ? " Vous remplacez un autre formateur." : ""))
+                .formationId(formation.getId())
+                .formationTitre(formation.getTitre())
+                .build();
+        notifRepository.save(notif);
+        log.info("Notification AFFECTATION envoyée au formateur: {}", formateur.getEmail());
+
+        // Si remplacement → notifier l'ancien formateur aussi
+        if (estRemplacement) {
+            UserEntity ancienFormateur = formation.getFormateur();
+            NotificationEntity notifAncien = NotificationEntity.builder()
+                    .user(ancienFormateur)
+                    .type("FORMATION_RETIREE")
+                    .titre("Formation retirée de votre portfolio")
+                    .message("La formation \"" + formation.getTitre()
+                            + "\" a été réaffectée à un autre formateur par l'administrateur.")
+                    .formationId(formation.getId())
+                    .formationTitre(formation.getTitre())
+                    .build();
+            notifRepository.save(notifAncien);
+            log.info("Notification RETRAIT (remplacement) envoyée à: {}", ancienFormateur.getEmail());
         }
 
         formation.setFormateur(formateur);

@@ -25,6 +25,7 @@ import { AdminDashboardComponent } from './components/admin/admindashboard/admin
 import { CategoriesComponent } from './components/admin/categories/categories.component';
 import { FormationsComponent } from './components/admin/formations/formations.component';
 import { CompetencesComponent } from './components/admin/competences/competences.component';
+import { DashboardFormateurComponent } from './components/dashboard-formateur/dashboard-formateur.component';
 
 
 
@@ -36,7 +37,7 @@ import { CompetencesComponent } from './components/admin/competences/competences
     FeaturesComponent, StatsComponent, TestimonialsComponent,
     CtaComponent, RegisterComponent, LoginComponent,
     ForgotPasswordComponent,SplashScreenComponent,VerifyEmailComponent,AdminLoginComponent,
-    AdminDashboardComponent,CategoriesComponent, FormationsComponent,CompetencesComponent,
+    AdminDashboardComponent,CategoriesComponent, FormationsComponent,CompetencesComponent,DashboardFormateurComponent,
   ],
   imports: [
     BrowserModule, AppRoutingModule,

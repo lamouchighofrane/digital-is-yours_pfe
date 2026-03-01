@@ -66,7 +66,16 @@ export class LoginComponent implements OnInit {
       next: (response) => {
         this.isLoading = false;
         if (response.role === 'FORMATEUR') {
-          this.router.navigate(['/dashboard-formateur']);
+          // ✅ Sauvegarder sous les clés attendues par le dashboard formateur
+          localStorage.setItem('formateur_token', response.token);
+          localStorage.setItem('formateur_user', JSON.stringify({
+            id:     (response as any).id || null,
+            nom:    response.nom,
+            prenom: response.prenom,
+            email:  response.email,
+            role:   response.role
+          }));
+          this.router.navigate(['/formateur/dashboard']);
         } else {
           this.router.navigate(['/dashboard-apprenant']);
         }
