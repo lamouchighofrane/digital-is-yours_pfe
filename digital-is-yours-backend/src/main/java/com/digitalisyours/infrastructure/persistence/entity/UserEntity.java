@@ -4,9 +4,9 @@ package com.digitalisyours.infrastructure.persistence.entity;
 import com.digitalisyours.domain.model.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,8 +17,9 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
+@Inheritance(strategy = InheritanceType.JOINED)  // ✅ AJOUTÉ pour l'héritage
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserEntity implements UserDetails {
@@ -54,6 +55,14 @@ public class UserEntity implements UserDetails {
     private LocalDateTime dateInscription;
 
     private LocalDateTime derniereConnexion;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String photo;
+
+    /**
+     * Correspond à +token : String (nullable) du diagramme.
+     */
+    private String token;
 
     @PrePersist
     public void prePersist() {

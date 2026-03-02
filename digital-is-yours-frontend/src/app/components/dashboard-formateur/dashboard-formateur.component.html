@@ -11,10 +11,15 @@
     </div>
 
     <div class="sb-profile">
-      <div class="sb-av">{{ getFormateurInitiales() }}</div>
+      <div class="sb-av-wrap">
+        <div class="sb-av" [style.background-image]="formateurUser?.photo ? 'url('+formateurUser.photo+')' : ''"
+             [class.sb-av-photo]="!!formateurUser?.photo">
+          <span *ngIf="!formateurUser?.photo">{{ getFormateurInitiales() }}</span>
+        </div>
+      </div>
       <div>
         <p class="sb-pname">{{ formateurUser?.prenom }} {{ formateurUser?.nom }}</p>
-        <p class="sb-prole">Formateur</p>
+        <p class="sb-prole">{{ formateurUser?.specialite || 'Formateur' }}</p>
       </div>
       <div class="sb-online-dot"></div>
     </div>
@@ -22,9 +27,7 @@
     <nav class="sb-nav">
       <div class="sb-group">
         <span class="sb-group-label">Navigation</span>
-
-        <button class="sb-item" [class.sb-active]="activeSection==='dashboard'"
-                (click)="setSection('dashboard')">
+        <button class="sb-item" [class.sb-active]="activeSection==='dashboard'" (click)="setSection('dashboard')">
           <span class="sb-item-icon">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.6"/>
@@ -36,8 +39,7 @@
           <span class="sb-item-label">Tableau de bord</span>
         </button>
 
-        <button class="sb-item" [class.sb-active]="activeSection==='mes-formations'"
-                (click)="setSection('mes-formations')">
+        <button class="sb-item" [class.sb-active]="activeSection==='mes-formations'" (click)="setSection('mes-formations')">
           <span class="sb-item-icon">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-width="1.6" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -45,6 +47,16 @@
           </span>
           <span class="sb-item-label">Mes formations</span>
           <span *ngIf="formations.length" class="sb-count-badge">{{ formations.length }}</span>
+        </button>
+
+        <button class="sb-item" [class.sb-active]="activeSection==='profil'" (click)="setSection('profil')">
+          <span class="sb-item-icon">
+            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+              <circle cx="12" cy="7" r="4" stroke-width="1.6"/>
+            </svg>
+          </span>
+          <span class="sb-item-label">Mon profil</span>
         </button>
       </div>
     </nav>
@@ -68,111 +80,68 @@
           <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
           </svg>
-          <span>{{ activeSection === 'dashboard' ? 'Tableau de bord' : 'Mes formations' }}</span>
+          <span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : 'Mon profil' }}</span>
         </p>
         <h1 class="topbar-title">
-          {{ activeSection === 'dashboard' ? 'Bonjour, ' + (formateurUser?.prenom || '') : 'Mes formations' }}
+          {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : 'Mon profil' }}
         </h1>
-        <p *ngIf="activeSection === 'mes-formations'" class="section-subtitle">
-          {{ formations.length }} formation(s) vous ont été affectée(s) par l'administrateur
-        </p>
+        <p *ngIf="activeSection==='mes-formations'" class="section-subtitle">{{ formations.length }} formation(s) affectée(s)</p>
+        <p *ngIf="activeSection==='profil'" class="section-subtitle">Gérez vos informations personnelles et votre visibilité</p>
       </div>
 
       <div class="topbar-right">
-
-        <!-- ══ CLOCHE NOTIFICATIONS ══ -->
+        <!-- CLOCHE -->
         <div class="notif-wrapper">
-          <button class="notif-bell" (click)="toggleNotifPanel($event)"
-                  [class.notif-bell-active]="showNotifPanel">
+          <button class="notif-bell" (click)="toggleNotifPanel($event)" [class.notif-bell-active]="showNotifPanel">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="1.7"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              <path stroke-width="1.7" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
-            <span *ngIf="notifNonLues > 0" class="notif-badge">
-              {{ notifNonLues > 9 ? '9+' : notifNonLues }}
-            </span>
+            <span *ngIf="notifNonLues>0" class="notif-badge">{{ notifNonLues>9?'9+':notifNonLues }}</span>
           </button>
-
-          <!-- Panel notifications -->
           <div *ngIf="showNotifPanel" class="notif-panel" (click)="$event.stopPropagation()">
             <div class="notif-panel-head">
               <div>
                 <h3 class="notif-panel-title">Notifications</h3>
-                <p class="notif-panel-sub">
-                  {{ notifNonLues }} non lue{{ notifNonLues !== 1 ? 's' : '' }}
-                </p>
+                <p class="notif-panel-sub">{{ notifNonLues }} non lue{{ notifNonLues!==1?'s':'' }}</p>
               </div>
               <div class="notif-panel-actions">
-                <button *ngIf="notifNonLues > 0"
-                        class="notif-tout-lire"
-                        (click)="marquerToutesLues($event)">
-                  Tout marquer comme lu
-                </button>
+                <button *ngIf="notifNonLues>0" class="notif-tout-lire" (click)="marquerToutesLues($event)">Tout marquer comme lu</button>
                 <button class="notif-close" (click)="closeNotifPanel()">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                  </svg>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
             </div>
-
-            <!-- Loading -->
-            <div *ngIf="notifLoading" class="notif-loading">
-              <div class="notif-spinner"></div>
-            </div>
-
-            <!-- Liste -->
+            <div *ngIf="notifLoading" class="notif-loading"><div class="notif-spinner"></div></div>
             <div *ngIf="!notifLoading" class="notif-list">
-
-              <div *ngIf="notifications.length === 0" class="notif-empty">
-                <svg width="32" height="32" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
-                  <path stroke-width="1.4"
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                </svg>
+              <div *ngIf="notifications.length===0" class="notif-empty">
+                <svg width="32" height="32" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24"><path stroke-width="1.4" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                 <p>Aucune notification</p>
               </div>
-
-              <div *ngFor="let notif of notifications"
-                   class="notif-item"
-                   [class.notif-item-unread]="!notif.lu"
-                   (click)="marquerLue(notif)">
-
-                <div class="notif-icon"
-                     [style.background]="getNotifBg(notif.type)"
-                     [style.color]="getNotifColor(notif.type)">
-                  <svg *ngIf="notif.type === 'FORMATION_AFFECTEE'"
-                       width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-width="1.8"
-                          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                  <svg *ngIf="notif.type === 'FORMATION_RETIREE'"
-                       width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/>
-                  </svg>
-                  <svg *ngIf="notif.type !== 'FORMATION_AFFECTEE' && notif.type !== 'FORMATION_RETIREE'"
-                       width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
+              <div *ngFor="let notif of notifications" class="notif-item" [class.notif-item-unread]="!notif.lu" (click)="marquerLue(notif)">
+                <div class="notif-icon" [style.background]="getNotifBg(notif.type)" [style.color]="getNotifColor(notif.type)">
+                  <svg *ngIf="notif.type==='FORMATION_AFFECTEE'" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <svg *ngIf="notif.type==='FORMATION_RETIREE'" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
+                  <svg *ngIf="notif.type!=='FORMATION_AFFECTEE'&&notif.type!=='FORMATION_RETIREE'" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-
                 <div class="notif-content">
                   <p class="notif-titre">{{ notif.titre }}</p>
                   <p class="notif-msg">{{ notif.message }}</p>
                   <p class="notif-time">{{ getTimeAgo(notif.dateCreation) }}</p>
                 </div>
-
                 <div *ngIf="!notif.lu" class="notif-dot"></div>
               </div>
             </div>
           </div>
         </div>
-        <!-- ══ FIN CLOCHE ══ -->
 
-        <div class="topbar-avatar">
-          <div class="t-av">{{ getFormateurInitiales() }}</div>
+        <div class="topbar-avatar" style="cursor:pointer" (click)="setSection('profil')">
+          <div class="t-av" [style.background-image]="formateurUser?.photo ? 'url('+formateurUser.photo+')' : ''"
+               [class.t-av-photo]="!!formateurUser?.photo">
+            <span *ngIf="!formateurUser?.photo">{{ getFormateurInitiales() }}</span>
+          </div>
           <div>
             <span class="t-name">{{ formateurUser?.prenom }}</span>
-            <span class="t-role">Formateur</span>
+            <span class="t-role">{{ formateurUser?.specialite || 'Formateur' }}</span>
           </div>
         </div>
       </div>
@@ -180,125 +149,90 @@
 
     <!-- ═══ DASHBOARD ═══ -->
     <section *ngIf="activeSection==='dashboard'" class="page-content">
-
       <div class="kpi-row">
         <div class="kpi" style="--accent:#4A7C7E">
           <div class="kpi-ico" style="background:rgba(74,124,126,.1)">
-            <svg width="18" height="18" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
-              <path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
-            </svg>
+            <svg width="18" height="18" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24"><path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4" stroke-width="1.6"/></svg>
           </div>
           <p class="kpi-val">{{ stats.totalApprenants }}</p>
           <p class="kpi-label">Apprenants au total</p>
         </div>
         <div class="kpi" style="--accent:#8B3A3A">
           <div class="kpi-ico" style="background:#fce4e4">
-            <svg width="18" height="18" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
-              <path stroke-width="1.6" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
+            <svg width="18" height="18" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.6" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           </div>
           <p class="kpi-val">{{ formations.length }}</p>
           <p class="kpi-label">Formations assignées</p>
         </div>
         <div class="kpi" style="--accent:#27ae60">
           <div class="kpi-ico" style="background:#e8f5e9">
-            <svg width="18" height="18" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
-              <path stroke-width="1.6" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+            <svg width="18" height="18" fill="none" stroke="#27ae60" viewBox="0 0 24 24"><path stroke-width="1.6" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
-          <p class="kpi-val">{{ stats.tauxReussite || 0 }}%</p>
+          <p class="kpi-val">{{ stats.tauxReussite||0 }}%</p>
           <p class="kpi-label">Taux de réussite</p>
         </div>
         <div class="kpi" style="--accent:#f39c12">
           <div class="kpi-ico" style="background:#fff3cd">
-            <svg width="18" height="18" fill="#f39c12" viewBox="0 0 24 24">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
+            <svg width="18" height="18" fill="#f39c12" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           </div>
           <p class="kpi-val">{{ stats.noteMoyenne ? (stats.noteMoyenne | number:'1.1-1') : '—' }}</p>
           <p class="kpi-label">Note moyenne</p>
         </div>
       </div>
-
-      <div class="card-block" *ngIf="formations.length > 0">
+      <div class="card-block" *ngIf="formations.length>0">
         <div class="cb-head">
           <h2 class="cb-title">Mes formations récentes</h2>
-          <button *ngIf="formations.length > 3" class="btn-voir-tout"
-                  (click)="setSection('mes-formations')">
-            Voir toutes ({{ formations.length }}) →
-          </button>
+          <button *ngIf="formations.length>3" class="btn-voir-tout" (click)="setSection('mes-formations')">Voir toutes ({{ formations.length }}) →</button>
         </div>
         <div class="formations-preview-grid">
           <div *ngFor="let f of formations.slice(0,4)" class="fc-preview">
             <div class="fc-cover" [ngStyle]="getCoverStyle(f)">
-              <span class="fc-statut-badge"
-                    [class.badge-publie]="f.statut==='PUBLIE'"
-                    [class.badge-draft]="f.statut!='PUBLIE'">
-                <span class="badge-dot"></span>
-                {{ f.statut === 'PUBLIE' ? 'Publié' : 'Brouillon' }}
+              <span class="fc-statut-badge" [class.badge-publie]="f.statut==='PUBLIE'" [class.badge-draft]="f.statut!='PUBLIE'">
+                <span class="badge-dot"></span>{{ f.statut==='PUBLIE'?'Publié':'Brouillon' }}
               </span>
             </div>
             <div class="fc-info">
               <p class="fc-titre">{{ f.titre }}</p>
               <div class="fc-meta">
-                <span class="fc-niveau niveau-{{ (f.niveau || 'DEBUTANT').toLowerCase() }}">
-                  {{ getNiveauLabel(f.niveau) }}
-                </span>
+                <span class="fc-niveau niveau-{{ (f.niveau||'DEBUTANT').toLowerCase() }}">{{ getNiveauLabel(f.niveau) }}</span>
                 <span class="fc-stat-sm">
-                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/>
-                  </svg>
-                  {{ f.nombreInscrits || 0 }}
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                  {{ f.nombreInscrits||0 }}
                 </span>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div *ngIf="formations.length === 0" class="empty-state-card">
-        <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
-          <path stroke-width="1.4" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
+      <div *ngIf="formations.length===0" class="empty-state-card">
+        <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24"><path stroke-width="1.4" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         <p class="empty-title">Aucune formation assignée</p>
         <p class="empty-sub">L'administrateur n'a pas encore affecté de formation à votre compte.</p>
       </div>
-
     </section>
 
     <!-- ═══ MES FORMATIONS ═══ -->
     <section *ngIf="activeSection==='mes-formations'" class="page-content">
-      <div *ngIf="formations.length === 0" class="empty-state-card">
-        <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
-          <path stroke-width="1.4" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
+      <div *ngIf="formations.length===0" class="empty-state-card">
+        <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24"><path stroke-width="1.4" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         <p class="empty-title">Aucune formation</p>
         <p class="empty-sub">L'administrateur n'a pas encore affecté de formation à votre compte.</p>
       </div>
-
       <div class="formations-grid">
         <div *ngFor="let f of formations" class="fc-card">
           <div class="fc-cover" [ngStyle]="getCoverStyle(f)">
-            <span class="fc-statut-badge"
-                  [class.badge-publie]="f.statut==='PUBLIE'"
-                  [class.badge-draft]="f.statut!='PUBLIE'">
-              <span class="badge-dot"></span>
-              {{ f.statut === 'PUBLIE' ? 'Publié' : 'Brouillon' }}
+            <span class="fc-statut-badge" [class.badge-publie]="f.statut==='PUBLIE'" [class.badge-draft]="f.statut!='PUBLIE'">
+              <span class="badge-dot"></span>{{ f.statut==='PUBLIE'?'Publié':'Brouillon' }}
             </span>
           </div>
           <div class="fc-body">
             <h3 class="fc-titre">{{ f.titre }}</h3>
-            <p class="fc-desc">{{ f.description || 'Aucune description.' }}</p>
+            <p class="fc-desc">{{ f.description||'Aucune description.' }}</p>
             <div class="fc-footer">
-              <span class="fc-niveau niveau-{{ (f.niveau || 'DEBUTANT').toLowerCase() }}">
-                {{ getNiveauLabel(f.niveau) }}
-              </span>
+              <span class="fc-niveau niveau-{{ (f.niveau||'DEBUTANT').toLowerCase() }}">{{ getNiveauLabel(f.niveau) }}</span>
               <span class="fc-stat-sm">
-                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/>
-                </svg>
-                {{ f.nombreInscrits || 0 }} inscrits
+                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                {{ f.nombreInscrits||0 }} inscrits
               </span>
             </div>
           </div>
@@ -306,5 +240,337 @@
       </div>
     </section>
 
+    <!-- ═══ MON PROFIL ═══ -->
+    <section *ngIf="activeSection==='profil'" class="page-content">
+
+      <!-- Hero -->
+      <div class="profil-hero">
+        <div class="profil-hero-bg"></div>
+        <div class="profil-hero-content">
+          <div class="profil-avatar-zone">
+            <div class="profil-avatar-big"
+                 [style.background-image]="photoPreview ? 'url('+photoPreview+')' : ''"
+                 [class.profil-avatar-photo]="!!photoPreview">
+              <span *ngIf="!photoPreview">{{ getFormateurInitiales() }}</span>
+            </div>
+            <label class="profil-avatar-edit" for="photoInput" title="Changer la photo">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="2" d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4" stroke-width="2"/>
+              </svg>
+            </label>
+            <input id="photoInput" type="file" accept="image/*" style="display:none" (change)="onPhotoSelected($event)">
+          </div>
+          <div class="profil-hero-info">
+            <h2 class="profil-hero-name">{{ formateurUser?.prenom }} {{ formateurUser?.nom }}</h2>
+            <p class="profil-hero-email">{{ formateurUser?.email }}</p>
+            <div class="profil-hero-meta">
+              <span class="profil-badge-role">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                {{ formateurUser?.specialite || 'Formateur' }}
+              </span>
+              <span *ngIf="formateurUser?.anneesExperience" class="profil-badge-exp">
+                {{ formateurUser.anneesExperience }} ans d'expérience
+              </span>
+              <span class="profil-badge-date">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Membre depuis {{ formatDate(formateurUser?.dateInscription) }}
+              </span>
+            </div>
+            <div *ngIf="competences.length>0" class="profil-hero-tags">
+              <span *ngFor="let tag of competences" class="hero-tag">{{ tag }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="profil-tabs">
+        <button class="profil-tab" [class.profil-tab-active]="profilActiveTab==='identite'" (click)="profilActiveTab='identite'">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+          Informations personnelles
+        </button>
+        <button class="profil-tab" [class.profil-tab-active]="profilActiveTab==='securite'" (click)="profilActiveTab='securite'">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Sécurité & Mot de passe
+        </button>
+      </div>
+
+      <!-- ════ IDENTITE ════ -->
+      <div *ngIf="profilActiveTab==='identite'" class="profil-card">
+
+        <div *ngIf="profilSuccess" class="profil-alert profil-alert-success">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          {{ profilSuccess }}
+        </div>
+        <div *ngIf="profilError" class="profil-alert profil-alert-error">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          {{ profilError }}
+        </div>
+
+        <form [formGroup]="profilForm" (ngSubmit)="saveProfil()">
+
+          <!-- ── Photo ── -->
+          <div class="profil-section-title">
+            <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4" stroke-width="1.8"/></svg>
+            Photo de profil
+          </div>
+          <div class="photo-upload-zone">
+            <div class="photo-preview-wrap">
+              <div class="photo-preview" [style.background-image]="photoPreview ? 'url('+photoPreview+')' : ''"
+                   [class.photo-preview-filled]="!!photoPreview">
+                <span *ngIf="!photoPreview" class="photo-preview-initials">{{ getFormateurInitiales() }}</span>
+                <div *ngIf="photoUploading" class="photo-uploading">
+                  <div class="notif-spinner"></div>
+                </div>
+              </div>
+              <button *ngIf="photoPreview" type="button" class="photo-remove-btn" (click)="removePhoto()" title="Supprimer la photo">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div class="photo-upload-info">
+              <label for="photoInput2" class="photo-upload-btn">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                Choisir une photo
+              </label>
+              <input id="photoInput2" type="file" accept="image/*" style="display:none" (change)="onPhotoSelected($event)">
+              <p class="photo-hint">JPG, PNG ou GIF · Max 2 Mo · Ratio carré recommandé</p>
+            </div>
+          </div>
+
+          <!-- ── Identité ── -->
+          <div class="profil-section-title" style="margin-top:28px">
+            <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            Identité
+          </div>
+          <div class="profil-form-grid">
+            <div class="profil-field">
+              <label class="profil-label">Prénom <span class="required">*</span></label>
+              <input class="profil-input" [class.profil-input-error]="isProfilInvalid('prenom')" formControlName="prenom" placeholder="Votre prénom" type="text">
+              <p *ngIf="isProfilInvalid('prenom')" class="profil-field-error">Requis (min. 2 caractères)</p>
+            </div>
+            <div class="profil-field">
+              <label class="profil-label">Nom <span class="required">*</span></label>
+              <input class="profil-input" [class.profil-input-error]="isProfilInvalid('nom')" formControlName="nom" placeholder="Votre nom" type="text">
+              <p *ngIf="isProfilInvalid('nom')" class="profil-field-error">Requis (min. 2 caractères)</p>
+            </div>
+            <div class="profil-field">
+              <label class="profil-label">Email</label>
+              <div class="profil-input profil-input-readonly">
+                <span>{{ formateurUser?.email }}</span>
+                <svg width="14" height="14" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24"><path stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              </div>
+              <p class="profil-field-hint">L'email ne peut pas être modifié</p>
+            </div>
+            <div class="profil-field">
+              <label class="profil-label">Téléphone</label>
+              <input class="profil-input" formControlName="telephone" placeholder="+33 6 12 34 56 78" type="tel">
+            </div>
+          </div>
+
+          <!-- ── Spécialité & Expérience ── -->
+          <div class="profil-section-title" style="margin-top:28px">
+            <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            Expertise professionnelle
+          </div>
+          <div class="profil-form-grid">
+            <div class="profil-field">
+              <label class="profil-label">Spécialité</label>
+              <input class="profil-input" formControlName="specialite" type="text" placeholder="Ex: Développement Web, Data Science...">
+            </div>
+            <div class="profil-field">
+              <label class="profil-label">Années d'expérience</label>
+              <div class="profil-slider-wrap">
+                <input class="profil-slider" type="range" min="0" max="30" formControlName="anneesExperience">
+                <div class="profil-slider-labels">
+                  <span>0</span>
+                  <span class="slider-current-val">{{ profilForm.get('anneesExperience')?.value }} ans</span>
+                  <span>30</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Bio ── -->
+          <div class="profil-section-title" style="margin-top:28px">
+            <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Bio professionnelle
+          </div>
+          <div class="profil-field" style="margin-bottom:24px">
+            <textarea class="profil-input profil-textarea"
+                      [class.profil-input-error]="isProfilInvalid('bio')"
+                      formControlName="bio"
+                      placeholder="Décrivez votre parcours, vos passions et votre approche pédagogique..."
+                      rows="4"></textarea>
+            <div class="bio-footer">
+              <p *ngIf="isProfilInvalid('bio')" class="profil-field-error">Maximum 500 caractères</p>
+              <span class="bio-counter" [class.bio-counter-warn]="bioLength>450">{{ bioLength }}/500</span>
+            </div>
+          </div>
+
+          <!-- ── Compétences ── -->
+          <div class="profil-section-title" style="margin-top:4px">
+            <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+            Compétences
+          </div>
+          <div class="competences-zone" style="margin-bottom:28px">
+            <div class="competences-list">
+              <span *ngFor="let tag of competences; let i=index" class="tag-item">
+                {{ tag }}
+                <button type="button" class="tag-remove" (click)="removeCompetence(i)">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </span>
+              <div class="tag-input-wrap">
+                <input class="tag-input" [(ngModel)]="competenceInput" [ngModelOptions]="{standalone:true}"
+                       (keydown)="addCompetenceOnEnter($event)"
+                       placeholder="{{ competences.length<8 ? '+ Ajouter une compétence' : 'Max 8 compétences' }}"
+                       [disabled]="competences.length>=8">
+                <button type="button" class="tag-add-btn" (click)="addCompetence()" [disabled]="!competenceInput.trim()||competences.length>=8">
+                  Ajouter
+                </button>
+              </div>
+            </div>
+            <p class="profil-field-hint">Appuyez sur Entrée ou cliquez "Ajouter" · Max 8 compétences</p>
+          </div>
+
+          <!-- ── Réseaux sociaux ── -->
+          <div class="profil-section-title">
+            <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+            Réseaux sociaux
+          </div>
+          <div class="social-grid">
+            <div class="profil-field social-field">
+              <label class="profil-label">
+                <span class="social-icon social-li">in</span> LinkedIn
+              </label>
+              <input class="profil-input" [(ngModel)]="reseauxSociaux.linkedin" [ngModelOptions]="{standalone:true}" placeholder="https://linkedin.com/in/votre-profil" type="url">
+            </div>
+            <div class="profil-field social-field">
+              <label class="profil-label">
+                <span class="social-icon social-tw">𝕏</span> Twitter / X
+              </label>
+              <input class="profil-input" [(ngModel)]="reseauxSociaux.twitter" [ngModelOptions]="{standalone:true}" placeholder="https://twitter.com/votre-compte" type="url">
+            </div>
+            <div class="profil-field social-field">
+              <label class="profil-label">
+                <span class="social-icon social-web">🌐</span> Portfolio
+              </label>
+              <input class="profil-input" [(ngModel)]="reseauxSociaux.portfolio" [ngModelOptions]="{standalone:true}" placeholder="https://votre-site.com" type="url">
+            </div>
+            <div class="profil-field social-field">
+              <label class="profil-label">
+                <span class="social-icon social-gh">⌨</span> GitHub
+              </label>
+              <input class="profil-input" [(ngModel)]="reseauxSociaux.github" [ngModelOptions]="{standalone:true}" placeholder="https://github.com/votre-compte" type="url">
+            </div>
+          </div>
+
+          <!-- ── Infos compte ── -->
+          <div class="profil-info-cards" style="margin-top:28px">
+            <div class="profil-info-card">
+              <div class="profil-info-icon" style="background:rgba(74,124,126,.1)">
+                <svg width="15" height="15" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24"><path stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
+              <div>
+                <p class="profil-info-label">Membre depuis</p>
+                <p class="profil-info-value">{{ formatDate(formateurUser?.dateInscription) }}</p>
+              </div>
+            </div>
+            <div class="profil-info-card">
+              <div class="profil-info-icon" style="background:rgba(139,58,58,.08)">
+                <svg width="15" height="15" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+              </div>
+              <div>
+                <p class="profil-info-label">Dernière connexion</p>
+                <p class="profil-info-value">{{ formatDate(formateurUser?.derniereConnexion) }}</p>
+              </div>
+            </div>
+            <div class="profil-info-card">
+              <div class="profil-info-icon" style="background:rgba(39,174,96,.1)">
+                <svg width="15" height="15" fill="none" stroke="#27ae60" viewBox="0 0 24 24"><path stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div>
+                <p class="profil-info-label">Statut du compte</p>
+                <p class="profil-info-value" style="color:#27ae60">Actif</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Actions ── -->
+          <div class="profil-actions">
+            <button type="button" class="profil-btn-cancel" (click)="cancelProfil()" [disabled]="profilLoading">Annuler</button>
+            <button type="submit" class="profil-btn-save" [disabled]="profilLoading">
+              <span *ngIf="profilLoading" class="btn-spinner"></span>
+              <svg *ngIf="!profilLoading" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              {{ profilLoading ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ════ SECURITE ════ -->
+      <div *ngIf="profilActiveTab==='securite'" class="profil-card">
+        <div *ngIf="mdpSuccess" class="profil-alert profil-alert-success">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          {{ mdpSuccess }}
+        </div>
+        <div *ngIf="mdpError" class="profil-alert profil-alert-error">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          {{ mdpError }}
+        </div>
+        <div class="profil-section-title">
+          <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Changer le mot de passe
+        </div>
+        <p class="profil-section-desc">Choisissez un mot de passe fort d'au moins 8 caractères.</p>
+        <form [formGroup]="mdpForm" (ngSubmit)="changerMotDePasse()">
+          <div class="profil-mdp-fields">
+            <div class="profil-field">
+              <label class="profil-label">Mot de passe actuel <span class="required">*</span></label>
+              <div class="profil-input-pwd">
+                <input class="profil-input" [class.profil-input-error]="isMdpInvalid('ancienMotDePasse')" formControlName="ancienMotDePasse" [type]="showAncienMdp?'text':'password'" placeholder="••••••••">
+                <button type="button" class="pwd-toggle" (click)="showAncienMdp=!showAncienMdp">
+                  <svg *ngIf="!showAncienMdp" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke-width="1.8"/></svg>
+                  <svg *ngIf="showAncienMdp" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>
+                </button>
+              </div>
+              <p *ngIf="isMdpInvalid('ancienMotDePasse')" class="profil-field-error">Ce champ est requis</p>
+            </div>
+            <div class="profil-field">
+              <label class="profil-label">Nouveau mot de passe <span class="required">*</span></label>
+              <div class="profil-input-pwd">
+                <input class="profil-input" [class.profil-input-error]="isMdpInvalid('nouveauMotDePasse')" formControlName="nouveauMotDePasse" [type]="showNouveauMdp?'text':'password'" placeholder="••••••••">
+                <button type="button" class="pwd-toggle" (click)="showNouveauMdp=!showNouveauMdp">
+                  <svg *ngIf="!showNouveauMdp" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke-width="1.8"/></svg>
+                  <svg *ngIf="showNouveauMdp" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>
+                </button>
+              </div>
+              <p *ngIf="isMdpInvalid('nouveauMotDePasse')" class="profil-field-error">Minimum 8 caractères</p>
+            </div>
+            <div class="profil-field">
+              <label class="profil-label">Confirmer le mot de passe <span class="required">*</span></label>
+              <div class="profil-input-pwd">
+                <input class="profil-input" [class.profil-input-error]="isMdpInvalid('confirmMotDePasse')" formControlName="confirmMotDePasse" [type]="showConfirmMdp?'text':'password'" placeholder="••••••••">
+                <button type="button" class="pwd-toggle" (click)="showConfirmMdp=!showConfirmMdp">
+                  <svg *ngIf="!showConfirmMdp" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke-width="1.8"/></svg>
+                  <svg *ngIf="showConfirmMdp" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>
+                </button>
+              </div>
+              <p *ngIf="isMdpInvalid('confirmMotDePasse')" class="profil-field-error">Ce champ est requis</p>
+            </div>
+          </div>
+          <div class="profil-actions">
+            <button type="button" class="profil-btn-cancel" (click)="mdpForm.reset();mdpError='';mdpSuccess=''" [disabled]="mdpLoading">Réinitialiser</button>
+            <button type="submit" class="profil-btn-save" [disabled]="mdpLoading">
+              <span *ngIf="mdpLoading" class="btn-spinner"></span>
+              <svg *ngIf="!mdpLoading" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              {{ mdpLoading ? 'Modification...' : 'Modifier le mot de passe' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </section>
   </main>
 </div>
