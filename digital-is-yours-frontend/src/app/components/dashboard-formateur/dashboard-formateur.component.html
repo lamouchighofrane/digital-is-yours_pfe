@@ -49,6 +49,8 @@
           <span *ngIf="formations.length" class="sb-count-badge">{{ formations.length }}</span>
         </button>
 
+        
+
         <button class="sb-item" [class.sb-active]="activeSection==='profil'" (click)="setSection('profil')">
           <span class="sb-item-icon">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,12 +82,14 @@
           <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
           </svg>
-          <span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : 'Mon profil' }}</span>
+          <span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? selectedFormation.titre : 'Mes cours') : 'Mon profil' }}</span>
         </p>
         <h1 class="topbar-title">
-          {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : 'Mon profil' }}
+          {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? 'Gestion des cours' : 'Mes cours') : 'Mon profil' }}
         </h1>
         <p *ngIf="activeSection==='mes-formations'" class="section-subtitle">{{ formations.length }} formation(s) affectée(s)</p>
+        <p *ngIf="activeSection==='cours' && selectedFormation" class="section-subtitle">{{ selectedFormation.titre }}</p>
+        <p *ngIf="activeSection==='cours' && !selectedFormation" class="section-subtitle">Sélectionnez une formation pour gérer ses cours</p>
         <p *ngIf="activeSection==='profil'" class="section-subtitle">Gérez vos informations personnelles et votre visibilité</p>
       </div>
 
@@ -230,14 +234,224 @@
             <p class="fc-desc">{{ f.description||'Aucune description.' }}</p>
             <div class="fc-footer">
               <span class="fc-niveau niveau-{{ (f.niveau||'DEBUTANT').toLowerCase() }}">{{ getNiveauLabel(f.niveau) }}</span>
-              <span class="fc-stat-sm">
-                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/></svg>
-                {{ f.nombreInscrits||0 }} inscrits
-              </span>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span class="fc-stat-sm">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                  {{ f.nombreInscrits||0 }} inscrits
+                </span>
+                <button style="background:#8B3A3A;color:#FFF;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"
+                        (click)="voirCours(f)">
+                  Cours →
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- ═══ COURS ═══ -->
+    <section *ngIf="activeSection==='cours'" class="page-content">
+
+      <!-- ── Écran de choix de formation (depuis sidebar) ── -->
+      <div *ngIf="!selectedFormation">
+        <div class="card-block" style="margin-bottom:22px">
+          <div class="cb-head">
+            <h2 class="cb-title">Choisissez une formation</h2>
+            <span style="font-size:12px;color:#6B5F52">{{ formations.length }} formation(s) disponible(s)</span>
+          </div>
+        </div>
+        <div *ngIf="formations.length===0" class="empty-state-card">
+          <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24"><path stroke-width="1.4" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          <p class="empty-title">Aucune formation assignée</p>
+          <p class="empty-sub">L'administrateur n'a pas encore affecté de formation à votre compte.</p>
+        </div>
+        <div class="formations-choice-grid">
+          <div *ngFor="let f of formations" class="formation-choice-card" (click)="voirCours(f)">
+            <div class="fcc-cover" [ngStyle]="getCoverStyle(f)">
+              <span class="fc-statut-badge" [class.badge-publie]="f.statut==='PUBLIE'" [class.badge-draft]="f.statut!='PUBLIE'">
+                <span class="badge-dot"></span>{{ f.statut==='PUBLIE'?'Publié':'Brouillon' }}
+              </span>
+            </div>
+            <div class="fcc-body">
+              <p class="fcc-titre">{{ f.titre }}</p>
+              <div class="fcc-meta">
+                <span class="fcc-badge niveau-{{ (f.niveau||'DEBUTANT').toLowerCase() }}">{{ getNiveauLabel(f.niveau) }}</span>
+                <span class="fcc-cours-count">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                  {{ f.nombreInscrits||0 }} inscrits
+                </span>
+              </div>
+              <div style="margin-top:10px;text-align:right">
+                <span style="font-size:11px;font-weight:700;color:#8B3A3A">Gérer les cours →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Gestion des cours d'une formation ── -->
+      <div *ngIf="selectedFormation">
+
+      <!-- Header formation -->
+      <div class="cours-formation-header">
+        <button class="cours-formation-back" (click)="setSection('mes-formations')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="cours-formation-cover">
+          <img *ngIf="selectedFormation?.imageCouverture" [src]="selectedFormation.imageCouverture" alt="">
+        </div>
+        <div class="cours-formation-info">
+          <h2 class="cours-formation-titre">{{ selectedFormation?.titre }}</h2>
+          <div class="cours-formation-meta">
+            <span class="cours-formation-badge" [class.badge-publie-sm]="selectedFormation?.statut==='PUBLIE'" [class.badge-draft-sm]="selectedFormation?.statut!=='PUBLIE'">
+              <span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block"></span>
+              {{ selectedFormation?.statut==='PUBLIE' ? 'Publié' : 'Brouillon' }}
+            </span>
+            <span class="cours-count-info">{{ coursStats.total }} cours · {{ coursStats.publies }} publiés</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI cours -->
+      <div class="cours-kpi-row">
+        <div class="cours-kpi" style="--accent:#8B3A3A">
+          <div class="cours-kpi-icon" style="background:#fce4e4">
+            <svg width="18" height="18" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.6" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <div>
+            <div class="cours-kpi-val">{{ coursStats.total }}</div>
+            <div class="cours-kpi-label">Cours au total</div>
+          </div>
+        </div>
+        <div class="cours-kpi" style="--accent:#27ae60">
+          <div class="cours-kpi-icon" style="background:#e8f5e9">
+            <svg width="18" height="18" fill="none" stroke="#27ae60" viewBox="0 0 24 24"><path stroke-width="1.6" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <div class="cours-kpi-val">{{ coursStats.publies }}</div>
+            <div class="cours-kpi-label">Cours publiés</div>
+          </div>
+        </div>
+        <div class="cours-kpi" style="--accent:#e67e22">
+          <div class="cours-kpi-icon" style="background:#fff3cd">
+            <svg width="18" height="18" fill="none" stroke="#e67e22" viewBox="0 0 24 24"><path stroke-width="1.6" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </div>
+          <div>
+            <div class="cours-kpi-val">{{ coursStats.brouillons }}</div>
+            <div class="cours-kpi-label">Brouillons</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="cours-toolbar">
+        <div class="cours-toolbar-left">
+          <div class="cours-search">
+            <svg width="14" height="14" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" placeholder="Rechercher un cours..." [(ngModel)]="coursSearch">
+          </div>
+          <select class="cours-filter-sel" [(ngModel)]="coursFilterStatut">
+            <option value="">Tous les statuts</option>
+            <option value="PUBLIE">Publiés</option>
+            <option value="BROUILLON">Brouillons</option>
+          </select>
+        </div>
+        <button class="btn-add-cours" (click)="openCoursModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 5v14M5 12h14"/></svg>
+          Ajouter un cours
+        </button>
+      </div>
+
+      <!-- Liste cours -->
+      <div *ngIf="coursLoading" class="cours-loading">
+        <div class="cours-spinner"></div>
+        <span>Chargement des cours...</span>
+      </div>
+
+      <div *ngIf="!coursLoading && filteredCours.length===0 && cours.length===0" class="cours-empty">
+        <div class="cours-empty-icon">
+          <svg width="28" height="28" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24"><path stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        <p class="cours-empty-title">Aucun cours pour cette formation</p>
+        <p class="cours-empty-sub">Commencez par créer votre premier cours pour structurer votre formation.</p>
+        <button class="btn-empty-add" (click)="openCoursModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 5v14M5 12h14"/></svg>
+          Créer le premier cours
+        </button>
+      </div>
+
+      <div *ngIf="!coursLoading && filteredCours.length===0 && cours.length>0" class="cours-empty">
+        <div class="cours-empty-icon">
+          <svg width="28" height="28" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24"><path stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <p class="cours-empty-title">Aucun résultat</p>
+        <p class="cours-empty-sub">Aucun cours ne correspond à votre recherche.</p>
+      </div>
+
+      <div *ngIf="!coursLoading && filteredCours.length>0" class="cours-list">
+        <div *ngFor="let c of filteredCours; let i=index" class="cours-card"
+             [class.cours-card-publie]="c.statut==='PUBLIE'"
+             [class.cours-card-draft]="c.statut==='BROUILLON'"
+             [style.--i]="i">
+          <div class="cours-drag-handle">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="cours-num" [class.cours-num-publie]="c.statut==='PUBLIE'">{{ c.ordre || i+1 }}</div>
+          <div class="cours-content">
+            <p class="cours-titre">{{ c.titre }}</p>
+            <p *ngIf="c.description" class="cours-desc">{{ c.description }}</p>
+            <div class="cours-meta">
+              <span *ngIf="c.dureeEstimee" class="cours-meta-item">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.8"/><path stroke-width="1.8" d="M12 6v6l4 2"/></svg>
+                {{ formatDuree(c.dureeEstimee) }}
+              </span>
+              <span *ngIf="c.objectifs" class="cours-meta-item">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M9 12l2 2 4-4"/><path stroke-width="1.8" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Objectifs définis
+              </span>
+              <span *ngIf="c.dateModification" class="cours-meta-item">
+                <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                {{ formatDate(c.dateModification) }}
+              </span>
+            </div>
+          </div>
+          <span class="cours-statut-badge" [class.badge-publie]="c.statut==='PUBLIE'" [class.badge-draft]="c.statut==='BROUILLON'">
+            <span class="badge-dot"></span>
+            {{ c.statut==='PUBLIE' ? 'Publié' : 'Brouillon' }}
+          </span>
+          <!-- Indicateur vidéo (videoType dans Cours selon diagramme) -->
+          <span *ngIf="c.videoType" class="cours-video-badge" [class.cvb-yt]="c.videoType==='YOUTUBE'" [class.cvb-local]="c.videoType==='LOCAL'" [title]="c.videoType==='YOUTUBE' ? 'Vidéo YouTube' : 'Vidéo locale'">
+            <svg *ngIf="c.videoType==='YOUTUBE'" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <svg *ngIf="c.videoType==='LOCAL'" width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+            {{ c.videoType==='YOUTUBE' ? 'YouTube' : 'Vidéo' }}
+          </span>
+          <div class="cours-actions">
+            <button class="cours-action-btn"
+                    [class.cours-action-toggle-publie]="c.statut==='PUBLIE'"
+                    (click)="toggleCoursStatut(c)"
+                    [title]="c.statut==='PUBLIE' ? 'Dépublier' : 'Publier'">
+              <svg *ngIf="c.statut==='PUBLIE'" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>
+              <svg *ngIf="c.statut!=='PUBLIE'" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+            </button>
+            <button class="cours-action-btn" (click)="openCoursModal(c)" title="Modifier">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
+            <button class="cours-action-btn cours-action-del" (click)="deleteCours(c)" title="Supprimer">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div *ngIf="coursToast" class="cours-toast" [class.cours-toast-success]="coursToastType==='success'" [class.cours-toast-error]="coursToastType==='error'">
+        <svg *ngIf="coursToastType==='success'" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <svg *ngIf="coursToastType==='error'" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {{ coursToast }}
+      </div>
+
+      </div> <!-- fin *ngIf="selectedFormation" -->
     </section>
 
     <!-- ═══ MON PROFIL ═══ -->
@@ -364,7 +578,7 @@
             </div>
             <div class="profil-field">
               <label class="profil-label">Téléphone</label>
-              <input class="profil-input" formControlName="telephone" placeholder="+33 6 12 34 56 78" type="tel">
+              <input class="profil-input" formControlName="telephone" placeholder="+216 XX XXX XXX" type="tel">
             </div>
           </div>
 
@@ -381,7 +595,8 @@
             <div class="profil-field">
               <label class="profil-label">Années d'expérience</label>
               <div class="profil-slider-wrap">
-                <input class="profil-slider" type="range" min="0" max="30" formControlName="anneesExperience">
+                <input class="profil-slider" type="range" min="0" max="30" formControlName="anneesExperience"
+                       [style.--val]="profilForm.get('anneesExperience')?.value">
                 <div class="profil-slider-labels">
                   <span>0</span>
                   <span class="slider-current-val">{{ profilForm.get('anneesExperience')?.value }} ans</span>
@@ -413,8 +628,8 @@
             <svg width="16" height="16" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
             Compétences
           </div>
-          <div class="competences-zone" style="margin-bottom:28px">
-            <div class="competences-list">
+          <div class="tags-zone" style="margin-bottom:28px">
+            <div class="tags-list">
               <span *ngFor="let tag of competences; let i=index" class="tag-item">
                 {{ tag }}
                 <button type="button" class="tag-remove" (click)="removeCompetence(i)">
@@ -422,7 +637,9 @@
                 </button>
               </span>
               <div class="tag-input-wrap">
-                <input class="tag-input" [(ngModel)]="competenceInput" [ngModelOptions]="{standalone:true}"
+                <input class="tag-input"
+                       [(ngModel)]="competenceInput"
+                       [ngModelOptions]="{standalone:true}"
                        (keydown)="addCompetenceOnEnter($event)"
                        placeholder="{{ competences.length<8 ? '+ Ajouter une compétence' : 'Max 8 compétences' }}"
                        [disabled]="competences.length>=8">
@@ -431,7 +648,7 @@
                 </button>
               </div>
             </div>
-            <p class="profil-field-hint">Appuyez sur Entrée ou cliquez "Ajouter" · Max 8 compétences</p>
+            <p class="profil-field-hint" style="margin-top:6px">Appuyez sur Entrée ou cliquez "Ajouter" · Max 8 compétences</p>
           </div>
 
           <!-- ── Réseaux sociaux ── -->
@@ -573,4 +790,251 @@
 
     </section>
   </main>
+</div>
+
+<!-- ═══ MODAL COURS ═══ -->
+<div *ngIf="showCoursModal" class="cours-modal-backdrop" (click)="showCoursModal=false">
+  <div class="cours-modal-sheet" (click)="$event.stopPropagation()">
+
+    <!-- Head -->
+    <div class="cms-head">
+      <div class="cms-head-left">
+        <div class="cms-head-icon">
+          <svg width="20" height="20" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24"><path stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        <div>
+          <h3 class="cms-title">{{ coursModalMode==='create' ? 'Nouveau cours' : 'Modifier le cours' }}</h3>
+          <p class="cms-sub">{{ selectedFormation?.titre }}</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="cms-statut-toggle"
+                [class.cms-st-publie]="coursForm.statut==='PUBLIE'"
+                [class.cms-st-draft]="coursForm.statut==='BROUILLON'"
+                (click)="coursForm.statut = coursForm.statut==='PUBLIE' ? 'BROUILLON' : 'PUBLIE'">
+          <span class="cms-statut-dot"></span>
+          {{ coursForm.statut==='PUBLIE' ? 'Publié' : 'Brouillon' }}
+        </button>
+        <button class="cms-close" (click)="showCoursModal=false">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="cms-tabs">
+      <button class="cms-tab" [class.cms-tab-active]="coursModalTab==='infos'" (click)="coursModalTab='infos'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        Informations générales
+      </button>
+      <button class="cms-tab" [class.cms-tab-active]="coursModalTab==='videos'"
+              (click)="coursModalMode!=='create' && (coursModalTab='videos')"
+              [class.cms-tab-disabled]="coursModalMode==='create'"
+              [title]="coursModalMode==='create' ? 'Enregistrez d\'abord le cours' : ''">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+        Vidéo
+        <span *ngIf="videoType" class="cms-tab-badge">1</span>
+        <span *ngIf="coursModalMode==='create'" class="cms-tab-lock">
+          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </span>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="cms-body">
+
+      <!-- ── Onglet Infos générales ── -->
+      <div *ngIf="coursModalTab==='infos'">
+        <div class="cms-field">
+          <label class="cms-label">Titre <span class="cms-req">*</span></label>
+          <input class="cms-input" [(ngModel)]="coursForm.titre" placeholder="Ex: Introduction au HTML & CSS" type="text">
+        </div>
+        <div class="cms-field">
+          <label class="cms-label">Description <span class="cms-opt">(optionnel)</span></label>
+          <textarea class="cms-textarea" [(ngModel)]="coursForm.description" placeholder="Décrivez le contenu de ce cours..." rows="3"></textarea>
+        </div>
+        <div class="cms-two">
+          <div class="cms-field">
+            <label class="cms-label">Durée estimée <span class="cms-opt">(optionnel)</span></label>
+            <div class="cms-duree-wrap">
+              <button type="button" class="cms-dur-btn" (click)="coursForm.dureeEstimee = Math.max(0, (coursForm.dureeEstimee||0) - 5)">−</button>
+              <input class="cms-input cms-duree-input" type="number" min="0" [(ngModel)]="coursForm.dureeEstimee" placeholder="0">
+              <button type="button" class="cms-dur-btn" (click)="coursForm.dureeEstimee = (coursForm.dureeEstimee||0) + 5">+</button>
+              <span class="cms-duree-unit">min</span>
+            </div>
+          </div>
+          <div class="cms-field">
+            <label class="cms-label">Ordre d'affichage <span class="cms-opt">(optionnel)</span></label>
+            <input class="cms-input" type="number" min="1" [(ngModel)]="coursForm.ordre" placeholder="Auto">
+            <p class="cms-ordre-hint">Laissez vide pour un ordre automatique</p>
+          </div>
+        </div>
+        <hr class="cms-divider">
+        <div class="cms-field">
+          <label class="cms-label">Objectifs pédagogiques <span class="cms-opt">(optionnel)</span></label>
+          <textarea class="cms-textarea" [(ngModel)]="coursForm.objectifs" placeholder="Qu'est-ce que l'apprenant saura faire après ce cours ?" rows="3"></textarea>
+          <p class="cms-objectifs-hint">Décrivez les compétences acquises à l'issue de ce cours</p>
+        </div>
+      </div>
+
+      <!-- ── Onglet Vidéo (videoType + videoUrl selon diagramme) ── -->
+      <div *ngIf="coursModalTab==='videos'" class="video-tab-content">
+
+        <!-- ══ VIDÉO EXISTANTE ══ -->
+        <div *ngIf="videoType" class="video-current-block">
+          <div class="vcb-header">
+            <div class="vcb-type-indicator" [class.vcb-yt]="videoType==='YOUTUBE'" [class.vcb-local]="videoType==='LOCAL'">
+              <!-- Icône YouTube -->
+              <svg *ngIf="videoType==='YOUTUBE'" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              <!-- Icône Local -->
+              <svg *ngIf="videoType==='LOCAL'" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="1.8" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+              </svg>
+              <span>{{ videoType === 'YOUTUBE' ? 'Vidéo YouTube' : 'Vidéo locale' }}</span>
+            </div>
+            <button class="vcb-delete-btn" (click)="supprimerVideo()" [disabled]="videoDeleting" title="Supprimer la vidéo">
+              <span *ngIf="videoDeleting" class="cms-spinner" style="width:11px;height:11px;border-width:1.5px"></span>
+              <svg *ngIf="!videoDeleting" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              Supprimer
+            </button>
+          </div>
+
+          <!-- Aperçu YouTube -->
+          <div *ngIf="videoType==='YOUTUBE'" class="vcb-preview">
+            <div class="vcb-yt-thumb">
+              <img [src]="getYoutubeThumbnail(videoUrl!)" (error)="onThumbError($event)" alt="Aperçu">
+              <div class="vcb-play-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+            <div class="vcb-url-info">
+              <p class="vcb-url-label">URL YouTube</p>
+              <p class="vcb-url-val">{{ videoUrl }}</p>
+              <a [href]="videoUrl!" target="_blank" class="vcb-open-link">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Ouvrir sur YouTube
+              </a>
+            </div>
+          </div>
+
+          <!-- Aperçu Locale -->
+          <div *ngIf="videoType==='LOCAL'" class="vcb-preview">
+            <div class="vcb-local-thumb">
+              <svg width="24" height="24" fill="none" stroke="rgba(255,255,255,.7)" viewBox="0 0 24 24"><path stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+            </div>
+            <div class="vcb-url-info">
+              <p class="vcb-url-label">Fichier vidéo local</p>
+              <p class="vcb-url-val">{{ videoUrl }}</p>
+              <span class="vi-upload-done" style="margin-top:4px;display:inline-flex">
+                <svg width="11" height="11" fill="none" stroke="#27ae60" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+                Vidéo uploadée avec succès
+              </span>
+            </div>
+          </div>
+
+          <div class="vcb-replace-hint">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Pour remplacer la vidéo, supprimez d'abord celle-ci puis ajoutez-en une nouvelle.
+          </div>
+        </div>
+
+        <!-- ══ AJOUTER UNE VIDÉO (si pas de vidéo) ══ -->
+        <div *ngIf="!videoType">
+
+          <!-- Upload local -->
+          <div class="video-section-block">
+            <div class="vsb-title">
+              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+              Ajouter une vidéo depuis votre ordinateur
+            </div>
+
+            <div class="video-drop-zone"
+                 [class.video-drop-active]="videoDragOver"
+                 [class.video-drop-uploading]="videoUploading"
+                 (dragover)="onVideoDragOver($event)"
+                 (dragleave)="videoDragOver=false"
+                 (drop)="onVideoDrop($event)"
+                 (click)="!videoUploading && videoFileInput.click()">
+              <input #videoFileInput type="file" accept="video/mp4,video/avi,video/quicktime,video/webm"
+                     style="display:none" (change)="onVideoFileSelected($event)">
+
+              <div *ngIf="!videoUploading" class="vdz-idle">
+                <div class="vdz-icon">
+                  <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+                </div>
+                <p class="vdz-main">Glissez votre vidéo ici ou cliquez pour parcourir</p>
+                <p class="vdz-hint">Formats : MP4, AVI, MOV, WebM · Max 1 GB</p>
+                <button type="button" class="vdz-btn" (click)="$event.stopPropagation(); videoFileInput.click()">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                  Parcourir fichiers
+                </button>
+              </div>
+
+              <div *ngIf="videoUploading" class="vdz-uploading">
+                <div class="vdz-progress-ring">
+                  <svg viewBox="0 0 48 48" width="60" height="60">
+                    <circle cx="24" cy="24" r="20" fill="none" stroke="#E8E3DB" stroke-width="4"/>
+                    <circle cx="24" cy="24" r="20" fill="none" stroke="#8B3A3A" stroke-width="4"
+                            stroke-dasharray="125.6"
+                            [attr.stroke-dashoffset]="125.6 - (videoUploadProgress * 1.256)"
+                            stroke-linecap="round" transform="rotate(-90 24 24)"/>
+                    <text x="24" y="28" text-anchor="middle" fill="#1A1612" font-size="10" font-weight="700">{{ videoUploadProgress }}%</text>
+                  </svg>
+                </div>
+                <p class="vdz-up-name">{{ videoUploadingName }}</p>
+                <p class="vdz-up-status">Upload en cours...</p>
+                <button type="button" class="vdz-cancel-btn" (click)="cancelVideoUpload()">Annuler</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Séparateur OU -->
+          <div class="video-or-separator">
+            <span></span><span class="video-or-text">ou</span><span></span>
+          </div>
+
+          <!-- YouTube -->
+          <div class="video-section-block">
+            <div class="vsb-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              Intégrer une vidéo YouTube
+            </div>
+            <div class="video-yt-wrap">
+              <input class="cms-input video-yt-input"
+                     [(ngModel)]="youtubeUrlInput"
+                     placeholder="https://www.youtube.com/watch?v=..."
+                     type="url"
+                     (keydown.enter)="ajouterYoutube()">
+              <button class="video-yt-btn" (click)="ajouterYoutube()" [disabled]="!youtubeUrlInput.trim() || videoYoutubeAdding">
+                <span *ngIf="videoYoutubeAdding" class="cms-spinner"></span>
+                <span *ngIf="!videoYoutubeAdding">Ajouter</span>
+              </button>
+            </div>
+            <p class="cms-ordre-hint" style="margin-top:6px">
+              Supporte : youtube.com/watch?v=, youtu.be/, /shorts/, /embed/
+            </p>
+          </div>
+
+          <div class="video-empty-hint">
+            <svg width="32" height="32" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24"><path stroke-width="1.4" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+            <p>Aucune vidéo pour ce cours.</p>
+            <p style="font-size:11px;color:#9B8B6E">Uploadez un fichier MP4/AVI/WebM ou collez un lien YouTube.</p>
+          </div>
+        </div>
+
+      </div><!-- fin onglet vidéo -->
+    </div>
+
+    <!-- Footer -->
+    <div class="cms-footer">
+      <button class="cms-cancel" (click)="showCoursModal=false">Fermer</button>
+      <button *ngIf="coursModalTab==='infos'" class="cms-save" (click)="saveCours()" [disabled]="!coursForm.titre?.trim() || coursSaving">
+        <span *ngIf="coursSaving" class="cms-spinner"></span>
+        <svg *ngIf="!coursSaving" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        {{ coursSaving ? 'Enregistrement...' : (coursModalMode==='create' ? 'Créer et continuer' : 'Enregistrer') }}
+      </button>
+    </div>
+  </div>
 </div>
