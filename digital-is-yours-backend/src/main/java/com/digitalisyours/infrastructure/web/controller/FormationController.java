@@ -13,6 +13,7 @@ import com.digitalisyours.infrastructure.persistence.repository.UserJpaRepositor
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -158,6 +159,7 @@ public class FormationController {
 
     // ══ AFFECTER FORMATEUR (endpoint dédié) ══════════════════════
     @PatchMapping("/{id}/affecter-formateur")
+    @Transactional
     public ResponseEntity<?> affecterFormateur(
             @PathVariable Long id,
             @RequestBody Map<String, Object> payload) {
