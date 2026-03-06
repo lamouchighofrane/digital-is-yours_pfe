@@ -486,3 +486,50 @@
 
 /* Badge document dans la liste des cours */
 .cours-doc-badge{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;flex-shrink:0;background:rgba(74,124,126,.1);color:#3a6a6c;border:1px solid rgba(74,124,126,.2)}
+
+/* ══════════════════════════════════════════════════════════════
+   DRAG & DROP RÉORDONNANCEMENT COURS
+══════════════════════════════════════════════════════════════ */
+.cours-card{cursor:default}
+.cours-drag-handle{cursor:grab;transition:opacity .2s}
+.cours-drag-handle:active{cursor:grabbing}
+
+/* Carte en cours de drag */
+.cours-card-dragging{
+  opacity:.45;
+  transform:scale(.98);
+  border-style:dashed;
+  border-color:#8B3A3A!important;
+  box-shadow:none!important;
+  background:#fdf8f8!important;
+  transition:opacity .15s,transform .15s;
+}
+
+/* Zone cible du drop */
+.cours-card-drag-over{
+  border-color:#8B3A3A!important;
+  border-style:solid!important;
+  border-width:2px!important;
+  background:#fdf0f0!important;
+  box-shadow:0 0 0 3px rgba(139,58,58,.12),0 6px 20px rgba(139,58,58,.15)!important;
+  transform:translateY(-2px);
+  transition:all .15s cubic-bezier(.16,1,.3,1);
+}
+
+/* Indicateur de position (ligne bleue au-dessus) */
+.cours-card-drag-over::before{
+  content:'';
+  position:absolute;
+  top:-2px;
+  left:16px;
+  right:16px;
+  height:3px;
+  background:linear-gradient(90deg,#8B3A3A,#a84848);
+  border-radius:2px;
+  animation:dragLine .2s ease;
+}
+@keyframes dragLine{from{opacity:0;transform:scaleX(.5)}to{opacity:1;transform:scaleX(1)}}
+
+/* Handle plus visible au hover de la carte */
+.cours-card:hover .cours-drag-handle{opacity:.7}
+.cours-card-dragging .cours-drag-handle{cursor:grabbing}

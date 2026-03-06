@@ -393,8 +393,16 @@
         <div *ngFor="let c of filteredCours; let i=index" class="cours-card"
              [class.cours-card-publie]="c.statut==='PUBLIE'"
              [class.cours-card-draft]="c.statut==='BROUILLON'"
-             [style.--i]="i">
-          <div class="cours-drag-handle">
+             [class.cours-card-dragging]="dragIndex===i"
+             [class.cours-card-drag-over]="dragOverIndex===i && dragIndex!==i"
+             [style.--i]="i"
+             draggable="true"
+             (dragstart)="onCoursDragStart($event, i)"
+             (dragover)="onCoursDragOver($event, i)"
+             (dragleave)="onCoursDragLeave($event)"
+             (drop)="onCoursDrop($event, i)"
+             (dragend)="onCoursDragEnd()">
+          <div class="cours-drag-handle" title="Glisser pour réordonner">
             <span></span><span></span><span></span>
           </div>
           <div class="cours-num" [class.cours-num-publie]="c.statut==='PUBLIE'">{{ c.ordre || i+1 }}</div>

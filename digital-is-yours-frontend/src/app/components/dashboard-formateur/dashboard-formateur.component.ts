@@ -78,6 +78,11 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   private uploadXhr: XMLHttpRequest | null = null;
   private currentCoursId: number | null = null;
 
+  // ── Drag & Drop réordonnancement cours ────────────────────
+  dragIndex: number | null = null;
+  dragOverIndex: number | null = null;
+  isDragging = false;
+
   // ── Documents ──────────────────────────────────────────────
   documents: any[] = [];
   docLoading = false;
@@ -358,6 +363,102 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         },
         error: () => this.showToast('Erreur lors de la suppression.', 'error')
       });
+  }
+
+  // ══ DRAG & DROP RÉORDONNANCEMENT ═══════════════════════════
+
+  onCoursDragStart(event: DragEvent, index: number) {
+    this.dragIndex = index;
+    this.isDragging = true;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(index));
+    }
+    this.cdr.detectChanges();
+  }
+
+  onCoursDragOver(event: DragEvent, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    if (this.dragOverIndex !== index) {
+      this.dragOverIndex = index;
+      this.cdr.detectChanges();
+    }
+  }
+
+  onCoursDragLeave(event: DragEvent) {
+    // Ne réinitialiser que si on quitte vraiment la zone
+    const related = event.relatedTarget as HTMLElement;
+    if (!related || !related.closest?.('.cours-card')) {
+      this.dragOverIndex = null;
+      this.cdr.detectChanges();
+    }
+  }
+
+  onCoursDrop(event: DragEvent, dropIndex: number) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const dragIdx = this.dragIndex;
+    if (dragIdx === null || dragIdx === dropIndex) {
+      this.resetDragState();
+      return;
+    }
+
+    // Réordonner le tableau local (sur la liste complète this.cours)
+    // Trouver les vraies positions dans this.cours depuis filteredCours
+    const draggedCours = this.filteredCours[dragIdx];
+    const targetCours  = this.filteredCours[dropIndex];
+
+    const realDragIdx   = this.cours.findIndex(c => c.id === draggedCours.id);
+    const realTargetIdx = this.cours.findIndex(c => c.id === targetCours.id);
+
+    if (realDragIdx === -1 || realTargetIdx === -1) {
+      this.resetDragState();
+      return;
+    }
+
+    // Déplacer dans le tableau
+    const newCours = [...this.cours];
+    const [removed] = newCours.splice(realDragIdx, 1);
+    newCours.splice(realTargetIdx, 0, removed);
+
+    // Recalculer les ordres
+    newCours.forEach((c, idx) => c.ordre = idx + 1);
+    this.cours = newCours;
+    this.resetDragState();
+    this.cdr.detectChanges();
+
+    // Appel API pour persister
+    this.sauvegarderOrdre();
+  }
+
+  onCoursDragEnd() {
+    this.resetDragState();
+  }
+
+  private resetDragState() {
+    this.dragIndex = null;
+    this.dragOverIndex = null;
+    this.isDragging = false;
+    this.cdr.detectChanges();
+  }
+
+  sauvegarderOrdre() {
+    if (!this.selectedFormation) return;
+    const ordres = this.cours.map(c => ({ id: c.id, ordre: c.ordre }));
+    this.http.patch(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/reordonner`,
+      { ordres },
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => this.showToast('Ordre des cours mis à jour !', 'success'),
+      error: () => {
+        this.showToast('Erreur lors de la sauvegarde de l\'ordre.', 'error');
+        this.loadCours(); // Recharger en cas d'échec
+      }
+    });
   }
 
   formatDuree(minutes: number): string {
