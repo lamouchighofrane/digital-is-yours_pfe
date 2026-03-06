@@ -6,6 +6,7 @@ import com.digitalisyours.infrastructure.persistence.entity.CoursEntity;
 import com.digitalisyours.infrastructure.persistence.entity.FormationEntity;
 import com.digitalisyours.infrastructure.persistence.entity.UserEntity;
 import com.digitalisyours.infrastructure.persistence.repository.CoursJpaRepository;
+import com.digitalisyours.infrastructure.persistence.repository.DocumentJpaRepository;
 import com.digitalisyours.infrastructure.persistence.repository.FormationJpaRepository;
 import com.digitalisyours.infrastructure.persistence.repository.UserJpaRepository;
 import com.digitalisyours.infrastructure.web.security.JwtUtil;
@@ -41,6 +42,7 @@ public class CoursFormateurController {
     private final CoursJpaRepository coursRepository;
     private final FormationJpaRepository formationRepository;
     private final UserJpaRepository userRepository;
+    private final DocumentJpaRepository documentRepository;
     private final JwtUtil jwtUtil;
 
     @Value("${app.upload.dir:uploads/videos}")
@@ -466,6 +468,9 @@ public class CoursFormateurController {
         // ── Vidéo ──
         map.put("videoType", c.getVideoType());   // "LOCAL" | "YOUTUBE" | null
         map.put("videoUrl",  c.getVideoUrl());    // URL YouTube ou nom fichier local
+
+        // ── Documents ──
+        map.put("nbDocuments", documentRepository.countByCoursId(c.getId()));
 
         if (c.getFormation() != null) {
             map.put("formationId",    c.getFormation().getId());

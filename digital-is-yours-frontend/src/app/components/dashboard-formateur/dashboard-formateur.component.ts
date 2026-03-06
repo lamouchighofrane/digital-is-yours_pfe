@@ -63,12 +63,11 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   private editingCoursId: number | null = null;
 
   // ── Modal tab ──────────────────────────────────────────────
-  coursModalTab: 'infos' | 'videos' = 'infos';
+  coursModalTab: 'infos' | 'videos' | 'documents' = 'infos';
 
-  // ── Vidéo — un seul champ videoType + videoUrl par cours ──
-  // (selon diagramme : Cours a videoType: Enum(Local,YouTube) et videoUrl: String)
-  videoType: string | null = null;      // 'LOCAL' | 'YOUTUBE' | null
-  videoUrl: string | null = null;       // URL YouTube ou nom fichier local
+  // ── Vidéo ─────────────────────────────────────────────────
+  videoType: string | null = null;
+  videoUrl: string | null = null;
   videoUploading = false;
   videoUploadProgress = 0;
   videoUploadingName = '';
@@ -78,6 +77,13 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   videoDeleting = false;
   private uploadXhr: XMLHttpRequest | null = null;
   private currentCoursId: number | null = null;
+
+  // ── Documents ──────────────────────────────────────────────
+  documents: any[] = [];
+  docLoading = false;
+  docTotalTaille = 0;
+  docDragOver = false;
+  docUploading: { name: string; progress: number }[] = [];
 
   private api = 'http://localhost:8080/api/formateur';
   private pollingInterval: any = null;
@@ -101,6 +107,8 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);
+    this.uploadXhr?.abort();
+    this.uploadXhr = null;
   }
 
   private headers() {
@@ -141,13 +149,20 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     if (section === 'mes-formations') this.loadFormations();
     if (section === 'profil') this.loadProfil();
     if (section === 'cours') {
-      // Depuis la sidebar : reset la formation pour afficher l'écran de choix
       this.selectedFormation = null;
       this.cours = [];
       this.coursStats = { total: 0, publies: 0, brouillons: 0 };
       this.loadFormations();
     }
     this.closeNotifPanel();
+  }
+
+  // ── Retour à l'écran de choix de formation (depuis gestion cours) ──
+  retourChoixFormation() {
+    this.selectedFormation = null;
+    this.cours = [];
+    this.coursStats = { total: 0, publies: 0, brouillons: 0 };
+    this.cdr.detectChanges();
   }
 
   // ── Chargement ─────────────────────────────────────────────
@@ -184,9 +199,27 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
           this.updateCoursStats();
           this.coursLoading = false;
           this.cdr.detectChanges();
+          // Charger le nbDocuments pour chaque cours depuis l'API
+          this.loadNbDocumentsForAllCours();
         },
         error: () => { this.cours = []; this.coursLoading = false; this.cdr.detectChanges(); }
       });
+  }
+
+  loadNbDocumentsForAllCours() {
+    if (!this.selectedFormation || !this.cours.length) return;
+    this.cours.forEach(cours => {
+      this.http.get<any>(
+        `${this.api}/formations/${this.selectedFormation.id}/cours/${cours.id}/documents`,
+        { headers: this.headers() }
+      ).subscribe({
+        next: (res) => {
+          cours.nbDocuments = (res.documents || []).length;
+          this.cdr.detectChanges();
+        },
+        error: () => { cours.nbDocuments = 0; }
+      });
+    });
   }
 
   updateCoursStats() {
@@ -224,9 +257,12 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         objectifs: cours.objectifs || '',
         statut: cours.statut || 'BROUILLON'
       };
-      // Charger l'état vidéo depuis le cours existant
       this.videoType = cours.videoType || null;
       this.videoUrl  = cours.videoUrl  || null;
+      // Documents : initialiser vide, chargement lazy à l'ouverture de l'onglet
+      this.documents = [];
+      this.docTotalTaille = 0;
+      this.docUploading = [];
     } else {
       this.coursModalMode = 'create';
       this.editingCoursId = null;
@@ -237,9 +273,22 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       };
       this.videoType = null;
       this.videoUrl  = null;
+      this.documents = [];
+      this.docTotalTaille = 0;
+      this.docUploading = [];
     }
     this.showCoursModal = true;
     this.cdr.detectChanges();
+  }
+
+  // Chargement lazy des documents quand on clique sur l'onglet
+  onDocTabClick() {
+    if (this.coursModalMode !== 'create') {
+      this.coursModalTab = 'documents';
+      if (this.documents.length === 0 && !this.docLoading) {
+        this.loadDocuments();
+      }
+    }
   }
 
   saveCours() {
@@ -321,8 +370,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   // ══ VIDÉO ═══════════════════════════════════════════════════
-  // Selon diagramme : Cours.videoType (Enum Local/YouTube) + Cours.videoUrl
-  // Un cours possède UNE vidéo (ou aucune)
 
   onVideoDragOver(event: DragEvent) {
     event.preventDefault();
@@ -377,7 +424,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         const updated = JSON.parse(xhr.responseText);
         this.videoType = updated.videoType;
         this.videoUrl  = updated.videoUrl;
-        // Mettre à jour aussi dans la liste cours
         this.updateCoursInList(updated);
         this.showToast('Vidéo uploadée avec succès !', 'success');
       } else {
@@ -441,7 +487,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         this.videoType = null;
         this.videoUrl  = null;
         this.videoDeleting = false;
-        // Mettre à jour dans la liste
         const c = this.cours.find((x:any) => x.id === this.currentCoursId);
         if (c) { c.videoType = null; c.videoUrl = null; }
         this.showToast('Vidéo supprimée.', 'success');
@@ -458,8 +503,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     const idx = this.cours.findIndex((c:any) => c.id === updated.id);
     if (idx !== -1) this.cours[idx] = { ...this.cours[idx], ...updated };
   }
-
-  // ── Helpers vidéo ──────────────────────────────────────────
 
   extractYoutubeId(url: string): string | null {
     if (!url) return null;
@@ -503,6 +546,212 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.coursToastType = type;
     this.cdr.detectChanges();
     setTimeout(() => { this.coursToast = ''; this.cdr.detectChanges(); }, 3000);
+  }
+
+  // ══ DOCUMENTS ══════════════════════════════════════════════
+
+  loadDocuments(): void {
+    if (!this.currentCoursId || !this.selectedFormation) return;
+    this.docLoading = true;
+    this.http.get<any>(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (res) => {
+        this.documents = (res.documents || []).map((d: any) => ({
+          ...d,
+          _editing: false,
+          _editTitre: d.titre
+        }));
+        this.docTotalTaille = res.totalTaille || 0;
+        this.docLoading = false;
+        // Synchroniser nbDocuments dans la liste des cours
+        const c = this.cours.find(x => x.id === this.currentCoursId);
+        if (c) c.nbDocuments = this.documents.length;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.documents = [];
+        this.docLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  onDocDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.docDragOver = true;
+  }
+
+  onDocDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.docDragOver = false;
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.uploadDocFiles(Array.from(files));
+    }
+  }
+
+  onDocFilesSelected(event: Event): void {
+    const files = (event.target as HTMLInputElement).files;
+    if (files && files.length > 0) {
+      this.uploadDocFiles(Array.from(files));
+      (event.target as HTMLInputElement).value = '';
+    }
+  }
+
+  uploadDocFiles(files: File[]): void {
+    const remaining = 10 - this.documents.length;
+    const filesToUpload = files.slice(0, remaining);
+    for (const file of filesToUpload) {
+      this.uploadSingleDoc(file);
+    }
+  }
+
+  uploadSingleDoc(file: File): void {
+    if (!this.currentCoursId || !this.selectedFormation) return;
+
+    const upEntry = { name: file.name, progress: 0 };
+    this.docUploading.push(upEntry);
+    this.cdr.detectChanges();
+
+    const formData = new FormData();
+    formData.append('fichier', file);
+
+    const token = localStorage.getItem('formateur_token');
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        upEntry.progress = Math.round((e.loaded / e.total) * 100);
+        this.cdr.detectChanges();
+      }
+    };
+
+    xhr.onload = () => {
+      const idx = this.docUploading.indexOf(upEntry);
+      if (idx !== -1) this.docUploading.splice(idx, 1);
+
+      if (xhr.status === 200) {
+        const doc = JSON.parse(xhr.responseText);
+        this.documents.push({ ...doc, _editing: false, _editTitre: doc.titre });
+        this.docTotalTaille += doc.taille || 0;
+        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
+        if (c) c.nbDocuments = (c.nbDocuments || 0) + 1;
+        this.showToast(`"${doc.titre}" ajouté avec succès !`, 'success');
+      } else {
+        try {
+          const err = JSON.parse(xhr.responseText);
+          this.showToast(err.message || 'Erreur lors de l\'upload.', 'error');
+        } catch {
+          this.showToast('Erreur lors de l\'upload.', 'error');
+        }
+      }
+      this.cdr.detectChanges();
+    };
+
+    xhr.onerror = () => {
+      const idx = this.docUploading.indexOf(upEntry);
+      if (idx !== -1) this.docUploading.splice(idx, 1);
+      this.showToast(`Erreur réseau pour "${file.name}".`, 'error');
+      this.cdr.detectChanges();
+    };
+
+    xhr.open('POST',
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/upload`
+    );
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.send(formData);
+  }
+
+  startEditDoc(doc: any): void {
+    doc._editing = true;
+    doc._editTitre = doc.titre;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      const el = document.getElementById('doc-title-' + doc.id) as HTMLInputElement;
+      if (el) { el.focus(); el.select(); }
+    }, 50);
+  }
+
+  saveDocTitre(doc: any): void {
+    const titre = doc._editTitre?.trim();
+    if (!titre) return;
+    this.http.put<any>(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}`,
+      { titre },
+      { headers: this.headers() }
+    ).subscribe({
+      next: (updated) => {
+        doc.titre = updated.titre;
+        doc._editing = false;
+        this.showToast('Titre modifié avec succès !', 'success');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.showToast(err.error?.message || 'Erreur lors de la modification.', 'error');
+      }
+    });
+  }
+
+  deleteDoc(doc: any): void {
+    if (!confirm(`Supprimer le document "${doc.titre}" ?`)) return;
+    this.http.delete(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        this.documents = this.documents.filter(d => d.id !== doc.id);
+        this.docTotalTaille = Math.max(0, this.docTotalTaille - (doc.taille || 0));
+        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
+        if (c && c.nbDocuments > 0) c.nbDocuments--;
+        this.showToast('Document supprimé.', 'success');
+        this.cdr.detectChanges();
+      },
+      error: () => this.showToast('Erreur lors de la suppression.', 'error')
+    });
+  }
+
+  downloadDoc(doc: any): void {
+    if (!this.selectedFormation || !this.currentCoursId) return;
+    this.http.get(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}/download`,
+      { headers: this.headers(), responseType: 'blob' }
+    ).subscribe({
+      next: blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.nomFichier || doc.titre;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => this.showToast('Erreur lors du téléchargement.', 'error')
+    });
+  }
+
+  getDocIconClass(type: string): string {
+    if (!type) return 'doc-icon-other';
+    if (type.includes('pdf'))        return 'doc-icon-pdf';
+    if (type.includes('word') || type.includes('msword')) return 'doc-icon-word';
+    if (type.includes('powerpoint') || type.includes('presentation')) return 'doc-icon-ppt';
+    if (type.includes('excel') || type.includes('sheet')) return 'doc-icon-excel';
+    if (type.includes('image'))      return 'doc-icon-img';
+    if (type.includes('text'))       return 'doc-icon-txt';
+    return 'doc-icon-other';
+  }
+
+  getDocLabel(type: string): string {
+    if (!type) return 'DOC';
+    if (type.includes('pdf'))        return 'PDF';
+    if (type.includes('word') || type.includes('msword')) return 'DOC';
+    if (type.includes('powerpoint') || type.includes('presentation')) return 'PPT';
+    if (type.includes('excel') || type.includes('sheet')) return 'XLS';
+    if (type.includes('image'))      return 'IMG';
+    if (type.includes('text'))       return 'TXT';
+    return 'FILE';
   }
 
   // ── Charger profil ─────────────────────────────────────────
@@ -632,7 +881,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   cancelProfil() {
-    this.loadProfil(); this.profilSuccess = ''; this.profilError = '';
+    this.profilSuccess = ''; this.profilError = '';
     this.setSection('dashboard');
   }
 
