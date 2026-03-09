@@ -63,7 +63,22 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   private editingCoursId: number | null = null;
 
   // ── Modal tab ──────────────────────────────────────────────
-  coursModalTab: 'infos' | 'videos' | 'documents' = 'infos';
+  coursModalTab: 'infos' | 'videos' | 'documents' | 'mini-quiz' = 'infos';
+
+  // ── Mini-quiz ──────────────────────────────────────────────
+  miniQuiz: any = null;
+  miniQuizLoading = false;
+  miniQuizExists = false;
+  miniQuizGenerating = false;
+  showMiniQuizModal = false;
+  miniQuizParams = {
+    nombreQuestions: 5,
+    difficulte: 'MOYEN',
+    inclureDefinitions: true,
+    inclureCasPratiques: true
+  };
+  miniQuizContexte: any = null;
+  miniQuizEditingQuestion: any = null;
 
   // ── Vidéo ─────────────────────────────────────────────────
   videoType: string | null = null;
@@ -281,6 +296,9 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       this.documents = [];
       this.docTotalTaille = 0;
       this.docUploading = [];
+      this.miniQuiz = null;
+      this.miniQuizExists = false;
+      this.miniQuizContexte = null;
     }
     this.showCoursModal = true;
     this.cdr.detectChanges();
@@ -1073,6 +1091,178 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   formatDate(d: string): string {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+
+  // ══ MINI-QUIZ ══════════════════════════════════════════════
+
+  onMiniQuizTabClick() {
+  if (this.coursModalMode !== 'create') {
+    this.coursModalTab = 'mini-quiz';
+    // Réinitialiser pour éviter d'afficher le contexte du cours précédent
+    this.miniQuiz = null;
+    this.miniQuizExists = false;
+    this.miniQuizContexte = null;
+    this.miniQuizLoading = true;
+    this.loadMiniQuiz();
+  }
+}
+
+  loadMiniQuiz() {
+    if (!this.currentCoursId || !this.selectedFormation) return;
+    this.miniQuizLoading = true;
+    this.http.get<any>(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: res => {
+        if (res.exists) {
+          this.miniQuiz = res;
+          this.miniQuizExists = true;
+        } else {
+          this.miniQuiz = null;
+          this.miniQuizExists = false;
+          // Charger le contexte pour la génération
+          this.loadMiniQuizContexte();
+        }
+        this.miniQuizLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.miniQuiz = null;
+        this.miniQuizExists = false;
+        this.miniQuizLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadMiniQuizContexte() {
+    if (!this.currentCoursId || !this.selectedFormation) return;
+    this.http.get<any>(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/contexte`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: ctx => { this.miniQuizContexte = ctx; this.cdr.detectChanges(); },
+      error: () => {}
+    });
+  }
+
+  openGenerateMiniQuiz() {
+  // Recharger le contexte avec le cours actuellement ouvert
+  this.miniQuizContexte = null;
+  this.loadMiniQuizContexte();
+  this.showMiniQuizModal = true;
+  this.miniQuizParams = { nombreQuestions: 5, difficulte: 'MOYEN', inclureDefinitions: true, inclureCasPratiques: true };
+  this.cdr.detectChanges();
+}
+  generateMiniQuiz() {
+    if (!this.currentCoursId || !this.selectedFormation) return;
+    this.miniQuizGenerating = true;
+    this.cdr.detectChanges();
+
+    this.http.post<any>(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/generer-ia`,
+      this.miniQuizParams,
+      { headers: this.headers() }
+    ).subscribe({
+      next: quiz => {
+        this.miniQuiz = quiz;
+        this.miniQuizExists = true;
+        this.miniQuizGenerating = false;
+        this.showMiniQuizModal = false;
+        this.showToast('Mini-quiz généré avec succès par l\'IA !', 'success');
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        this.miniQuizGenerating = false;
+        this.showToast(err.error?.message || 'Erreur lors de la génération.', 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  deleteMiniQuiz() {
+    if (!confirm('Supprimer le mini-quiz de ce cours ?')) return;
+    this.http.delete(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        this.miniQuiz = null;
+        this.miniQuizExists = false;
+        this.loadMiniQuizContexte();
+        this.showToast('Mini-quiz supprimé.', 'success');
+        this.cdr.detectChanges();
+      },
+      error: () => this.showToast('Erreur lors de la suppression.', 'error')
+    });
+  }
+
+  regenerateMiniQuiz() {
+    this.showMiniQuizModal = true;
+    this.miniQuizParams = {
+      nombreQuestions: this.miniQuiz?.nombreQuestions || 5,
+      difficulte: this.miniQuiz?.difficulte || 'MOYEN',
+      inclureDefinitions: this.miniQuiz?.inclureDefinitions ?? true,
+      inclureCasPratiques: this.miniQuiz?.inclureCasPratiques ?? true
+    };
+    this.cdr.detectChanges();
+  }
+
+  // Régénérer directement avec un niveau de difficulté choisi
+  quickRegenerateWithDiff(difficulte: string) {
+    if (!this.currentCoursId || !this.selectedFormation) return;
+    // Même params que le quiz actuel, juste la difficulté change
+    this.miniQuizParams = {
+      nombreQuestions: this.miniQuiz?.nombreQuestions || 5,
+      difficulte: difficulte,
+      inclureDefinitions: this.miniQuiz?.inclureDefinitions ?? true,
+      inclureCasPratiques: this.miniQuiz?.inclureCasPratiques ?? true
+    };
+    this.generateMiniQuiz();
+  }
+
+  startEditQuestion(q: any) {
+    this.miniQuizEditingQuestion = { ...q, _editTexte: q.texte, _editExplication: q.explication };
+    this.cdr.detectChanges();
+  }
+
+  cancelEditQuestion() {
+    this.miniQuizEditingQuestion = null;
+    this.cdr.detectChanges();
+  }
+
+  saveEditQuestion() {
+    if (!this.miniQuizEditingQuestion) return;
+    const qId = this.miniQuizEditingQuestion.id;
+    this.http.put<any>(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/questions/${qId}`,
+      { texte: this.miniQuizEditingQuestion._editTexte, explication: this.miniQuizEditingQuestion._editExplication },
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        const q = this.miniQuiz.questions.find((x: any) => x.id === qId);
+        if (q) {
+          q.texte = this.miniQuizEditingQuestion._editTexte;
+          q.explication = this.miniQuizEditingQuestion._editExplication;
+        }
+        this.miniQuizEditingQuestion = null;
+        this.showToast('Question modifiée.', 'success');
+        this.cdr.detectChanges();
+      },
+      error: () => this.showToast('Erreur lors de la modification.', 'error')
+    });
+  }
+
+  getMiniQuizDifficulteLabel(d: string): string {
+    const m: any = { FACILE: 'Facile', MOYEN: 'Moyen', DIFFICILE: 'Difficile' };
+    return m[d] || d || 'Moyen';
+  }
+
+  getMiniQuizDifficulteColor(d: string): string {
+    if (d === 'FACILE') return '#27ae60';
+    if (d === 'DIFFICILE') return '#8B3A3A';
+    return '#e67e22';
   }
 
   logout() {

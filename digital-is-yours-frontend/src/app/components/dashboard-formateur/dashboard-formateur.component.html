@@ -871,6 +871,24 @@
           </svg>
         </span>
       </button>
+
+      <!-- Onglet Mini-quiz IA -->
+      <button class="cms-tab"
+              [class.cms-tab-active]="coursModalTab==='mini-quiz'"
+              (click)="onMiniQuizTabClick()"
+              [class.cms-tab-disabled]="coursModalMode==='create'"
+              [title]="coursModalMode==='create' ? 'Enregistrez d\'abord le cours' : ''">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="1.8" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        Mini-quiz IA
+        <span *ngIf="miniQuizExists" class="cms-tab-badge-mq">✓</span>
+        <span *ngIf="coursModalMode==='create'" class="cms-tab-lock">
+          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </span>
+      </button>
     </div>
 
     <!-- Body -->
@@ -1181,6 +1199,213 @@
 
       </div><!-- fin onglet documents -->
 
+      <!-- ── Onglet Mini-quiz IA ── -->
+      <div *ngIf="coursModalTab==='mini-quiz'" class="mq-tab-content">
+
+        <!-- Chargement -->
+        <div *ngIf="miniQuizLoading" class="mq-loading">
+          <div class="mq-spinner-wrap">
+            <div class="mq-spinner"></div>
+          </div>
+          <p>Chargement du mini-quiz...</p>
+        </div>
+
+        <!-- ════ ÉTAT VIDE : Aucun quiz ════ -->
+        <div *ngIf="!miniQuizLoading && !miniQuizExists" class="mq-empty-state">
+          <!-- Robot icon -->
+          <div class="mq-robot-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="8" width="18" height="12" rx="3" stroke="#8B3A3A" stroke-width="1.5" fill="rgba(139,58,58,.08)"/>
+              <rect x="7" y="11" width="2.5" height="2.5" rx="0.5" fill="#8B3A3A"/>
+              <rect x="14.5" y="11" width="2.5" height="2.5" rx="0.5" fill="#8B3A3A"/>
+              <rect x="9.5" y="14.5" width="5" height="1.5" rx="0.75" fill="#8B3A3A"/>
+              <line x1="12" y1="8" x2="12" y2="4" stroke="#8B3A3A" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="12" cy="3.5" r="1.5" fill="#8B3A3A"/>
+              <line x1="3" y1="13" x2="0.5" y2="13" stroke="#8B3A3A" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="21" y1="13" x2="23.5" y2="13" stroke="#8B3A3A" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="mq-empty-title">Générez un mini-quiz avec l'IA</h3>
+          <p class="mq-empty-desc">L'IA analysera le contenu de votre cours (description, objectifs, documents) pour créer des questions pertinentes automatiquement.</p>
+
+          <!-- Contenu disponible pour l'analyse -->
+          <div *ngIf="miniQuizContexte" class="mq-context-preview">
+            <div class="mq-ctx-title">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Contenu analysé par l'IA
+            </div>
+            <div class="mq-ctx-items">
+              <div *ngIf="miniQuizContexte.coursTitre" class="mq-ctx-item mq-ctx-ok">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+                Titre du cours : <strong>{{ miniQuizContexte.coursTitre }}</strong>
+              </div>
+              <div *ngIf="miniQuizContexte.coursDescription" class="mq-ctx-item mq-ctx-ok">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+                Description disponible
+              </div>
+              <div *ngIf="miniQuizContexte.coursObjectifs" class="mq-ctx-item mq-ctx-ok">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+                Objectifs pédagogiques définis
+              </div>
+              <div *ngIf="miniQuizContexte.hasVideo" class="mq-ctx-item mq-ctx-ok">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+                Vidéo {{ miniQuizContexte.videoType === 'YOUTUBE' ? 'YouTube' : 'locale' }} associée
+              </div>
+              <div *ngFor="let doc of miniQuizContexte.documents" class="mq-ctx-item mq-ctx-ok">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+                Document : <strong>{{ doc.titre }}</strong>
+              </div>
+              <div *ngIf="!miniQuizContexte.coursDescription && !miniQuizContexte.coursObjectifs && !miniQuizContexte.hasVideo && (!miniQuizContexte.documents || miniQuizContexte.documents.length === 0)"
+                   class="mq-ctx-item mq-ctx-warn">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                Enrichissez votre cours pour de meilleures questions
+              </div>
+            </div>
+          </div>
+
+          <button class="mq-btn-generate" (click)="openGenerateMiniQuiz()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.8" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            Générer le mini-quiz avec l'IA
+          </button>
+        </div>
+
+        <!-- ════ QUIZ EXISTANT ════ -->
+        <div *ngIf="!miniQuizLoading && miniQuizExists && miniQuiz">
+
+          <!-- Header du quiz -->
+          <div class="mq-quiz-header">
+            <div class="mq-quiz-header-left">
+              <div class="mq-quiz-ia-badge">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="1.8" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                Généré par IA
+              </div>
+              <div class="mq-quiz-meta-tags">
+                <!-- Boutons de difficulté cliquables → régénère avec le niveau choisi -->
+                <button class="mq-diff-quick-btn"
+                        [class.mq-diff-quick-active]="miniQuiz.difficulte === 'FACILE'"
+                        (click)="quickRegenerateWithDiff('FACILE')"
+                        title="Régénérer en Facile">
+                  🌱 Facile
+                </button>
+                <button class="mq-diff-quick-btn"
+                        [class.mq-diff-quick-active]="miniQuiz.difficulte === 'MOYEN'"
+                        (click)="quickRegenerateWithDiff('MOYEN')"
+                        title="Régénérer en Moyen">
+                  ⚡ Moyen
+                </button>
+                <button class="mq-diff-quick-btn"
+                        [class.mq-diff-quick-active]="miniQuiz.difficulte === 'DIFFICILE'"
+                        (click)="quickRegenerateWithDiff('DIFFICILE')"
+                        title="Régénérer en Difficile">
+                  🔥 Difficile
+                </button>
+                <span class="mq-meta-tag mq-meta-tag-neutral">
+                  {{ miniQuiz.nombreQuestions }} question{{ miniQuiz.nombreQuestions > 1 ? 's' : '' }}
+                </span>
+                <span class="mq-meta-tag mq-meta-tag-neutral">
+                  Note passage : {{ miniQuiz.notePassage }}%
+                </span>
+                <span *ngIf="miniQuiz.inclureDefinitions" class="mq-meta-tag mq-meta-tag-teal">Définitions</span>
+                <span *ngIf="miniQuiz.inclureCasPratiques" class="mq-meta-tag mq-meta-tag-teal">Cas pratiques</span>
+              </div>
+            </div>
+            <div class="mq-quiz-header-actions">
+              <button class="mq-btn-regen" (click)="regenerateMiniQuiz()" title="Régénérer avec l'IA">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="1.8" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Régénérer
+              </button>
+              <button class="mq-btn-del" (click)="deleteMiniQuiz()" title="Supprimer le quiz">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Liste des questions -->
+          <div class="mq-questions-list">
+            <div *ngFor="let q of miniQuiz.questions; let qi = index" class="mq-question-card">
+
+              <!-- Header question -->
+              <div class="mq-q-header">
+                <div class="mq-q-num">Q{{ qi + 1 }}</div>
+
+                <!-- Mode lecture -->
+                <div *ngIf="!miniQuizEditingQuestion || miniQuizEditingQuestion.id !== q.id" class="mq-q-body">
+                  <p class="mq-q-texte">{{ q.texte }}</p>
+                  <div class="mq-q-options">
+                    <div *ngFor="let opt of q.options" class="mq-q-option" [class.mq-q-option-correct]="opt.estCorrecte">
+                      <span class="mq-q-opt-label" [class.mq-q-opt-correct-label]="opt.estCorrecte">{{ opt.ordre }}</span>
+                      <span class="mq-q-opt-text">{{ opt.texte }}</span>
+                      <svg *ngIf="opt.estCorrecte" width="14" height="14" fill="none" stroke="#27ae60" viewBox="0 0 24 24" style="flex-shrink:0;margin-left:auto">
+                        <path stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div *ngIf="q.explication" class="mq-q-explication">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ q.explication }}
+                  </div>
+                </div>
+
+                <!-- Mode édition -->
+                <div *ngIf="miniQuizEditingQuestion && miniQuizEditingQuestion.id === q.id" class="mq-q-body mq-q-edit-body">
+                  <div class="mq-edit-field">
+                    <label class="mq-edit-label">Question</label>
+                    <textarea class="mq-edit-textarea" [(ngModel)]="miniQuizEditingQuestion._editTexte" rows="2" placeholder="Texte de la question..."></textarea>
+                  </div>
+                  <div class="mq-edit-field">
+                    <label class="mq-edit-label">Explication de la bonne réponse</label>
+                    <textarea class="mq-edit-textarea" [(ngModel)]="miniQuizEditingQuestion._editExplication" rows="2" placeholder="Explication..."></textarea>
+                  </div>
+                </div>
+
+                <!-- Actions question -->
+                <div class="mq-q-actions">
+                  <button *ngIf="!miniQuizEditingQuestion || miniQuizEditingQuestion.id !== q.id"
+                          class="mq-q-action-btn" (click)="startEditQuestion(q)" title="Modifier">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                  </button>
+                  <button *ngIf="miniQuizEditingQuestion && miniQuizEditingQuestion.id === q.id"
+                          class="mq-q-action-btn mq-q-action-save" (click)="saveEditQuestion()" title="Sauvegarder">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </button>
+                  <button *ngIf="miniQuizEditingQuestion && miniQuizEditingQuestion.id === q.id"
+                          class="mq-q-action-btn" (click)="cancelEditQuestion()" title="Annuler">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer info -->
+          <div class="mq-quiz-footer-info">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Généré le {{ formatDate(miniQuiz.dateCreation) }} · {{ miniQuiz.nombreTentatives }} tentative{{ miniQuiz.nombreTentatives > 1 ? 's' : '' }} autorisée{{ miniQuiz.nombreTentatives > 1 ? 's' : '' }}
+          </div>
+        </div>
+
+      </div><!-- fin onglet mini-quiz -->
+
     </div>
 
     <!-- Footer -->
@@ -1190,6 +1415,185 @@
         <span *ngIf="coursSaving" class="cms-spinner"></span>
         <svg *ngIf="!coursSaving" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M5 13l4 4L19 7"/></svg>
         {{ coursSaving ? 'Enregistrement...' : (coursModalMode==='create' ? 'Créer et continuer' : 'Enregistrer') }}
+      </button>
+      <button *ngIf="coursModalTab==='mini-quiz' && !miniQuizExists && !miniQuizLoading"
+              class="mq-btn-generate-footer" (click)="openGenerateMiniQuiz()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="1.8" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        Générer avec l'IA
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL GÉNÉRATION MINI-QUIZ IA ═══ -->
+<div *ngIf="showMiniQuizModal" class="mq-gen-backdrop" (click)="!miniQuizGenerating && (showMiniQuizModal=false)">
+  <div class="mq-gen-sheet" (click)="$event.stopPropagation()">
+
+    <!-- Header avec animation robot -->
+    <div class="mq-gen-header">
+      <button *ngIf="!miniQuizGenerating" class="mq-gen-close" (click)="showMiniQuizModal=false">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <div class="mq-gen-robot" [class.mq-gen-robot-animating]="miniQuizGenerating">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="8" width="18" height="12" rx="3" fill="#8B3A3A" fill-opacity="0.12" stroke="#8B3A3A" stroke-width="1.4"/>
+          <rect x="7" y="11" width="2.5" height="2.5" rx="0.6" fill="#8B3A3A"/>
+          <rect x="14.5" y="11" width="2.5" height="2.5" rx="0.6" fill="#8B3A3A"/>
+          <rect x="9.5" y="15" width="5" height="1.4" rx="0.7" fill="#8B3A3A"/>
+          <line x1="12" y1="8" x2="12" y2="4.5" stroke="#8B3A3A" stroke-width="1.4" stroke-linecap="round"/>
+          <circle cx="12" cy="3.5" r="1.5" fill="#8B3A3A"/>
+          <line x1="3" y1="13" x2="1" y2="13" stroke="#8B3A3A" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="21" y1="13" x2="23" y2="13" stroke="#8B3A3A" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 class="mq-gen-title">Générer automatiquement le mini-quiz</h2>
+      <p class="mq-gen-subtitle">L'IA va analyser le contenu de votre cours</p>
+
+      <!-- Animation de génération -->
+      <div *ngIf="miniQuizGenerating" class="mq-gen-progress-wrap">
+        <div class="mq-gen-progress-bar">
+          <div class="mq-gen-progress-fill"></div>
+        </div>
+        <p class="mq-gen-progress-text">
+          <span class="mq-gen-dots">Génération en cours</span>
+          <span style="font-size:11px;color:#9B8B6E;margin-left:6px">30-60 secondes</span>
+        </p>
+      </div>
+    </div>
+
+    <div *ngIf="!miniQuizGenerating" class="mq-gen-body">
+
+      <!-- Contenu analysé -->
+      <div *ngIf="miniQuizContexte" class="mq-gen-section">
+        <h3 class="mq-gen-section-title">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+          </svg>
+          Contenu analysé
+        </h3>
+        <div class="mq-gen-content-list">
+          <div *ngIf="miniQuizContexte.coursTitre" class="mq-gen-content-item">
+            <div class="mq-gen-ci-icon mq-gen-ci-ok">
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <span class="mq-gen-ci-text">Cours : <strong>{{ miniQuizContexte.coursTitre }}</strong></span>
+          </div>
+          <div *ngIf="miniQuizContexte.coursDescription" class="mq-gen-content-item">
+            <div class="mq-gen-ci-icon mq-gen-ci-ok">
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <span class="mq-gen-ci-text">Description du cours</span>
+          </div>
+          <div *ngIf="miniQuizContexte.coursObjectifs" class="mq-gen-content-item">
+            <div class="mq-gen-ci-icon mq-gen-ci-ok">
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <span class="mq-gen-ci-text">Objectifs pédagogiques</span>
+          </div>
+          <div *ngIf="miniQuizContexte.hasVideo" class="mq-gen-content-item">
+            <div class="mq-gen-ci-icon mq-gen-ci-ok">
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <span class="mq-gen-ci-text">Vidéo {{ miniQuizContexte.videoType === 'YOUTUBE' ? 'YouTube' : 'locale' }}</span>
+          </div>
+          <div *ngFor="let doc of miniQuizContexte.documents" class="mq-gen-content-item">
+            <div class="mq-gen-ci-icon mq-gen-ci-ok">
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <span class="mq-gen-ci-text">Document : <strong>{{ doc.titre }}</strong></span>
+          </div>
+        </div>
+        <p class="mq-gen-analyze-note">L'IA analysera ces contenus pour extraire les concepts clés.</p>
+      </div>
+
+      <!-- Paramètres du quiz -->
+      <div class="mq-gen-section">
+        <h3 class="mq-gen-section-title">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+          </svg>
+          Paramètres du quiz
+        </h3>
+
+        <!-- Nombre de questions -->
+        <div class="mq-gen-param">
+          <div class="mq-gen-param-header">
+            <label class="mq-gen-param-label">Nombre de questions</label>
+            <span class="mq-gen-param-val">{{ miniQuizParams.nombreQuestions }}</span>
+          </div>
+          <input type="range" class="mq-gen-slider" min="3" max="10" step="1"
+                 [(ngModel)]="miniQuizParams.nombreQuestions">
+          <div class="mq-gen-slider-labels">
+            <span>3</span>
+            <span>10</span>
+          </div>
+        </div>
+
+        <!-- Niveau de difficulté -->
+        <div class="mq-gen-param">
+          <label class="mq-gen-param-label">Niveau de difficulté</label>
+          <div class="mq-gen-diff-tabs">
+            <button class="mq-gen-diff-btn"
+                    [class.mq-gen-diff-active-facile]="miniQuizParams.difficulte==='FACILE'"
+                    (click)="miniQuizParams.difficulte='FACILE'">
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 3v1m0 16v1M4.22 4.22l.71.71M18.36 18.36l.71.71M3 12H2m20 0h-1M4.93 19.07l.71-.71M18.36 5.64l.71-.71"/></svg>
+              Facile
+            </button>
+            <button class="mq-gen-diff-btn"
+                    [class.mq-gen-diff-active-moyen]="miniQuizParams.difficulte==='MOYEN'"
+                    (click)="miniQuizParams.difficulte='MOYEN'">
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Moyen
+            </button>
+            <button class="mq-gen-diff-btn"
+                    [class.mq-gen-diff-active-difficile]="miniQuizParams.difficulte==='DIFFICILE'"
+                    (click)="miniQuizParams.difficulte='DIFFICILE'">
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
+              Difficile
+            </button>
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="mq-gen-options">
+          <label class="mq-gen-checkbox" (click)="miniQuizParams.inclureDefinitions = !miniQuizParams.inclureDefinitions">
+            <div class="mq-gen-cb" [class.mq-gen-cb-checked]="miniQuizParams.inclureDefinitions">
+              <svg *ngIf="miniQuizParams.inclureDefinitions" width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <span class="mq-gen-cb-label">Inclure questions de définition</span>
+          </label>
+          <label class="mq-gen-checkbox" (click)="miniQuizParams.inclureCasPratiques = !miniQuizParams.inclureCasPratiques">
+            <div class="mq-gen-cb" [class.mq-gen-cb-checked]="miniQuizParams.inclureCasPratiques">
+              <svg *ngIf="miniQuizParams.inclureCasPratiques" width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <span class="mq-gen-cb-label">Inclure cas pratiques</span>
+          </label>
+        </div>
+
+        <!-- Temps estimé -->
+        <div class="mq-gen-time-hint">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+            <path stroke-width="1.8" d="M12 6v6l4 2"/>
+          </svg>
+          Temps de génération estimé : 30-60 secondes
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div class="mq-gen-footer">
+      <button *ngIf="!miniQuizGenerating" class="mq-gen-cancel" (click)="showMiniQuizModal=false">Annuler</button>
+      <button class="mq-gen-submit" (click)="generateMiniQuiz()" [disabled]="miniQuizGenerating">
+        <span *ngIf="miniQuizGenerating" class="mq-gen-loading-dots">
+          <span></span><span></span><span></span>
+        </span>
+        <svg *ngIf="!miniQuizGenerating" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="1.8" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        {{ miniQuizGenerating ? 'Génération en cours...' : 'Générer le quiz' }}
       </button>
     </div>
   </div>
