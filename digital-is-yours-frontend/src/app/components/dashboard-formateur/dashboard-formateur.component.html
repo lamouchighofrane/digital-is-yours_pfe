@@ -1204,15 +1204,12 @@
 
         <!-- Chargement -->
         <div *ngIf="miniQuizLoading" class="mq-loading">
-          <div class="mq-spinner-wrap">
-            <div class="mq-spinner"></div>
-          </div>
+          <div class="mq-spinner-wrap"><div class="mq-spinner"></div></div>
           <p>Chargement du mini-quiz...</p>
         </div>
 
         <!-- ════ ÉTAT VIDE : Aucun quiz ════ -->
         <div *ngIf="!miniQuizLoading && !miniQuizExists" class="mq-empty-state">
-          <!-- Robot icon -->
           <div class="mq-robot-icon">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
               <rect x="3" y="8" width="18" height="12" rx="3" stroke="#8B3A3A" stroke-width="1.5" fill="rgba(139,58,58,.08)"/>
@@ -1226,20 +1223,16 @@
             </svg>
           </div>
           <h3 class="mq-empty-title">Générez un mini-quiz avec l'IA</h3>
-          <p class="mq-empty-desc">L'IA analysera le contenu de votre cours (description, objectifs, documents) pour créer des questions pertinentes automatiquement.</p>
-
-          <!-- Contenu disponible pour l'analyse -->
+          <p class="mq-empty-desc">L'IA analysera le contenu de votre cours pour créer des questions pertinentes automatiquement.</p>
           <div *ngIf="miniQuizContexte" class="mq-context-preview">
             <div class="mq-ctx-title">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               Contenu analysé par l'IA
             </div>
             <div class="mq-ctx-items">
               <div *ngIf="miniQuizContexte.coursTitre" class="mq-ctx-item mq-ctx-ok">
                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
-                Titre du cours : <strong>{{ miniQuizContexte.coursTitre }}</strong>
+                Titre : <strong>{{ miniQuizContexte.coursTitre }}</strong>
               </div>
               <div *ngIf="miniQuizContexte.coursDescription" class="mq-ctx-item mq-ctx-ok">
                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
@@ -1253,18 +1246,8 @@
                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
                 Vidéo {{ miniQuizContexte.videoType === 'YOUTUBE' ? 'YouTube' : 'locale' }} associée
               </div>
-              <div *ngFor="let doc of miniQuizContexte.documents" class="mq-ctx-item mq-ctx-ok">
-                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12l2 2 4-4"/></svg>
-                Document : <strong>{{ doc.titre }}</strong>
-              </div>
-              <div *ngIf="!miniQuizContexte.coursDescription && !miniQuizContexte.coursObjectifs && !miniQuizContexte.hasVideo && (!miniQuizContexte.documents || miniQuizContexte.documents.length === 0)"
-                   class="mq-ctx-item mq-ctx-warn">
-                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                Enrichissez votre cours pour de meilleures questions
-              </div>
             </div>
           </div>
-
           <button class="mq-btn-generate" (click)="openGenerateMiniQuiz()">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-width="1.8" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
@@ -1286,36 +1269,20 @@
                 Généré par IA
               </div>
               <div class="mq-quiz-meta-tags">
-                <!-- Boutons de difficulté cliquables → régénère avec le niveau choisi -->
-                <button class="mq-diff-quick-btn"
-                        [class.mq-diff-quick-active]="miniQuiz.difficulte === 'FACILE'"
-                        (click)="quickRegenerateWithDiff('FACILE')"
-                        title="Régénérer en Facile">
-                  🌱 Facile
-                </button>
-                <button class="mq-diff-quick-btn"
-                        [class.mq-diff-quick-active]="miniQuiz.difficulte === 'MOYEN'"
-                        (click)="quickRegenerateWithDiff('MOYEN')"
-                        title="Régénérer en Moyen">
-                  ⚡ Moyen
-                </button>
-                <button class="mq-diff-quick-btn"
-                        [class.mq-diff-quick-active]="miniQuiz.difficulte === 'DIFFICILE'"
-                        (click)="quickRegenerateWithDiff('DIFFICILE')"
-                        title="Régénérer en Difficile">
-                  🔥 Difficile
-                </button>
-                <span class="mq-meta-tag mq-meta-tag-neutral">
-                  {{ miniQuiz.nombreQuestions }} question{{ miniQuiz.nombreQuestions > 1 ? 's' : '' }}
-                </span>
-                <span class="mq-meta-tag mq-meta-tag-neutral">
-                  Note passage : {{ miniQuiz.notePassage }}%
-                </span>
+                <button class="mq-diff-quick-btn" [class.mq-diff-quick-active]="(miniQuiz.niveauDifficulte||miniQuiz.difficulte)==='FACILE'" (click)="quickRegenerateWithDiff('FACILE')" title="Régénérer en Facile">🌱 Facile</button>
+                <button class="mq-diff-quick-btn" [class.mq-diff-quick-active]="(miniQuiz.niveauDifficulte||miniQuiz.difficulte)==='MOYEN'" (click)="quickRegenerateWithDiff('MOYEN')" title="Régénérer en Moyen">⚡ Moyen</button>
+                <button class="mq-diff-quick-btn" [class.mq-diff-quick-active]="(miniQuiz.niveauDifficulte||miniQuiz.difficulte)==='DIFFICILE'" (click)="quickRegenerateWithDiff('DIFFICILE')" title="Régénérer en Difficile">🔥 Difficile</button>
+                <span class="mq-meta-tag mq-meta-tag-neutral">{{ (miniQuiz.questions?.length || miniQuiz.nombreQuestions || 0) }} question{{ (miniQuiz.questions?.length || miniQuiz.nombreQuestions || 0) > 1 ? 's' : '' }}</span>
+                <span class="mq-meta-tag mq-meta-tag-neutral">Note passage : {{ miniQuiz.notePassage }}%</span>
                 <span *ngIf="miniQuiz.inclureDefinitions" class="mq-meta-tag mq-meta-tag-teal">Définitions</span>
                 <span *ngIf="miniQuiz.inclureCasPratiques" class="mq-meta-tag mq-meta-tag-teal">Cas pratiques</span>
               </div>
             </div>
             <div class="mq-quiz-header-actions">
+              <button class="mq-btn-add-question" (click)="openAddQuestionModal()" title="Ajouter une question manuellement">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Ajouter
+              </button>
               <button class="mq-btn-regen" (click)="regenerateMiniQuiz()" title="Régénérer avec l'IA">
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-width="1.8" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -1330,69 +1297,96 @@
             </div>
           </div>
 
-          <!-- Liste des questions -->
+          <!-- ════ LISTE DES QUESTIONS ════ -->
           <div class="mq-questions-list">
             <div *ngFor="let q of miniQuiz.questions; let qi = index" class="mq-question-card">
 
-              <!-- Header question -->
-              <div class="mq-q-header">
-                <div class="mq-q-num">Q{{ qi + 1 }}</div>
-
-                <!-- Mode lecture -->
-                <div *ngIf="!miniQuizEditingQuestion || miniQuizEditingQuestion.id !== q.id" class="mq-q-body">
-                  <p class="mq-q-texte">{{ q.texte }}</p>
-                  <div class="mq-q-options">
-                    <div *ngFor="let opt of q.options" class="mq-q-option" [class.mq-q-option-correct]="opt.estCorrecte">
-                      <span class="mq-q-opt-label" [class.mq-q-opt-correct-label]="opt.estCorrecte">{{ opt.ordre }}</span>
-                      <span class="mq-q-opt-text">{{ opt.texte }}</span>
-                      <svg *ngIf="opt.estCorrecte" width="14" height="14" fill="none" stroke="#27ae60" viewBox="0 0 24 24" style="flex-shrink:0;margin-left:auto">
-                        <path stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
+              <!-- ── MODE LECTURE ── -->
+              <div *ngIf="mqEditingId !== q.id">
+                <div class="mq-q-header">
+                  <div class="mq-q-num">Q{{ qi + 1 }}</div>
+                  <div class="mq-q-body">
+                    <p class="mq-q-texte">{{ q.texte }}</p>
+                    <div class="mq-q-options">
+                      <div *ngFor="let opt of q.options" class="mq-q-option" [class.mq-q-option-correct]="opt.estCorrecte">
+                        <span class="mq-q-opt-label" [class.mq-q-opt-correct-label]="opt.estCorrecte">{{ opt.ordre }}</span>
+                        <span class="mq-q-opt-text">{{ opt.texte }}</span>
+                        <svg *ngIf="opt.estCorrecte" width="14" height="14" fill="none" stroke="#27ae60" viewBox="0 0 24 24" style="flex-shrink:0;margin-left:auto">
+                          <path stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                      </div>
                     </div>
+                    <div *ngIf="q.explication" class="mq-q-explication">
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      {{ q.explication }}
+                    </div>
+                    <span *ngIf="!q.genereParIA" class="mq-badge-manuel">✏️ Manuel</span>
                   </div>
-                  <div *ngIf="q.explication" class="mq-q-explication">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    {{ q.explication }}
+                  <div class="mq-q-actions">
+                    <button class="mq-q-action-btn mq-q-action-edit" (click)="startEditQuestion(q)" title="Modifier">
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <button class="mq-q-action-btn mq-q-action-del" (click)="confirmDeleteQuestion(q, qi)" title="Supprimer">
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
                   </div>
-                </div>
-
-                <!-- Mode édition -->
-                <div *ngIf="miniQuizEditingQuestion && miniQuizEditingQuestion.id === q.id" class="mq-q-body mq-q-edit-body">
-                  <div class="mq-edit-field">
-                    <label class="mq-edit-label">Question</label>
-                    <textarea class="mq-edit-textarea" [(ngModel)]="miniQuizEditingQuestion._editTexte" rows="2" placeholder="Texte de la question..."></textarea>
-                  </div>
-                  <div class="mq-edit-field">
-                    <label class="mq-edit-label">Explication de la bonne réponse</label>
-                    <textarea class="mq-edit-textarea" [(ngModel)]="miniQuizEditingQuestion._editExplication" rows="2" placeholder="Explication..."></textarea>
-                  </div>
-                </div>
-
-                <!-- Actions question -->
-                <div class="mq-q-actions">
-                  <button *ngIf="!miniQuizEditingQuestion || miniQuizEditingQuestion.id !== q.id"
-                          class="mq-q-action-btn" (click)="startEditQuestion(q)" title="Modifier">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                  </button>
-                  <button *ngIf="miniQuizEditingQuestion && miniQuizEditingQuestion.id === q.id"
-                          class="mq-q-action-btn mq-q-action-save" (click)="saveEditQuestion()" title="Sauvegarder">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                    </svg>
-                  </button>
-                  <button *ngIf="miniQuizEditingQuestion && miniQuizEditingQuestion.id === q.id"
-                          class="mq-q-action-btn" (click)="cancelEditQuestion()" title="Annuler">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                  </button>
                 </div>
               </div>
-            </div>
+
+              <!-- ── MODE ÉDITION ── -->
+              <div *ngIf="mqEditingId === q.id && mqEditForm" class="mq-edit-zone">
+                <div class="mq-edit-header">
+                  <span class="mq-q-num">Q{{ qi + 1 }}</span>
+                  <span class="mq-edit-badge">Mode édition</span>
+                  <div class="mq-q-actions" style="margin-left:auto">
+                    <button class="mq-q-action-btn mq-q-action-save" (click)="saveEditQuestion()" [disabled]="mqSaving" title="Enregistrer">
+                      <span *ngIf="mqSaving" class="mq-mini-spinner"></span>
+                      <svg *ngIf="!mqSaving" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    </button>
+                    <button class="mq-q-action-btn" (click)="cancelEditQuestion()" [disabled]="mqSaving" title="Annuler">
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div *ngIf="mqEditError" class="mq-edit-error">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                  {{ mqEditError }}
+                </div>
+                <!-- Texte question -->
+                <div class="mq-edit-field">
+                  <label class="mq-edit-label">Texte de la question <span class="mq-req">*</span></label>
+                  <textarea class="mq-edit-textarea" [(ngModel)]="mqEditForm.texte" rows="3" placeholder="Rédigez votre question..."></textarea>
+                </div>
+                <!-- Options -->
+                <div class="mq-edit-field">
+                  <label class="mq-edit-label">Options de réponse <span class="mq-req">*</span>
+                    <span class="mq-edit-hint"> — cliquez sur le cercle pour marquer la bonne réponse</span>
+                  </label>
+                  <div class="mq-edit-options">
+                    <div *ngFor="let opt of mqEditForm.options; let oi = index"
+                         class="mq-edit-option" [class.mq-edit-option-correct]="opt.estCorrecte">
+                      <button type="button" class="mq-edit-opt-radio"
+                              [class.mq-edit-opt-radio-active]="opt.estCorrecte"
+                              (click)="setCorrectOption(oi)"
+                              [title]="opt.estCorrecte ? 'Bonne réponse' : 'Marquer comme bonne réponse'">
+                        <svg *ngIf="opt.estCorrecte" width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                      </button>
+                      <span class="mq-edit-opt-letter">{{ opt.ordre }}</span>
+                      <input type="text" class="mq-edit-opt-input"
+                             [(ngModel)]="opt.texte"
+                             [placeholder]="'Option ' + opt.ordre + '...'"
+                             [class.mq-edit-opt-input-correct]="opt.estCorrecte">
+                    </div>
+                  </div>
+                </div>
+                <!-- Explication -->
+                <div class="mq-edit-field">
+                  <label class="mq-edit-label">Explication de la bonne réponse</label>
+                  <textarea class="mq-edit-textarea" [(ngModel)]="mqEditForm.explication" rows="2" placeholder="Expliquez pourquoi cette réponse est correcte..."></textarea>
+                </div>
+              </div>
+
+            </div><!-- fin *ngFor questions -->
           </div>
 
           <!-- Footer info -->
@@ -1594,6 +1588,96 @@
           <path stroke-width="1.8" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
         </svg>
         {{ miniQuizGenerating ? 'Génération en cours...' : 'Générer le quiz' }}
+      </button>
+    </div>
+  </div>
+</div>
+<!-- ═══ MODAL CONFIRMATION SUPPRESSION QUESTION ═══ -->
+<div *ngIf="showDeleteQuestionModal" class="mq-modal-backdrop" (click)="!mqDeleteSaving && (showDeleteQuestionModal=false)">
+  <div class="mq-modal-box mq-modal-delete" (click)="$event.stopPropagation()">
+    <div class="mq-modal-icon mq-modal-icon-danger">
+      <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+    </div>
+    <h3 class="mq-modal-title">Supprimer cette question ?</h3>
+    <p class="mq-modal-desc" *ngIf="mqDeleteQuestion">
+      <strong>Q{{ mqDeleteQuestionIndex + 1 }} :</strong> {{ mqDeleteQuestion.texte | slice:0:80 }}{{ mqDeleteQuestion.texte?.length > 80 ? '...' : '' }}
+    </p>
+    <p class="mq-modal-warn">Cette action est irréversible.</p>
+    <div class="mq-modal-actions">
+      <button class="mq-modal-btn-cancel" (click)="showDeleteQuestionModal=false" [disabled]="mqDeleteSaving">Annuler</button>
+      <button class="mq-modal-btn-danger" (click)="deleteQuestion()" [disabled]="mqDeleteSaving">
+        <span *ngIf="mqDeleteSaving" class="mq-mini-spinner mq-mini-spinner-white"></span>
+        <svg *ngIf="!mqDeleteSaving" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        {{ mqDeleteSaving ? 'Suppression...' : 'Supprimer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL AJOUT QUESTION MANUELLE ═══ -->
+<div *ngIf="showAddQuestionModal" class="mq-modal-backdrop" (click)="!mqAddSaving && (showAddQuestionModal=false)">
+  <div class="mq-modal-box mq-modal-add" (click)="$event.stopPropagation()">
+    <div class="mq-modal-header">
+      <h3 class="mq-modal-title-add">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Ajouter une question
+      </h3>
+      <button class="mq-modal-close" (click)="showAddQuestionModal=false" [disabled]="mqAddSaving">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="mq-modal-body">
+      <!-- Erreur -->
+      <div *ngIf="mqAddError" class="mq-edit-error">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        {{ mqAddError }}
+      </div>
+
+      <!-- Texte de la question -->
+      <div class="mq-edit-field">
+        <label class="mq-edit-label">Texte de la question <span class="mq-req">*</span></label>
+        <textarea class="mq-edit-textarea" [(ngModel)]="mqNewQuestion.texte" rows="3" placeholder="Rédigez votre question..."></textarea>
+      </div>
+
+      <!-- Options de réponse -->
+      <div class="mq-edit-field">
+        <label class="mq-edit-label">Options de réponse <span class="mq-req">*</span>
+          <span class="mq-edit-hint"> — cliquez sur le cercle pour marquer la bonne réponse</span>
+        </label>
+        <div class="mq-edit-options">
+          <div *ngFor="let opt of mqNewQuestion.options; let oi = index"
+               class="mq-edit-option" [class.mq-edit-option-correct]="opt.estCorrecte">
+            <button type="button" class="mq-edit-opt-radio"
+                    [class.mq-edit-opt-radio-active]="opt.estCorrecte"
+                    (click)="setNewCorrectOption(oi)"
+                    [title]="opt.estCorrecte ? 'Bonne réponse' : 'Marquer comme bonne réponse'">
+              <svg *ngIf="opt.estCorrecte" width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+            </button>
+            <span class="mq-edit-opt-letter">{{ opt.ordre }}</span>
+            <input type="text" class="mq-edit-opt-input"
+                   [(ngModel)]="opt.texte"
+                   [placeholder]="'Option ' + opt.ordre + '...'"
+                   [class.mq-edit-opt-input-correct]="opt.estCorrecte">
+          </div>
+        </div>
+      </div>
+
+      <!-- Explication -->
+      <div class="mq-edit-field">
+        <label class="mq-edit-label">Explication de la bonne réponse <span class="mq-opt-label">(optionnel)</span></label>
+        <textarea class="mq-edit-textarea" [(ngModel)]="mqNewQuestion.explication" rows="2" placeholder="Expliquez pourquoi cette réponse est correcte..."></textarea>
+      </div>
+    </div>
+
+    <div class="mq-modal-footer">
+      <button class="mq-modal-btn-cancel" (click)="showAddQuestionModal=false" [disabled]="mqAddSaving">Annuler</button>
+      <button class="mq-modal-btn-primary" (click)="submitAddQuestion()" [disabled]="mqAddSaving">
+        <span *ngIf="mqAddSaving" class="mq-mini-spinner mq-mini-spinner-white"></span>
+        <svg *ngIf="!mqAddSaving" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        {{ mqAddSaving ? 'Ajout en cours...' : 'Ajouter la question' }}
       </button>
     </div>
   </div>

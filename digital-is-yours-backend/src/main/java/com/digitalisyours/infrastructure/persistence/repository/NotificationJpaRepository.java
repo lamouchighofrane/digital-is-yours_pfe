@@ -27,4 +27,9 @@ public interface NotificationJpaRepository extends JpaRepository<NotificationEnt
     @Transactional
     @Query("UPDATE NotificationEntity n SET n.lu = true WHERE n.user = :user")
     void marquerToutesLues(@Param("user") UserEntity user);
+    // Supprimer toutes les notifs d'un user (avant suppression du user)
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM NotificationEntity n WHERE n.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 }

@@ -1706,3 +1706,567 @@
   color: #5b21b6 !important;
   font-weight: 700 !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   US-019 — ÉDITION INLINE QUESTIONS MINI-QUIZ
+══════════════════════════════════════════════════════════════ */
+
+/* Carte en mode édition */
+.mq-question-editing {
+  border-color: rgba(139,58,58,0.3) !important;
+  box-shadow: 0 0 0 3px rgba(139,58,58,0.08) !important;
+}
+
+/* Bouton "Ajouter" dans la barre d'actions du quiz header */
+.mq-btn-add-question {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(39,174,96,0.3);
+  background: rgba(39,174,96,0.06);
+  color: #27ae60;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mq-btn-add-question:hover {
+  background: rgba(39,174,96,0.12);
+  border-color: #27ae60;
+}
+
+/* Zone édition options avec radio */
+.mq-edit-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.mq-edit-option-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.mq-edit-radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #E8E3DB;
+  background: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  padding: 0;
+  color: #FFF;
+}
+.mq-edit-radio:hover { border-color: #27ae60; background: rgba(39,174,96,0.08); }
+.mq-edit-radio-correct {
+  border-color: #27ae60 !important;
+  background: #27ae60 !important;
+}
+.mq-edit-opt-letter {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #F5F1EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6B5F52;
+  flex-shrink: 0;
+}
+.mq-edit-opt-input {
+  flex: 1;
+  border: 1.5px solid #E8E3DB;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  color: #1A1612;
+  outline: none;
+  background: #FFF;
+  transition: border-color 0.15s;
+}
+.mq-edit-opt-input:focus { border-color: #8B3A3A; }
+
+/* Actions du formulaire d'édition inline */
+.mq-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(139,58,58,0.1);
+  background: rgba(139,58,58,0.03);
+}
+.mq-edit-btn-cancel {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #E8E3DB;
+  background: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B5F52;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mq-edit-btn-cancel:hover { background: #F5F1EB; border-color: #C8BEB2; }
+.mq-edit-btn-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+.mq-edit-btn-save {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #8B3A3A;
+  color: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 3px 10px rgba(139,58,58,0.25);
+}
+.mq-edit-btn-save:hover:not(:disabled) { background: #a84848; }
+.mq-edit-btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Spinner inline */
+.mq-edit-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #FFF;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+/* Message d'erreur inline */
+.mq-edit-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  background: #fce4e4;
+  border: 1px solid rgba(139,58,58,0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #8B3A3A;
+  font-weight: 500;
+  margin: 8px 16px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   US-019 — MODAL CONFIRMATION SUPPRESSION QUESTION
+══════════════════════════════════════════════════════════════ */
+.mq-delete-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,22,18,0.55);
+  backdrop-filter: blur(6px);
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+.mq-delete-modal {
+  background: #FFF;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 28px 24px;
+  box-shadow: 0 24px 60px rgba(26,22,18,0.22);
+  text-align: center;
+  animation: modalUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mq-delete-modal-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: #fef2f2;
+  border: 2px solid rgba(220,38,38,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.mq-delete-modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1A1612;
+  margin: 0 0 10px;
+}
+.mq-delete-modal-sub {
+  font-size: 13px;
+  color: #6B5F52;
+  font-style: italic;
+  background: #FAFAF7;
+  border: 1px solid #E8E3DB;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.mq-delete-modal-warn {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 600;
+  margin: 0 0 24px;
+}
+.mq-delete-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.mq-delete-modal-cancel {
+  flex: 1;
+  padding: 11px;
+  border-radius: 10px;
+  border: 1.5px solid #E8E3DB;
+  background: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B5F52;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mq-delete-modal-cancel:hover { background: #F5F1EB; border-color: #C8BEB2; }
+.mq-delete-modal-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+.mq-delete-modal-confirm {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px;
+  border-radius: 10px;
+  border: none;
+  background: #dc2626;
+  color: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 4px 14px rgba(220,38,38,0.3);
+}
+.mq-delete-modal-confirm:hover:not(:disabled) { background: #b91c1c; }
+.mq-delete-modal-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════════════════════
+   US-019 — MODAL AJOUT QUESTION
+══════════════════════════════════════════════════════════════ */
+.mq-add-modal {
+  background: #FFF;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 28px 70px rgba(26,22,18,0.22);
+  animation: modalUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.mq-add-modal::-webkit-scrollbar { width: 4px; }
+.mq-add-modal::-webkit-scrollbar-thumb { background: #E8E3DB; border-radius: 2px; }
+.mq-add-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #E8E3DB;
+  background: #FAFAF7;
+  border-radius: 20px 20px 0 0;
+  position: relative;
+}
+.mq-add-modal-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fce4e4, rgba(139,58,58,0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mq-add-modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1612;
+  margin: 0 0 2px;
+}
+.mq-add-modal-sub {
+  font-size: 12px;
+  color: #6B5F52;
+  margin: 0;
+}
+.mq-add-modal-body {
+  padding: 20px 24px;
+}
+.mq-add-textarea {
+  min-height: 80px;
+}
+.mq-add-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #E8E3DB;
+}
+.mq-add-submit {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px;
+  border-radius: 10px;
+  border: none;
+  background: #8B3A3A;
+  color: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(139,58,58,0.28);
+}
+.mq-add-submit:hover:not(:disabled) { background: #a84848; transform: translateY(-1px); }
+.mq-add-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* ═══════════════════════════════════════════════════════════
+   MINI-QUIZ — Nouveaux styles édition inline + modals
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Bouton Ajouter dans le header du quiz ──────────────── */
+.mq-btn-add-question {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 7px; border: 1.5px solid #4A7C7E;
+  background: rgba(74,124,126,.08); color: #4A7C7E;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all .18s; white-space: nowrap;
+}
+.mq-btn-add-question:hover {
+  background: #4A7C7E; color: #fff;
+}
+
+/* ── Bouton modifier bleu et supprimer rouge dans la liste ── */
+.mq-q-action-edit { color: #4A7C7E !important; }
+.mq-q-action-edit:hover { background: rgba(74,124,126,.15) !important; }
+.mq-q-action-del  { color: #8B3A3A !important; }
+.mq-q-action-del:hover  { background: rgba(139,58,58,.12) !important; }
+
+/* ── Zone édition inline ────────────────────────────────── */
+.mq-edit-zone {
+  padding: 14px 14px 10px;
+  background: #fafaf8;
+  border: 1.5px solid #4A7C7E;
+  border-radius: 10px;
+  margin: 2px 0;
+}
+
+.mq-edit-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid rgba(74,124,126,.15);
+}
+.mq-edit-badge {
+  font-size: 11px; font-weight: 600; padding: 2px 8px;
+  background: rgba(74,124,126,.12); color: #4A7C7E;
+  border-radius: 20px; letter-spacing: .3px;
+}
+
+.mq-edit-error {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 7px; margin-bottom: 10px;
+  background: rgba(139,58,58,.08); color: #8B3A3A;
+  font-size: 12px; font-weight: 500; border: 1px solid rgba(139,58,58,.2);
+}
+
+.mq-edit-field { margin-bottom: 12px; }
+
+.mq-edit-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: #3D2C2C; margin-bottom: 5px;
+}
+.mq-edit-hint {
+  font-weight: 400; color: #9B8B6E; font-size: 11px;
+}
+.mq-req { color: #8B3A3A; }
+.mq-opt-label { font-weight: 400; color: #9B8B6E; font-size: 11px; }
+
+.mq-edit-textarea {
+  width: 100%; padding: 8px 10px; border-radius: 7px;
+  border: 1.5px solid #e8e0d6; background: #fff;
+  font-size: 13px; color: #3D2C2C; resize: vertical;
+  font-family: inherit; line-height: 1.5;
+  transition: border-color .15s; box-sizing: border-box;
+}
+.mq-edit-textarea:focus { outline: none; border-color: #4A7C7E; }
+
+/* ── Options édition ────────────────────────────────────── */
+.mq-edit-options { display: flex; flex-direction: column; gap: 7px; }
+
+.mq-edit-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 8px;
+  border: 1.5px solid #e8e0d6; background: #fff;
+  transition: all .15s;
+}
+.mq-edit-option-correct {
+  border-color: rgba(39,174,96,.4) !important;
+  background: rgba(39,174,96,.05) !important;
+}
+
+.mq-edit-opt-radio {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid #d4cbbf; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; padding: 0;
+}
+.mq-edit-opt-radio-active {
+  border-color: #27ae60 !important;
+  background: #27ae60 !important;
+  color: #fff;
+}
+.mq-edit-opt-radio:hover { border-color: #27ae60; }
+
+.mq-edit-opt-letter {
+  width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0;
+  background: rgba(155,139,110,.15); color: #9B8B6E;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.mq-edit-opt-input {
+  flex: 1; padding: 5px 8px; border-radius: 6px;
+  border: 1px solid transparent; background: transparent;
+  font-size: 13px; color: #3D2C2C; font-family: inherit;
+  transition: all .15s;
+}
+.mq-edit-opt-input:focus {
+  outline: none; border-color: #4A7C7E; background: #fff;
+}
+.mq-edit-opt-input-correct { font-weight: 600; color: #27ae60; }
+
+/* ── Mini spinner inline ────────────────────────────────── */
+.mq-mini-spinner {
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  display: inline-block; animation: mq-spin .6s linear infinite;
+  flex-shrink: 0;
+}
+.mq-mini-spinner-white { border-color: rgba(255,255,255,.5); border-top-color: transparent; }
+@keyframes mq-spin { to { transform: rotate(360deg); } }
+
+/* ── Badge Manuel ────────────────────────────────────────── */
+.mq-badge-manuel {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600; padding: 2px 7px;
+  background: rgba(155,139,110,.12); color: #9B8B6E;
+  border-radius: 20px; margin-top: 5px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODALS SUPPRESSION ET AJOUT
+   ═══════════════════════════════════════════════════════════ */
+
+.mq-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(30,20,10,.45);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9000; padding: 20px; animation: mq-backdrop-in .15s ease;
+}
+@keyframes mq-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+.mq-modal-box {
+  background: #fff; border-radius: 16px; width: 100%; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  animation: mq-modal-in .2s cubic-bezier(.34,1.56,.64,1);
+  overflow: hidden;
+}
+.mq-modal-add { max-width: 520px; }
+@keyframes mq-modal-in {
+  from { opacity: 0; transform: scale(.92) translateY(16px); }
+  to   { opacity: 1; transform: scale(1)  translateY(0);    }
+}
+
+/* Modal suppression */
+.mq-modal-delete { padding: 32px 28px 24px; text-align: center; }
+.mq-modal-icon {
+  width: 60px; height: 60px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.mq-modal-icon-danger { background: rgba(139,58,58,.1); color: #8B3A3A; }
+.mq-modal-title { font-size: 17px; font-weight: 700; color: #3D2C2C; margin: 0 0 8px; }
+.mq-modal-desc {
+  font-size: 13px; color: #6B5B5B; margin: 0 0 6px;
+  background: #f8f4ef; padding: 8px 12px; border-radius: 8px; line-height: 1.5;
+}
+.mq-modal-warn { font-size: 12px; color: #9B8B6E; margin: 4px 0 20px; }
+
+.mq-modal-actions {
+  display: flex; gap: 10px; justify-content: center;
+}
+.mq-modal-btn-cancel {
+  padding: 9px 20px; border-radius: 8px; border: 1.5px solid #e8e0d6;
+  background: #fff; color: #6B5B5B; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.mq-modal-btn-cancel:hover { background: #f5f0ea; }
+.mq-modal-btn-danger {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 20px; border-radius: 8px; border: none;
+  background: #8B3A3A; color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.mq-modal-btn-danger:hover { background: #7a3030; }
+.mq-modal-btn-danger:disabled, .mq-modal-btn-cancel:disabled { opacity: .6; cursor: not-allowed; }
+
+/* Modal ajout */
+.mq-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px; border-bottom: 1px solid #f0ebe4;
+}
+.mq-modal-title-add {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 700; color: #3D2C2C; margin: 0;
+}
+.mq-modal-close {
+  width: 28px; height: 28px; border-radius: 7px; border: none;
+  background: rgba(155,139,110,.1); color: #9B8B6E;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; flex-shrink: 0;
+}
+.mq-modal-close:hover { background: rgba(139,58,58,.12); color: #8B3A3A; }
+
+.mq-modal-body {
+  padding: 18px 20px; max-height: 55vh; overflow-y: auto;
+}
+.mq-modal-footer {
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding: 14px 20px; border-top: 1px solid #f0ebe4;
+  background: #faf8f5;
+}
+.mq-modal-btn-primary {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 20px; border-radius: 8px; border: none;
+  background: #4A7C7E; color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.mq-modal-btn-primary:hover { background: #3d6b6d; }
+.mq-modal-btn-primary:disabled { opacity: .6; cursor: not-allowed; }

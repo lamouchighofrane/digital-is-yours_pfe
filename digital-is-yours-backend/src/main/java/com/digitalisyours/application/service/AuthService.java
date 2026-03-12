@@ -7,7 +7,7 @@ import com.digitalisyours.domain.model.User;
 import com.digitalisyours.domain.port.in.*;
 import com.digitalisyours.domain.port.out.EmailSenderPort;
 import com.digitalisyours.domain.port.out.UserRepositoryPort;
-import com.digitalisyours.infrastructure.persistence.EmailVerificationTokenRepository;
+
 import com.digitalisyours.infrastructure.web.dto.request.*;
 import com.digitalisyours.infrastructure.web.dto.response.AuthResponse;
 import com.digitalisyours.infrastructure.web.dto.response.MessageResponse;
@@ -29,7 +29,7 @@ public class AuthService implements RegisterUserUseCase, LoginUserUseCase,
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final EmailVerificationTokenRepository tokenRepository;
+
 
     // ─── REGISTER ─────────────────────────────────────────────────────────────
     @Override

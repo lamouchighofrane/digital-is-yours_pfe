@@ -57,7 +57,10 @@ export class AdminDashboardComponent implements OnInit {
   loadUsers() {
     this.isLoading = true;
     this.http.get<any[]>(`${this.api}/users`, { headers: this.headers() })
-      .subscribe({ next: d => { this.users = d; this.isLoading = false; }, error: () => this.isLoading = false });
+      .subscribe({
+        next: d => { this.users = d; this.isLoading = false; },
+        error: () => this.isLoading = false
+      });
   }
 
   // ── Filtrage ──────────────────────────────────────────────
@@ -121,7 +124,21 @@ export class AdminDashboardComponent implements OnInit {
       .subscribe({
         next: r => {
           this.showCreateModal = false;
-          this.loadUsers(); this.loadStats();
+
+          // ✅ FIX BUG 4 : Si le backend retourne l'utilisateur créé, l'ajouter directement
+          // dans this.users sans attendre le rechargement réseau
+          if (r && r.id) {
+            // Le backend retourne l'utilisateur complet → ajout immédiat
+            this.users = [r, ...this.users];
+            this.loadStats();
+          } else {
+            // Le backend retourne juste {message: "..."} → délai pour laisser MySQL committer
+            setTimeout(() => {
+              this.loadUsers();
+              this.loadStats();
+            }, 300);
+          }
+
           this.showToast(r.message || `${this.getCreateTitle()} — succès`);
         },
         error: e => this.createError = e.error?.message || 'Erreur lors de la création'

@@ -65,7 +65,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   // ── Modal tab ──────────────────────────────────────────────
   coursModalTab: 'infos' | 'videos' | 'documents' | 'mini-quiz' = 'infos';
 
-  // ── Mini-quiz ──────────────────────────────────────────────
+  // ── Mini-quiz : état général ───────────────────────────────
   miniQuiz: any = null;
   miniQuizLoading = false;
   miniQuizExists = false;
@@ -78,7 +78,33 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     inclureCasPratiques: true
   };
   miniQuizContexte: any = null;
-  miniQuizEditingQuestion: any = null;
+
+  // ── Mini-quiz : édition inline question ───────────────────
+  mqEditingId: number | null = null;
+  mqEditForm: any = null;
+  mqSaving = false;
+  mqEditError = '';
+
+  // ── Mini-quiz : suppression avec confirmation ─────────────
+  showDeleteQuestionModal = false;
+  mqDeleteQuestion: any = null;
+  mqDeleteQuestionIndex = 0;
+  mqDeleteSaving = false;
+
+  // ── Mini-quiz : ajout manuel d'une question ───────────────
+  showAddQuestionModal = false;
+  mqAddSaving = false;
+  mqAddError = '';
+  mqNewQuestion: any = {
+    texte: '',
+    explication: '',
+    options: [
+      { ordre: 'A', texte: '', estCorrecte: true  },
+      { ordre: 'B', texte: '', estCorrecte: false },
+      { ordre: 'C', texte: '', estCorrecte: false },
+      { ordre: 'D', texte: '', estCorrecte: false },
+    ]
+  };
 
   // ── Vidéo ─────────────────────────────────────────────────
   videoType: string | null = null;
@@ -177,7 +203,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.closeNotifPanel();
   }
 
-  // ── Retour à l'écran de choix de formation (depuis gestion cours) ──
   retourChoixFormation() {
     this.selectedFormation = null;
     this.cours = [];
@@ -219,7 +244,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
           this.updateCoursStats();
           this.coursLoading = false;
           this.cdr.detectChanges();
-          // Charger le nbDocuments pour chaque cours depuis l'API
           this.loadNbDocumentsForAllCours();
         },
         error: () => { this.cours = []; this.coursLoading = false; this.cdr.detectChanges(); }
@@ -265,6 +289,15 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.videoUploadProgress = 0;
     this.videoDragOver = false;
 
+    // Réinitialiser les états US-019
+    this.mqEditingId = null;
+    this.mqEditForm = null;
+    this.mqEditError = '';
+    this.showDeleteQuestionModal = false;
+    this.mqDeleteQuestion = null;
+    this.showAddQuestionModal = false;
+    this.mqAddError = '';
+
     if (cours) {
       this.coursModalMode = 'edit';
       this.editingCoursId = cours.id;
@@ -279,7 +312,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       };
       this.videoType = cours.videoType || null;
       this.videoUrl  = cours.videoUrl  || null;
-      // Documents : initialiser vide, chargement lazy à l'ouverture de l'onglet
       this.documents = [];
       this.docTotalTaille = 0;
       this.docUploading = [];
@@ -304,7 +336,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Chargement lazy des documents quand on clique sur l'onglet
   onDocTabClick() {
     if (this.coursModalMode !== 'create') {
       this.coursModalTab = 'documents';
@@ -406,7 +437,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   onCoursDragLeave(event: DragEvent) {
-    // Ne réinitialiser que si on quitte vraiment la zone
     const related = event.relatedTarget as HTMLElement;
     if (!related || !related.closest?.('.cours-card')) {
       this.dragOverIndex = null;
@@ -424,8 +454,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Réordonner le tableau local (sur la liste complète this.cours)
-    // Trouver les vraies positions dans this.cours depuis filteredCours
     const draggedCours = this.filteredCours[dragIdx];
     const targetCours  = this.filteredCours[dropIndex];
 
@@ -437,18 +465,15 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Déplacer dans le tableau
     const newCours = [...this.cours];
     const [removed] = newCours.splice(realDragIdx, 1);
     newCours.splice(realTargetIdx, 0, removed);
 
-    // Recalculer les ordres
     newCours.forEach((c, idx) => c.ordre = idx + 1);
     this.cours = newCours;
     this.resetDragState();
     this.cdr.detectChanges();
 
-    // Appel API pour persister
     this.sauvegarderOrdre();
   }
 
@@ -474,7 +499,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       next: () => this.showToast('Ordre des cours mis à jour !', 'success'),
       error: () => {
         this.showToast('Erreur lors de la sauvegarde de l\'ordre.', 'error');
-        this.loadCours(); // Recharger en cas d'échec
+        this.loadCours();
       }
     });
   }
@@ -684,7 +709,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         }));
         this.docTotalTaille = res.totalTaille || 0;
         this.docLoading = false;
-        // Synchroniser nbDocuments dans la liste des cours
         const c = this.cours.find(x => x.id === this.currentCoursId);
         if (c) c.nbDocuments = this.documents.length;
         this.cdr.detectChanges();
@@ -1096,16 +1120,19 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   // ══ MINI-QUIZ ══════════════════════════════════════════════
 
   onMiniQuizTabClick() {
-  if (this.coursModalMode !== 'create') {
-    this.coursModalTab = 'mini-quiz';
-    // Réinitialiser pour éviter d'afficher le contexte du cours précédent
-    this.miniQuiz = null;
-    this.miniQuizExists = false;
-    this.miniQuizContexte = null;
-    this.miniQuizLoading = true;
-    this.loadMiniQuiz();
+    if (this.coursModalMode !== 'create') {
+      this.coursModalTab = 'mini-quiz';
+      // Réinitialiser les états US-019
+      this.mqEditingId = null;
+      this.mqEditForm = null;
+      this.mqEditError = '';
+      this.miniQuiz = null;
+      this.miniQuizExists = false;
+      this.miniQuizContexte = null;
+      this.miniQuizLoading = true;
+      this.loadMiniQuiz();
+    }
   }
-}
 
   loadMiniQuiz() {
     if (!this.currentCoursId || !this.selectedFormation) return;
@@ -1121,7 +1148,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         } else {
           this.miniQuiz = null;
           this.miniQuizExists = false;
-          // Charger le contexte pour la génération
           this.loadMiniQuizContexte();
         }
         this.miniQuizLoading = false;
@@ -1148,13 +1174,13 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   openGenerateMiniQuiz() {
-  // Recharger le contexte avec le cours actuellement ouvert
-  this.miniQuizContexte = null;
-  this.loadMiniQuizContexte();
-  this.showMiniQuizModal = true;
-  this.miniQuizParams = { nombreQuestions: 5, difficulte: 'MOYEN', inclureDefinitions: true, inclureCasPratiques: true };
-  this.cdr.detectChanges();
-}
+    this.miniQuizContexte = null;
+    this.loadMiniQuizContexte();
+    this.showMiniQuizModal = true;
+    this.miniQuizParams = { nombreQuestions: 5, difficulte: 'MOYEN', inclureDefinitions: true, inclureCasPratiques: true };
+    this.cdr.detectChanges();
+  }
+
   generateMiniQuiz() {
     if (!this.currentCoursId || !this.selectedFormation) return;
     this.miniQuizGenerating = true;
@@ -1170,6 +1196,9 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         this.miniQuizExists = true;
         this.miniQuizGenerating = false;
         this.showMiniQuizModal = false;
+        // Réinitialiser les états d'édition US-019
+        this.mqEditingId = null;
+        this.mqEditForm = null;
         this.showToast('Mini-quiz généré avec succès par l\'IA !', 'success');
         this.cdr.detectChanges();
       },
@@ -1190,6 +1219,9 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       next: () => {
         this.miniQuiz = null;
         this.miniQuizExists = false;
+        // Réinitialiser les états US-019
+        this.mqEditingId = null;
+        this.mqEditForm = null;
         this.loadMiniQuizContexte();
         this.showToast('Mini-quiz supprimé.', 'success');
         this.cdr.detectChanges();
@@ -1202,17 +1234,15 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.showMiniQuizModal = true;
     this.miniQuizParams = {
       nombreQuestions: this.miniQuiz?.nombreQuestions || 5,
-      difficulte: this.miniQuiz?.difficulte || 'MOYEN',
+      difficulte: this.miniQuiz?.niveauDifficulte || this.miniQuiz?.difficulte || 'MOYEN',
       inclureDefinitions: this.miniQuiz?.inclureDefinitions ?? true,
       inclureCasPratiques: this.miniQuiz?.inclureCasPratiques ?? true
     };
     this.cdr.detectChanges();
   }
 
-  // Régénérer directement avec un niveau de difficulté choisi
   quickRegenerateWithDiff(difficulte: string) {
     if (!this.currentCoursId || !this.selectedFormation) return;
-    // Même params que le quiz actuel, juste la difficulté change
     this.miniQuizParams = {
       nombreQuestions: this.miniQuiz?.nombreQuestions || 5,
       difficulte: difficulte,
@@ -1222,37 +1252,8 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.generateMiniQuiz();
   }
 
-  startEditQuestion(q: any) {
-    this.miniQuizEditingQuestion = { ...q, _editTexte: q.texte, _editExplication: q.explication };
-    this.cdr.detectChanges();
-  }
+  // ── US-019 : Édition inline question ──────────────────────
 
-  cancelEditQuestion() {
-    this.miniQuizEditingQuestion = null;
-    this.cdr.detectChanges();
-  }
-
-  saveEditQuestion() {
-    if (!this.miniQuizEditingQuestion) return;
-    const qId = this.miniQuizEditingQuestion.id;
-    this.http.put<any>(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/questions/${qId}`,
-      { texte: this.miniQuizEditingQuestion._editTexte, explication: this.miniQuizEditingQuestion._editExplication },
-      { headers: this.headers() }
-    ).subscribe({
-      next: () => {
-        const q = this.miniQuiz.questions.find((x: any) => x.id === qId);
-        if (q) {
-          q.texte = this.miniQuizEditingQuestion._editTexte;
-          q.explication = this.miniQuizEditingQuestion._editExplication;
-        }
-        this.miniQuizEditingQuestion = null;
-        this.showToast('Question modifiée.', 'success');
-        this.cdr.detectChanges();
-      },
-      error: () => this.showToast('Erreur lors de la modification.', 'error')
-    });
-  }
 
   getMiniQuizDifficulteLabel(d: string): string {
     const m: any = { FACILE: 'Facile', MOYEN: 'Moyen', DIFFICILE: 'Difficile' };
@@ -1264,6 +1265,212 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     if (d === 'DIFFICILE') return '#8B3A3A';
     return '#e67e22';
   }
+
+  // ── US-019 : Édition inline ────────────────────────────────
+
+  startEditQuestion019(q: any) {
+    this.mqEditingId  = q.id;
+    this.mqEditError  = '';
+    this.mqEditForm = {
+      id:          q.id,
+      texte:       q.texte        || '',
+      explication: q.explication  || '',
+      options:     (q.options || []).map((o: any) => ({ ...o }))
+    };
+    this.cdr.detectChanges();
+  }
+
+  cancelEditQuestion019() {
+    this.mqEditingId = null;
+    this.mqEditForm  = null;
+    this.mqEditError = '';
+    this.cdr.detectChanges();
+  }
+
+  setCorrectOption019(index: number) {
+    if (!this.mqEditForm?.options) return;
+    this.mqEditForm.options.forEach((o: any, i: number) => { o.estCorrecte = (i === index); });
+    this.cdr.detectChanges();
+  }
+
+  saveEditQuestion019() {
+    if (!this.mqEditForm || !this.currentCoursId || !this.selectedFormation) return;
+    if (!this.mqEditForm.texte?.trim()) { this.mqEditError = 'Le texte de la question est obligatoire.'; return; }
+    for (const opt of this.mqEditForm.options) {
+      if (!opt.texte?.trim()) { this.mqEditError = 'Toutes les options doivent avoir un texte.'; return; }
+    }
+    const nbCorrects = this.mqEditForm.options.filter((o: any) => o.estCorrecte).length;
+    if (nbCorrects !== 1) { this.mqEditError = 'Exactement 1 option doit être la bonne réponse.'; return; }
+
+    this.mqSaving    = true;
+    this.mqEditError = '';
+    this.cdr.detectChanges();
+
+    const qId     = this.mqEditForm.id;
+    const formId  = this.selectedFormation.id;
+    const coursId = this.currentCoursId;
+    const baseUrl = `${this.api}/formations/${formId}/cours/${coursId}/mini-quiz`;
+
+    this.http.put<any>(
+      `${baseUrl}/questions/${qId}`,
+      { texte: this.mqEditForm.texte.trim(), explication: this.mqEditForm.explication?.trim() || '' },
+      { headers: this.headers() }
+    ).subscribe({
+      next: (updatedQuiz) => {
+        const optionUpdates = this.mqEditForm.options.map((opt: any) =>
+          this.http.patch<any>(
+            `${baseUrl}/questions/${qId}/options/${opt.id}`,
+            { texte: opt.texte.trim() },
+            { headers: this.headers() }
+          ).toPromise().catch(() => null)
+        );
+        Promise.all(optionUpdates).then(() => {
+          const correctOpt = this.mqEditForm.options.find((o: any) => o.estCorrecte);
+          this.http.patch<any>(
+            `${baseUrl}/questions/${qId}/bonne-reponse/${correctOpt.id}`,
+            {},
+            { headers: this.headers() }
+          ).subscribe({
+            next: (finalQuiz) => {
+              this.miniQuiz    = finalQuiz;
+              this.mqEditingId = null;
+              this.mqEditForm  = null;
+              this.mqSaving    = false;
+              this.showToast('Question mise à jour avec succès !', 'success');
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              this.miniQuiz    = updatedQuiz;
+              this.mqEditingId = null;
+              this.mqEditForm  = null;
+              this.mqSaving    = false;
+              this.showToast('Modifications partiellement enregistrées.', 'success');
+              this.cdr.detectChanges();
+            }
+          });
+        });
+      },
+      error: (err) => {
+        this.mqSaving    = false;
+        this.mqEditError = err.error?.message || 'Erreur lors de la sauvegarde.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── US-019 : Suppression avec confirmation ─────────────────
+
+  confirmDeleteQuestion019(q: any, index: number) {
+    this.mqDeleteQuestion        = q;
+    this.mqDeleteQuestionIndex   = index;
+    this.showDeleteQuestionModal = true;
+    this.cdr.detectChanges();
+  }
+
+  deleteQuestion019() {
+    if (!this.mqDeleteQuestion || !this.currentCoursId || !this.selectedFormation) return;
+    this.mqDeleteSaving = true;
+    this.cdr.detectChanges();
+    const qId = this.mqDeleteQuestion.id;
+    this.http.delete<any>(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/questions/${qId}`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: () => {
+        if (this.miniQuiz?.questions) {
+          this.miniQuiz.questions = this.miniQuiz.questions.filter((q: any) => q.id !== qId);
+          this.miniQuiz.questions.forEach((q: any, i: number) => q.ordre = i + 1);
+          this.miniQuiz.nbQuestions = this.miniQuiz.questions.length;
+        }
+        this.showDeleteQuestionModal = false;
+        this.mqDeleteSaving          = false;
+        this.mqDeleteQuestion        = null;
+        if (this.miniQuiz?.questions?.length === 0) {
+          this.miniQuizExists = false;
+          this.miniQuiz       = null;
+        }
+        this.showToast('Question supprimée.', 'success');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.mqDeleteSaving = false;
+        this.showToast(err.error?.message || 'Erreur lors de la suppression.', 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── US-019 : Ajout manuel ──────────────────────────────────
+
+  openAddQuestionModal() {
+    this.mqNewQuestion = {
+      texte: '', explication: '',
+      options: [
+        { ordre: 'A', texte: '', estCorrecte: true  },
+        { ordre: 'B', texte: '', estCorrecte: false },
+        { ordre: 'C', texte: '', estCorrecte: false },
+        { ordre: 'D', texte: '', estCorrecte: false },
+      ]
+    };
+    this.mqAddError           = '';
+    this.showAddQuestionModal = true;
+    this.cdr.detectChanges();
+  }
+
+  setNewCorrectOption(index: number) {
+    this.mqNewQuestion.options.forEach((o: any, i: number) => { o.estCorrecte = (i === index); });
+    this.cdr.detectChanges();
+  }
+
+  submitAddQuestion() {
+    if (!this.currentCoursId || !this.selectedFormation) return;
+    if (!this.mqNewQuestion.texte?.trim()) { this.mqAddError = 'Le texte de la question est obligatoire.'; return; }
+    for (const opt of this.mqNewQuestion.options) {
+      if (!opt.texte?.trim()) { this.mqAddError = 'Toutes les options doivent avoir un texte.'; return; }
+    }
+    const nbCorrects = this.mqNewQuestion.options.filter((o: any) => o.estCorrecte).length;
+    if (nbCorrects !== 1) { this.mqAddError = 'Sélectionnez exactement 1 bonne réponse.'; return; }
+
+    this.mqAddSaving = true;
+    this.mqAddError  = '';
+    this.cdr.detectChanges();
+
+    const payload = {
+      texte:       this.mqNewQuestion.texte.trim(),
+      explication: this.mqNewQuestion.explication?.trim() || '',
+      options:     this.mqNewQuestion.options.map((o: any) => ({
+        ordre: o.ordre, texte: o.texte.trim(), estCorrecte: o.estCorrecte
+      }))
+    };
+
+    this.http.post<any>(
+      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/questions`,
+      payload,
+      { headers: this.headers() }
+    ).subscribe({
+      next: (updatedQuiz) => {
+        this.miniQuiz             = updatedQuiz;
+        this.miniQuizExists       = true;
+        this.mqAddSaving          = false;
+        this.showAddQuestionModal = false;
+        this.showToast('Question ajoutée avec succès !', 'success');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.mqAddSaving = false;
+        this.mqAddError  = err.error?.message || 'Erreur lors de l\'ajout.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── Aliases sans suffixe (appelés depuis le HTML) ────────
+  startEditQuestion(q: any)            { this.startEditQuestion019(q); }
+  cancelEditQuestion()                 { this.cancelEditQuestion019(); }
+  saveEditQuestion()                   { this.saveEditQuestion019(); }
+  setCorrectOption(index: number)      { this.setCorrectOption019(index); }
+  confirmDeleteQuestion(q: any, i: number) { this.confirmDeleteQuestion019(q, i); }
+  deleteQuestion()                     { this.deleteQuestion019(); }
 
   logout() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);

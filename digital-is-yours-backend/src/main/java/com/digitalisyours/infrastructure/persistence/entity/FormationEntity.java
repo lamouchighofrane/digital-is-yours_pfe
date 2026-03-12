@@ -1,11 +1,9 @@
 package com.digitalisyours.infrastructure.persistence.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -17,6 +15,8 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = "competences")   // ← FIX StackOverflow
+@ToString(exclude = "competences")            // ← FIX StackOverflow
 public class FormationEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,11 +53,11 @@ public class FormationEntity {
     @JoinColumn(name = "categorie_id")
     private CategorieEntity categorie;
 
-    // ★★★ AJOUT : Relation avec Formateur ★★★
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "formateur_id")
     private UserEntity formateur;
 
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "formation_competences",

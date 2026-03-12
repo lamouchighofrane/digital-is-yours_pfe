@@ -1,9 +1,10 @@
 package com.digitalisyours.infrastructure.web.controller;
 
 
-import com.digitalisyours.domain.model.EmailVerificationToken;
+
 import com.digitalisyours.domain.port.in.*;
 import com.digitalisyours.infrastructure.persistence.EmailVerificationTokenRepository;
+import com.digitalisyours.infrastructure.persistence.entity.EmailVerificationTokenEntity;
 import com.digitalisyours.infrastructure.persistence.entity.UserEntity;
 import com.digitalisyours.infrastructure.persistence.repository.UserJpaRepository;
 import com.digitalisyours.infrastructure.web.dto.request.*;
@@ -87,7 +88,7 @@ public class AuthController {
     @GetMapping("/verify-email")
     public ResponseEntity<?> verifyEmail(@RequestParam String token) {
         try {
-            EmailVerificationToken verifToken = tokenRepository
+            EmailVerificationTokenEntity verifToken = tokenRepository
                     .findByToken(token)
                     .orElseThrow(() -> new RuntimeException("Lien invalide"));
 

@@ -3,10 +3,7 @@ package com.digitalisyours.infrastructure.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,6 +14,8 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = "formations")   // ← FIX StackOverflow
+@ToString(exclude = "formations")            // ← FIX StackOverflow
 public class CompetenceEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,26 +1,20 @@
 package com.digitalisyours.infrastructure.web.controller;
 
 
-import com.digitalisyours.domain.model.Role;
-import com.digitalisyours.infrastructure.persistence.entity.CategorieEntity;
-import com.digitalisyours.infrastructure.persistence.entity.FormationEntity;
-import com.digitalisyours.infrastructure.persistence.entity.NotificationEntity;
-import com.digitalisyours.infrastructure.persistence.entity.UserEntity;
-import com.digitalisyours.infrastructure.persistence.repository.CategorieJpaRepository;
-import com.digitalisyours.infrastructure.persistence.repository.FormationJpaRepository;
-import com.digitalisyours.infrastructure.persistence.repository.NotificationJpaRepository;
-import com.digitalisyours.infrastructure.persistence.repository.UserJpaRepository;
+import com.digitalisyours.domain.model.Formation;
+import com.digitalisyours.domain.model.User;
+import com.digitalisyours.domain.port.in.FormationUseCase;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/admin/formations")
@@ -28,335 +22,140 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "http://localhost:4200")
 @Slf4j
 public class FormationController {
-    private final FormationJpaRepository formationRepository;
-    private final CategorieJpaRepository categorieRepository;
-    private final UserJpaRepository userRepository;
-    private final NotificationJpaRepository notifRepository;
+    private final FormationUseCase formationUseCase;
 
-    // ══ STATS ════════════════════════════════════════════════════
     @GetMapping("/stats")
     public ResponseEntity<?> getStats() {
-        return ResponseEntity.ok(Map.of(
-                "total",      formationRepository.countAll(),
-                "publiees",   formationRepository.countPubliees(),
-                "brouillons", formationRepository.countBrouillons()
-        ));
+        return ResponseEntity.ok(formationUseCase.getStats());
     }
 
-    // ══ LISTER TOUS LES FORMATEURS ACTIFS ════════════════════════
     @GetMapping("/formateurs")
-    public ResponseEntity<List<Map<String, Object>>> getAllFormateurs() {
-        List<UserEntity> formateurs = userRepository.findByRoleAndActiveTrue(Role.FORMATEUR);
-        return ResponseEntity.ok(
-                formateurs.stream().map(this::formateurToMap).collect(Collectors.toList())
-        );
+    public ResponseEntity<List<User>> getAllFormateurs() {
+        return ResponseEntity.ok(formationUseCase.getAllFormateurs());
     }
 
-    // ══ LISTER TOUTES LES FORMATIONS ══════════════════════════════
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getAllFormations() {
-        List<FormationEntity> formations = formationRepository.findAllWithCategorie();
-        return ResponseEntity.ok(
-                formations.stream().map(this::toResponse).collect(Collectors.toList())
-        );
+    public ResponseEntity<List<Formation>> getAllFormations() {
+        return ResponseEntity.ok(formationUseCase.getAllFormations());
     }
 
-    // ══ RÉCUPÉRER UNE FORMATION ═══════════════════════════════════
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Long id) {
-        return formationRepository.findById(id)
-                .map(f -> ResponseEntity.ok(toResponse(f)))
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            return ResponseEntity.ok(formationUseCase.getFormationById(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    // ══ CRÉER ════════════════════════════════════════════════════
     @PostMapping
     public ResponseEntity<?> createFormation(@RequestBody Map<String, Object> payload) {
-        log.info("Création d'une nouvelle formation");
-
-        String titre = (String) payload.get("titre");
-        if (titre == null || titre.isBlank()) {
+        try {
+            Formation formation = fromPayload(payload);
+            Formation created = formationUseCase.createFormation(formation);
+            log.info("Formation créée : {}", created.getTitre());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Formation créée avec succès",
+                    "id", created.getId()
+            ));
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "success", false, "message", "Le titre est obligatoire"));
+                    "success", false, "message", e.getMessage()));
         }
+    }
 
-        CategorieEntity categorie = resoudreCategorie(payload);
-        UserEntity formateur = resoudreFormateur(payload);
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateFormation(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Formation formation = fromPayload(payload);
+            formationUseCase.updateFormation(id, formation);
+            log.info("Formation mise à jour ID: {}", id);
+            return ResponseEntity.ok(Map.of(
+                    "success", true, "message", "Formation mise à jour avec succès"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false, "message", e.getMessage()));
+        }
+    }
 
-        FormationEntity formation = FormationEntity.builder()
-                .titre(titre)
+    @PatchMapping("/{id}/affecter-formateur")
+    public ResponseEntity<?> affecterFormateur(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Object formateurIdObj = payload.get("formateurId");
+            if (formateurIdObj == null) {
+                formationUseCase.retirerFormateur(id);
+                log.info("Formateur retiré de la formation ID: {}", id);
+                return ResponseEntity.ok(Map.of(
+                        "success", true, "message", "Formateur retiré avec succès"));
+            }
+            Long formateurId = Long.valueOf(formateurIdObj.toString());
+            Formation updated = formationUseCase.affecterFormateur(id, formateurId);
+            log.info("Formateur {} affecté à la formation ID: {}", formateurId, id);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Formateur affecté avec succès",
+                    "formateurId",     updated.getFormateurId(),
+                    "formateurNom",    updated.getFormateurNom(),
+                    "formateurPrenom", updated.getFormateurPrenom(),
+                    "formateurEmail",  updated.getFormateurEmail()
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/{id}/toggle-statut")
+    public ResponseEntity<?> toggleStatut(@PathVariable Long id) {
+        try {
+            Formation updated = formationUseCase.toggleStatut(id);
+            log.info("Formation {} → {}", updated.getTitre(), updated.getStatut());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "statut",  updated.getStatut(),
+                    "message", "PUBLIE".equals(updated.getStatut())
+                            ? "Formation publiée" : "Formation mise en brouillon"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false, "message", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteFormation(@PathVariable Long id) {
+        try {
+            formationUseCase.deleteFormation(id);
+            log.info("Formation supprimée ID: {}", id);
+            return ResponseEntity.ok(Map.of(
+                    "success", true, "message", "Formation supprimée avec succès"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // ── Helper ────────────────────────────────────────────────────
+    private Formation fromPayload(Map<String, Object> payload) {
+        return Formation.builder()
+                .titre((String) payload.get("titre"))
                 .description((String) payload.get("description"))
                 .objectifsApprentissage((String) payload.get("objectifsApprentissage"))
                 .prerequis((String) payload.get("prerequis"))
                 .pourQui((String) payload.get("pourQui"))
                 .imageCouverture((String) payload.get("imageCouverture"))
                 .dureeEstimee(payload.get("dureeEstimee") != null
-                        ? Integer.valueOf(payload.get("dureeEstimee").toString()) : 1)
+                        ? Integer.valueOf(payload.get("dureeEstimee").toString()) : null)
                 .niveau((String) payload.get("niveau"))
-                .statut(payload.get("statut") != null ? (String) payload.get("statut") : "BROUILLON")
-                .categorie(categorie)
-                .formateur(formateur)
-                .dateCreation(LocalDateTime.now())
-                .nombreInscrits(0)
-                .nombreCertifies(0)
+                .statut((String) payload.get("statut"))
+                .categorieId(payload.get("categorieId") != null
+                        ? Long.valueOf(payload.get("categorieId").toString()) : null)
+                .formateurId(payload.get("formateurId") != null
+                        ? Long.valueOf(payload.get("formateurId").toString()) : null)
                 .build();
-
-        if ("PUBLIE".equals(formation.getStatut())) {
-            formation.setDatePublication(LocalDateTime.now());
-        }
-
-        formationRepository.save(formation);
-        log.info("Formation créée : {}", titre);
-
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Formation créée avec succès",
-                "id", formation.getId()
-        ));
-    }
-
-    // ══ MODIFIER ═════════════════════════════════════════════════
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateFormation(
-            @PathVariable Long id,
-            @RequestBody Map<String, Object> payload) {
-
-        FormationEntity formation = formationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Formation non trouvée"));
-
-        String titre = (String) payload.get("titre");
-        if (titre == null || titre.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false, "message", "Le titre est obligatoire"));
-        }
-
-        boolean wasNotPublie = !"PUBLIE".equals(formation.getStatut());
-        String newStatut = payload.get("statut") != null
-                ? (String) payload.get("statut") : formation.getStatut();
-
-        formation.setTitre(titre);
-        formation.setDescription((String) payload.get("description"));
-        formation.setObjectifsApprentissage((String) payload.get("objectifsApprentissage"));
-        formation.setPrerequis((String) payload.get("prerequis"));
-        formation.setPourQui((String) payload.get("pourQui"));
-        formation.setImageCouverture((String) payload.get("imageCouverture"));
-        formation.setDureeEstimee(payload.get("dureeEstimee") != null
-                ? Integer.valueOf(payload.get("dureeEstimee").toString()) : formation.getDureeEstimee());
-        formation.setNiveau((String) payload.get("niveau"));
-        formation.setStatut(newStatut);
-        formation.setCategorie(resoudreCategorie(payload));
-        formation.setFormateur(resoudreFormateur(payload));
-
-        if ("PUBLIE".equals(newStatut) && wasNotPublie) {
-            formation.setDatePublication(LocalDateTime.now());
-        }
-
-        formationRepository.save(formation);
-        log.info("Formation mise à jour : {}", titre);
-
-        return ResponseEntity.ok(Map.of("success", true, "message", "Formation mise à jour avec succès"));
-    }
-
-    // ══ AFFECTER FORMATEUR (endpoint dédié) ══════════════════════
-    @PatchMapping("/{id}/affecter-formateur")
-    @Transactional
-    public ResponseEntity<?> affecterFormateur(
-            @PathVariable Long id,
-            @RequestBody Map<String, Object> payload) {
-
-        FormationEntity formation = formationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Formation non trouvée"));
-
-        Object formateurIdObj = payload.get("formateurId");
-
-        if (formateurIdObj == null) {
-            // ── Retirer le formateur ────────────────────────────────
-            UserEntity ancienFormateur = formation.getFormateur();
-
-            // Notification "retrait" si un formateur était affecté
-            if (ancienFormateur != null) {
-                NotificationEntity notif = NotificationEntity.builder()
-                        .user(ancienFormateur)
-                        .type("FORMATION_RETIREE")
-                        .titre("Formation retirée de votre portfolio")
-                        .message("La formation \"" + formation.getTitre()
-                                + "\" vous a été retirée par l'administrateur.")
-                        .formationId(formation.getId())
-                        .formationTitre(formation.getTitre())
-                        .build();
-                notifRepository.save(notif);
-                log.info("Notification RETRAIT envoyée au formateur: {}", ancienFormateur.getEmail());
-            }
-
-            formation.setFormateur(null);
-            formationRepository.save(formation);
-            log.info("Formateur retiré de la formation: {}", formation.getTitre());
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Formateur retiré avec succès"
-            ));
-        }
-
-        // ── Affecter un formateur ───────────────────────────────────
-        Long formateurId = Long.valueOf(formateurIdObj.toString());
-        UserEntity formateur = userRepository.findById(formateurId)
-                .orElseThrow(() -> new RuntimeException("Formateur non trouvé"));
-
-        if (formateur.getRole() != Role.FORMATEUR) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "L'utilisateur sélectionné n'est pas un formateur"
-            ));
-        }
-
-        // Vérifie si c'est un changement de formateur
-        boolean estRemplacement = formation.getFormateur() != null
-                && !formation.getFormateur().getId().equals(formateurId);
-
-        // Notification au nouveau formateur
-        NotificationEntity notif = NotificationEntity.builder()
-                .user(formateur)
-                .type("FORMATION_AFFECTEE")
-                .titre("Nouvelle formation assignée")
-                .message("L'administrateur vous a affecté(e) à la formation \""
-                        + formation.getTitre() + "\"."
-                        + (estRemplacement ? " Vous remplacez un autre formateur." : ""))
-                .formationId(formation.getId())
-                .formationTitre(formation.getTitre())
-                .build();
-        notifRepository.save(notif);
-        log.info("Notification AFFECTATION envoyée au formateur: {}", formateur.getEmail());
-
-        // Si remplacement → notifier l'ancien formateur aussi
-        if (estRemplacement) {
-            UserEntity ancienFormateur = formation.getFormateur();
-            NotificationEntity notifAncien = NotificationEntity.builder()
-                    .user(ancienFormateur)
-                    .type("FORMATION_RETIREE")
-                    .titre("Formation retirée de votre portfolio")
-                    .message("La formation \"" + formation.getTitre()
-                            + "\" a été réaffectée à un autre formateur par l'administrateur.")
-                    .formationId(formation.getId())
-                    .formationTitre(formation.getTitre())
-                    .build();
-            notifRepository.save(notifAncien);
-            log.info("Notification RETRAIT (remplacement) envoyée à: {}", ancienFormateur.getEmail());
-        }
-
-        formation.setFormateur(formateur);
-        formationRepository.save(formation);
-
-        log.info("Formateur {} {} affecté à la formation: {}",
-                formateur.getPrenom(), formateur.getNom(), formation.getTitre());
-
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Formateur affecté avec succès",
-                "formateur", formateurToMap(formateur)
-        ));
-    }
-
-    // ══ TOGGLE STATUT ════════════════════════════════════════════
-    @PatchMapping("/{id}/toggle-statut")
-    public ResponseEntity<?> toggleStatut(@PathVariable Long id) {
-        FormationEntity formation = formationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Formation non trouvée"));
-
-        String newStatut = "PUBLIE".equals(formation.getStatut()) ? "BROUILLON" : "PUBLIE";
-        formation.setStatut(newStatut);
-
-        if ("PUBLIE".equals(newStatut) && formation.getDatePublication() == null) {
-            formation.setDatePublication(LocalDateTime.now());
-        }
-
-        formationRepository.save(formation);
-        log.info("Formation {} → {}", formation.getTitre(), newStatut);
-
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "statut",  newStatut,
-                "message", "PUBLIE".equals(newStatut) ? "Formation publiée" : "Formation mise en brouillon"
-        ));
-    }
-
-    // ══ SUPPRIMER ════════════════════════════════════════════════
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteFormation(@PathVariable Long id) {
-        if (!formationRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        formationRepository.deleteById(id);
-        log.info("Formation supprimée ID: {}", id);
-        return ResponseEntity.ok(Map.of("success", true, "message", "Formation supprimée avec succès"));
-    }
-
-    // ══ HELPERS ══════════════════════════════════════════════════
-    private CategorieEntity resoudreCategorie(Map<String, Object> payload) {
-        Object catIdObj = payload.get("categorieId");
-        if (catIdObj == null) return null;
-        try {
-            Long catId = Long.valueOf(catIdObj.toString());
-            return categorieRepository.findById(catId).orElse(null);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private UserEntity resoudreFormateur(Map<String, Object> payload) {
-        Object formateurIdObj = payload.get("formateurId");
-        if (formateurIdObj == null) return null;
-        try {
-            Long formateurId = Long.valueOf(formateurIdObj.toString());
-            return userRepository.findById(formateurId).orElse(null);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private Map<String, Object> toResponse(FormationEntity f) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id",                    f.getId());
-        map.put("titre",                 f.getTitre());
-        map.put("description",           f.getDescription());
-        map.put("objectifsApprentissage",f.getObjectifsApprentissage());
-        map.put("prerequis",             f.getPrerequis());
-        map.put("pourQui",               f.getPourQui());
-        map.put("imageCouverture",       f.getImageCouverture());
-        map.put("dureeEstimee",          f.getDureeEstimee());
-        map.put("niveau",                f.getNiveau());
-        map.put("statut",                f.getStatut());
-        map.put("dateCreation",          f.getDateCreation());
-        map.put("datePublication",       f.getDatePublication());
-        map.put("nombreInscrits",        f.getNombreInscrits());
-        map.put("nombreCertifies",       f.getNombreCertifies());
-        map.put("noteMoyenne",           f.getNoteMoyenne());
-        map.put("tauxReussite",          f.getTauxReussite());
-
-        if (f.getCategorie() != null) {
-            map.put("categorieId",       f.getCategorie().getId());
-            map.put("categorieNom",      f.getCategorie().getNom());
-            map.put("categorieCouleur",  f.getCategorie().getCouleur());
-        }
-
-        // ★★★ AJOUT : Infos formateur ★★★
-        if (f.getFormateur() != null) {
-            map.put("formateurId",      f.getFormateur().getId());
-            map.put("formateurNom",     f.getFormateur().getNom());
-            map.put("formateurPrenom",  f.getFormateur().getPrenom());
-            map.put("formateurEmail",   f.getFormateur().getEmail());
-        }
-
-        return map;
-    }
-
-    private Map<String, Object> formateurToMap(UserEntity u) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id",      u.getId());
-        map.put("prenom",  u.getPrenom());
-        map.put("nom",     u.getNom());
-        map.put("email",   u.getEmail());
-        map.put("active",  u.isActive());
-        return map;
     }
 }

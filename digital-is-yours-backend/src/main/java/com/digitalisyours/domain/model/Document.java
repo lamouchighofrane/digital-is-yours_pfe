@@ -1,6 +1,5 @@
 package com.digitalisyours.domain.model;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,15 +11,13 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-
-public class EmailVerificationToken {
+public class Document {
     private Long id;
-    private String token;
-    private String email;
-    private LocalDateTime expiresAt;
-    private boolean used;
-
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
-    }
+    private String titre;
+    private String nomFichier;
+    private String url;
+    private String typeFichier;
+    private Long taille;
+    private LocalDateTime dateAjout;
+    private Long coursId;
 }

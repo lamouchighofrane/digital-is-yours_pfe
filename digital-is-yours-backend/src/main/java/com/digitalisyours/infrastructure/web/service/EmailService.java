@@ -1,8 +1,9 @@
 package com.digitalisyours.infrastructure.web.service;
 
 
-import com.digitalisyours.domain.model.EmailVerificationToken;
+
 import com.digitalisyours.infrastructure.persistence.EmailVerificationTokenRepository;
+import com.digitalisyours.infrastructure.persistence.entity.EmailVerificationTokenEntity;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,7 @@ public class EmailService {
         try {
             tokenRepository.deleteByEmail(toEmail);
 
-            EmailVerificationToken token = new EmailVerificationToken(toEmail);
+            EmailVerificationTokenEntity token = new EmailVerificationTokenEntity(toEmail);
             tokenRepository.save(token);
 
             String verificationUrl = "http://localhost:8080/api/auth/verify-email?token=" + token.getToken();
