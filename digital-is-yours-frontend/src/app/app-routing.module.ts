@@ -9,6 +9,7 @@ import { VerifyEmailComponent } from './components/auth/verifyEmail/verifyEmail.
 import { AdminLoginComponent } from './components/admin/adminlogin/adminLogin.component';
 import { AdminDashboardComponent } from './components/admin/admindashboard/adminDashboard.component';
 import { DashboardFormateurComponent } from './components/dashboard-formateur/dashboard-formateur.component';
+import { DashboardApprenantComponent } from './components/dashboard-apprenant/dashboard-apprenant.component';
 const routes: Routes = [
   { path: '', component: SplashScreenComponent },
   { path: 'home', component: HomeComponent, title: 'Digital Is Yours' },
@@ -19,6 +20,7 @@ const routes: Routes = [
   { path: 'admin-login', component: AdminLoginComponent },
   { path: 'admin/dashboard', component: AdminDashboardComponent },
   { path: 'formateur/dashboard', component: DashboardFormateurComponent},
+  { path: 'apprenant/dashboard', component: DashboardApprenantComponent },
   { path: '**', redirectTo: '' },   // ← toujours EN DERNIER
 ];
 

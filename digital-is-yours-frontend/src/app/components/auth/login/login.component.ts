@@ -65,26 +65,52 @@ export class LoginComponent implements OnInit {
     this.authService.login({ email, password, role: this.selectedRole }).subscribe({
       next: (response) => {
         this.isLoading = false;
+
         if (response.role === 'FORMATEUR') {
-          // ✅ Sauvegarder sous les clés attendues par le dashboard formateur
           localStorage.setItem('formateur_token', response.token);
           localStorage.setItem('formateur_user', JSON.stringify({
             id:     (response as any).id || null,
             nom:    response.nom,
             prenom: response.prenom,
             email:  response.email,
-            role:   response.role
+            role:   response.role,
+            photo:        (response as any).photo        || null,
+            specialite:   (response as any).specialite   || '',
+            dateInscription:   (response as any).dateInscription   || null,
+            derniereConnexion: (response as any).derniereConnexion || null,
           }));
           this.router.navigate(['/formateur/dashboard']);
+
+        } else if (response.role === 'APPRENANT') {
+          // ✅ Clés attendues par DashboardApprenantComponent
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('user', JSON.stringify({
+            id:                (response as any).id                || null,
+            nom:               response.nom,
+            prenom:            response.prenom,
+            email:             response.email,
+            role:              response.role,
+            photo:             (response as any).photo             || null,
+            niveauActuel:      (response as any).niveauActuel      || 'DEBUTANT',
+            bio:               (response as any).bio               || '',
+            telephone:         (response as any).telephone         || '',
+            domainesInteret:   (response as any).domainesInteret   || [],
+            disponibilites:    (response as any).disponibilites    || [],
+            objectifsApprentissage:         (response as any).objectifsApprentissage         || '',
+            disponibilitesHeuresParSemaine: (response as any).disponibilitesHeuresParSemaine || null,
+            dateInscription:   (response as any).dateInscription   || null,
+            derniereConnexion: (response as any).derniereConnexion || null,
+          }));
+          this.router.navigate(['/apprenant/dashboard']);
+
         } else {
-          this.router.navigate(['/dashboard-apprenant']);
+          this.router.navigate(['/']);
         }
       },
       error: (err) => {
         this.isLoading = false;
         this.loginError = true;
 
-        // Récupérer le message d'erreur du backend
         const msg: string = err.error?.message || '';
 
         if (msg === 'COMPTE_DESACTIVE' || err.status === 403) {

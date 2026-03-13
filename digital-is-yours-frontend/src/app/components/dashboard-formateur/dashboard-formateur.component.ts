@@ -245,6 +245,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
           this.coursLoading = false;
           this.cdr.detectChanges();
           this.loadNbDocumentsForAllCours();
+          this.loadQuizStatusForAllCours(); // ← NOUVEAU : charge le statut quiz pour chaque cours
         },
         error: () => { this.cours = []; this.coursLoading = false; this.cdr.detectChanges(); }
       });
@@ -262,6 +263,23 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: () => { cours.nbDocuments = 0; }
+      });
+    });
+  }
+
+  // ── NOUVEAU : charge le statut quiz (hasQuiz) pour chaque cours de la liste ──
+  loadQuizStatusForAllCours() {
+    if (!this.selectedFormation || !this.cours.length) return;
+    this.cours.forEach(cours => {
+      this.http.get<any>(
+        `${this.api}/formations/${this.selectedFormation.id}/cours/${cours.id}/mini-quiz`,
+        { headers: this.headers() }
+      ).subscribe({
+        next: (res) => {
+          cours.hasQuiz = res && res.exists === true;
+          this.cdr.detectChanges();
+        },
+        error: () => { cours.hasQuiz = false; }
       });
     });
   }
@@ -289,7 +307,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.videoUploadProgress = 0;
     this.videoDragOver = false;
 
-    // Réinitialiser les états US-019
+    // Réinitialiser les états mini-quiz
     this.mqEditingId = null;
     this.mqEditForm = null;
     this.mqEditError = '';
@@ -315,6 +333,15 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       this.documents = [];
       this.docTotalTaille = 0;
       this.docUploading = [];
+
+      // ── CORRECTION : pré-charger le statut quiz depuis la propriété hasQuiz
+      //    du cours (déjà chargée par loadQuizStatusForAllCours).
+      //    On remet miniQuiz à null pour forcer un rechargement propre
+      //    UNIQUEMENT quand l'utilisateur clique sur l'onglet Mini-quiz.
+      this.miniQuiz = null;
+      this.miniQuizContexte = null;
+      this.miniQuizExists = cours.hasQuiz === true; // ← affiche ✓ sur l'onglet dès l'ouverture
+
     } else {
       this.coursModalMode = 'create';
       this.editingCoursId = null;
@@ -1122,15 +1149,16 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   onMiniQuizTabClick() {
     if (this.coursModalMode !== 'create') {
       this.coursModalTab = 'mini-quiz';
-      // Réinitialiser les états US-019
       this.mqEditingId = null;
       this.mqEditForm = null;
       this.mqEditError = '';
-      this.miniQuiz = null;
-      this.miniQuizExists = false;
-      this.miniQuizContexte = null;
-      this.miniQuizLoading = true;
-      this.loadMiniQuiz();
+
+      // ── CORRECTION : ne pas remettre à null si le quiz est déjà chargé
+      //    On recharge uniquement si miniQuiz est null (première ouverture)
+      if (!this.miniQuiz) {
+        this.miniQuizLoading = true;
+        this.loadMiniQuiz();
+      }
     }
   }
 
@@ -1142,9 +1170,12 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       { headers: this.headers() }
     ).subscribe({
       next: res => {
-        if (res.exists) {
+        if (res && res.exists === true) {
           this.miniQuiz = res;
           this.miniQuizExists = true;
+          // Mettre à jour le badge dans la liste
+          const c = this.cours.find((x: any) => x.id === this.currentCoursId);
+          if (c) c.hasQuiz = true;
         } else {
           this.miniQuiz = null;
           this.miniQuizExists = false;
@@ -1157,6 +1188,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         this.miniQuiz = null;
         this.miniQuizExists = false;
         this.miniQuizLoading = false;
+        this.loadMiniQuizContexte();
         this.cdr.detectChanges();
       }
     });
@@ -1177,7 +1209,12 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.miniQuizContexte = null;
     this.loadMiniQuizContexte();
     this.showMiniQuizModal = true;
-    this.miniQuizParams = { nombreQuestions: 5, difficulte: 'MOYEN', inclureDefinitions: true, inclureCasPratiques: true };
+    this.miniQuizParams = {
+      nombreQuestions: 5,
+      difficulte: 'MOYEN',
+      inclureDefinitions: true,
+      inclureCasPratiques: true
+    };
     this.cdr.detectChanges();
   }
 
@@ -1192,13 +1229,16 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       { headers: this.headers() }
     ).subscribe({
       next: quiz => {
-        this.miniQuiz = quiz;
-        this.miniQuizExists = true;
         this.miniQuizGenerating = false;
-        this.showMiniQuizModal = false;
-        // Réinitialiser les états d'édition US-019
-        this.mqEditingId = null;
-        this.mqEditForm = null;
+        this.showMiniQuizModal  = false;
+        this.mqEditingId        = null;
+        this.mqEditForm         = null;
+        this.miniQuiz           = quiz;
+        this.miniQuizExists     = true;
+        this.miniQuizContexte   = null;
+        // ── NOUVEAU : mettre à jour le badge dans la liste des cours
+        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
+        if (c) c.hasQuiz = true;
         this.showToast('Mini-quiz généré avec succès par l\'IA !', 'success');
         this.cdr.detectChanges();
       },
@@ -1219,9 +1259,11 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       next: () => {
         this.miniQuiz = null;
         this.miniQuizExists = false;
-        // Réinitialiser les états US-019
         this.mqEditingId = null;
         this.mqEditForm = null;
+        // ── NOUVEAU : retirer le badge dans la liste des cours
+        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
+        if (c) c.hasQuiz = false;
         this.loadMiniQuizContexte();
         this.showToast('Mini-quiz supprimé.', 'success');
         this.cdr.detectChanges();
@@ -1233,9 +1275,9 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   regenerateMiniQuiz() {
     this.showMiniQuizModal = true;
     this.miniQuizParams = {
-      nombreQuestions: this.miniQuiz?.nombreQuestions || 5,
-      difficulte: this.miniQuiz?.niveauDifficulte || this.miniQuiz?.difficulte || 'MOYEN',
-      inclureDefinitions: this.miniQuiz?.inclureDefinitions ?? true,
+      nombreQuestions:     this.miniQuiz?.nombreQuestions  || 5,
+      difficulte:          this.miniQuiz?.niveauDifficulte || this.miniQuiz?.difficulte || 'MOYEN',
+      inclureDefinitions:  this.miniQuiz?.inclureDefinitions  ?? true,
       inclureCasPratiques: this.miniQuiz?.inclureCasPratiques ?? true
     };
     this.cdr.detectChanges();
@@ -1244,16 +1286,13 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   quickRegenerateWithDiff(difficulte: string) {
     if (!this.currentCoursId || !this.selectedFormation) return;
     this.miniQuizParams = {
-      nombreQuestions: this.miniQuiz?.nombreQuestions || 5,
-      difficulte: difficulte,
-      inclureDefinitions: this.miniQuiz?.inclureDefinitions ?? true,
+      nombreQuestions:     this.miniQuiz?.nombreQuestions  || 5,
+      difficulte:          difficulte,
+      inclureDefinitions:  this.miniQuiz?.inclureDefinitions  ?? true,
       inclureCasPratiques: this.miniQuiz?.inclureCasPratiques ?? true
     };
     this.generateMiniQuiz();
   }
-
-  // ── US-019 : Édition inline question ──────────────────────
-
 
   getMiniQuizDifficulteLabel(d: string): string {
     const m: any = { FACILE: 'Facile', MOYEN: 'Moyen', DIFFICILE: 'Difficile' };
@@ -1261,7 +1300,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   getMiniQuizDifficulteColor(d: string): string {
-    if (d === 'FACILE') return '#27ae60';
+    if (d === 'FACILE')    return '#27ae60';
     if (d === 'DIFFICILE') return '#8B3A3A';
     return '#e67e22';
   }
@@ -1273,8 +1312,8 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.mqEditError  = '';
     this.mqEditForm = {
       id:          q.id,
-      texte:       q.texte        || '',
-      explication: q.explication  || '',
+      texte:       q.texte       || '',
+      explication: q.explication || '',
       options:     (q.options || []).map((o: any) => ({ ...o }))
     };
     this.cdr.detectChanges();
@@ -1361,8 +1400,8 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   // ── US-019 : Suppression avec confirmation ─────────────────
 
   confirmDeleteQuestion019(q: any, index: number) {
-    this.mqDeleteQuestion        = q;
-    this.mqDeleteQuestionIndex   = index;
+    this.mqDeleteQuestion      = q;
+    this.mqDeleteQuestionIndex = index;
     this.showDeleteQuestionModal = true;
     this.cdr.detectChanges();
   }
@@ -1388,6 +1427,8 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         if (this.miniQuiz?.questions?.length === 0) {
           this.miniQuizExists = false;
           this.miniQuiz       = null;
+          const c = this.cours.find((x: any) => x.id === this.currentCoursId);
+          if (c) c.hasQuiz = false;
         }
         this.showToast('Question supprimée.', 'success');
         this.cdr.detectChanges();
@@ -1453,6 +1494,9 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         this.miniQuizExists       = true;
         this.mqAddSaving          = false;
         this.showAddQuestionModal = false;
+        // Mettre à jour le badge
+        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
+        if (c) c.hasQuiz = true;
         this.showToast('Question ajoutée avec succès !', 'success');
         this.cdr.detectChanges();
       },
@@ -1465,12 +1509,12 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   // ── Aliases sans suffixe (appelés depuis le HTML) ────────
-  startEditQuestion(q: any)            { this.startEditQuestion019(q); }
-  cancelEditQuestion()                 { this.cancelEditQuestion019(); }
-  saveEditQuestion()                   { this.saveEditQuestion019(); }
-  setCorrectOption(index: number)      { this.setCorrectOption019(index); }
+  startEditQuestion(q: any)                { this.startEditQuestion019(q); }
+  cancelEditQuestion()                     { this.cancelEditQuestion019(); }
+  saveEditQuestion()                       { this.saveEditQuestion019(); }
+  setCorrectOption(index: number)          { this.setCorrectOption019(index); }
   confirmDeleteQuestion(q: any, i: number) { this.confirmDeleteQuestion019(q, i); }
-  deleteQuestion()                     { this.deleteQuestion019(); }
+  deleteQuestion()                         { this.deleteQuestion019(); }
 
   logout() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);

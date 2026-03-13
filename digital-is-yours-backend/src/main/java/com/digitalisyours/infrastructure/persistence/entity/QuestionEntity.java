@@ -23,15 +23,12 @@ public class QuestionEntity {
     @Column(name = "texte", columnDefinition = "TEXT", nullable = false)
     private String texte;
 
-    /** true = question générée par IA (mapGenerateParIA du diagramme) */
     @Column(name = "genere_par_ia", nullable = false)
     private Boolean genereParIA;
 
-    /** Explication affichée après correction */
     @Column(name = "explication", columnDefinition = "TEXT")
     private String explication;
 
-    /** Ordre d'affichage dans le quiz */
     @Column(name = "ordre")
     private Integer ordre;
 
@@ -39,7 +36,8 @@ public class QuestionEntity {
     @JoinColumn(name = "quiz_id", nullable = false)
     private QuizEntity quiz;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    // ← LAZY au lieu de EAGER : c'est la correction clé
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     @OrderBy("ordre ASC")
     private List<OptionQuestionEntity> options = new ArrayList<>();

@@ -23,7 +23,7 @@ public class QuizEntity {
     private Long id;
 
     @Column(name = "type", length = 20, nullable = false)
-    private String type; // "MiniQuiz" | "QuizFinal"
+    private String type;
 
     @Column(name = "note_passage", nullable = false)
     private Float notePassage;
@@ -37,11 +37,9 @@ public class QuizEntity {
     @Column(name = "date_creation", nullable = false)
     private LocalDateTime dateCreation;
 
-    /** Niveau de difficulte utilise lors de la generation IA */
     @Column(name = "niveau_difficulte", length = 20)
-    private String niveauDifficulte; // "FACILE" | "MOYEN" | "DIFFICILE"
+    private String niveauDifficulte;
 
-    /** Parametres de generation IA sauvegardes */
     @Column(name = "inclure_definitions", nullable = false)
     @Builder.Default
     private Boolean inclureDefinitions = true;
@@ -54,18 +52,19 @@ public class QuizEntity {
     @JoinColumn(name = "cours_id", nullable = false, unique = true)
     private CoursEntity cours;
 
+    // ← LAZY : évite le MultipleBagFetchException
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<QuestionEntity> questions = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
-        if (this.dateCreation == null) this.dateCreation = LocalDateTime.now();
-        if (this.type == null) this.type = "MiniQuiz";
-        if (this.notePassage == null) this.notePassage = 70.0f;
+        if (this.dateCreation == null)     this.dateCreation = LocalDateTime.now();
+        if (this.type == null)             this.type = "MiniQuiz";
+        if (this.notePassage == null)      this.notePassage = 70.0f;
         if (this.nombreTentatives == null) this.nombreTentatives = 3;
-        if (this.genereParIA == null) this.genereParIA = false;
-        if (this.inclureDefinitions == null) this.inclureDefinitions = true;
-        if (this.inclureCasPratiques == null) this.inclureCasPratiques = true;
+        if (this.genereParIA == null)      this.genereParIA = false;
+        if (this.inclureDefinitions == null)   this.inclureDefinitions = true;
+        if (this.inclureCasPratiques == null)  this.inclureCasPratiques = true;
     }
 }

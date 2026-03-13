@@ -2,6 +2,7 @@ package com.digitalisyours.infrastructure.web.controller;
 
 import com.digitalisyours.domain.model.Categorie;
 import com.digitalisyours.domain.port.in.CategorieUseCase;
+import com.digitalisyours.infrastructure.persistence.repository.FormationJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.Map;
 @Slf4j
 public class CategorieController {
     private final CategorieUseCase categorieUseCase;
+    private final FormationJpaRepository formationJpaRepository;
 
     @GetMapping
     public ResponseEntity<List<Categorie>> getAllCategories() {
@@ -71,7 +73,11 @@ public class CategorieController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCategorie(@PathVariable Long id) {
         try {
+            // Délier les formations avant suppression pour éviter la contrainte FK
+            formationJpaRepository.detacherCategorie(id);
+
             categorieUseCase.deleteCategorie(id);
+            log.info("Catégorie supprimée ID: {}", id);
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "Catégorie supprimée avec succès"

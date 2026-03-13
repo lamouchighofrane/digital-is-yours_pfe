@@ -13,27 +13,30 @@
       </p>
     </div>
 
-    <!-- Grille catégories avec images -->
-    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
+    <!-- Loading catégories -->
+    <div *ngIf="isLoadingCats" class="flex justify-center py-16">
+      <div class="w-8 h-8 border-4 border-[#EDE8DF] border-t-[#8B3A3A] rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Grille catégories dynamiques -->
+    <div *ngIf="!isLoadingCats" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
       <div *ngFor="let cat of categories; let i = index"
            class="reveal card group cursor-pointer overflow-hidden flex flex-col"
            [style.transition-delay]="(i*70)+'ms'">
 
         <!-- Image -->
         <div class="relative h-40 overflow-hidden">
-          <img [src]="cat.img" [alt]="cat.title"
+          <img *ngIf="cat.imageCouverture" [src]="cat.imageCouverture" [alt]="cat.nom"
                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"/>
+          <div *ngIf="!cat.imageCouverture"
+               class="w-full h-full flex items-center justify-center bg-[#EDE8DF]">
+            <span class="text-4xl opacity-30">📚</span>
+          </div>
           <!-- Overlay gradient -->
           <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-          <!-- Tag -->
-          <span class="absolute top-3 left-3 text-[10px] font-semibold px-2.5 py-1 rounded-full"
-                [style.background]="cat.accentBg"
-                [style.color]="cat.accentColor">
-            {{ cat.tag }}
-          </span>
           <!-- Count -->
           <span class="absolute bottom-3 right-3 text-[11px] text-white/80 font-medium">
-            {{ cat.count }} cours
+            {{ getNbFormations(cat.id) }} cours
           </span>
         </div>
 
@@ -41,18 +44,24 @@
         <div class="p-5 flex flex-col flex-1">
           <h3 class="font-display font-bold text-lg text-[#1E1A16] mb-2 leading-tight
                      group-hover:text-[#8B3A3A] transition-colors duration-300">
-            {{ cat.title }}
+            {{ cat.nom }}
           </h3>
-          <p class="text-[#6B5F52] text-xs leading-relaxed mb-4 flex-1">{{ cat.desc }}</p>
+          <p class="text-[#6B5F52] text-xs leading-relaxed mb-4 flex-1">{{ cat.description }}</p>
           <div class="flex items-center gap-1.5 text-sm font-semibold
                       group-hover:gap-3 transition-all duration-300"
-               [style.color]="cat.accentColor">
+               [style.color]="cat.couleur || '#8B3A3A'">
             Explorer
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
             </svg>
           </div>
         </div>
+      </div>
+
+      <!-- Aucune catégorie -->
+      <div *ngIf="categories.length === 0" class="col-span-4 text-center py-12 text-[#9E9082]">
+        <div class="text-4xl mb-3 opacity-40">📭</div>
+        <p>Aucune catégorie disponible pour le moment.</p>
       </div>
     </div>
 
@@ -67,71 +76,49 @@
       <a href="#" class="btn-ghost hidden md:inline-flex">Tout le catalogue →</a>
     </div>
 
-    <!-- Grille formations avec images style Udemy -->
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
+    <!-- Loading formations -->
+    <div *ngIf="isLoading" class="flex justify-center py-16">
+      <div class="w-8 h-8 border-4 border-[#EDE8DF] border-t-[#8B3A3A] rounded-full animate-spin"></div>
+    </div>
+
+    <!-- Grille formations depuis l'API -->
+    <div *ngIf="!isLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
       <div *ngFor="let f of formations; let i = index"
            class="reveal card overflow-hidden group cursor-pointer flex flex-col"
            [style.transition-delay]="(i*90)+'ms'">
 
         <!-- Image cours -->
-        <div class="relative h-48 overflow-hidden">
-          <img [src]="f.img" [alt]="f.title"
+        <div class="relative h-48 overflow-hidden bg-[#EDE8DF] flex items-center justify-center">
+          <img *ngIf="f.imageCouverture" [src]="f.imageCouverture" [alt]="f.titre"
                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"/>
+          <span *ngIf="!f.imageCouverture" class="text-5xl opacity-30">📚</span>
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-          <!-- Badge catégorie -->
+          <!-- Badge niveau -->
           <div class="absolute bottom-4 left-4">
             <span class="text-xs font-semibold px-3 py-1.5 rounded-full text-white backdrop-blur-sm"
-                  [style.background]="f.accentColor + 'cc'">
-              {{ f.category }}
+                  [style.background]="getAccentColor(f.niveau) + 'cc'">
+              {{ f.niveau }}
             </span>
           </div>
           <!-- Durée -->
           <div class="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs
                       font-medium px-2.5 py-1 rounded-full">
-            {{ f.duration }}
+            {{ getDuree(f.dureeEstimee) }}
           </div>
         </div>
 
         <!-- Corps -->
         <div class="p-6 flex flex-col flex-1">
-
-          <!-- Titre -->
           <h3 class="font-display font-bold text-[19px] text-[#1E1A16] mb-2 leading-tight
                      group-hover:text-[#8B3A3A] transition-colors duration-300">
-            {{ f.title }}
+            {{ f.titre }}
           </h3>
-
-          <!-- Instructeur -->
-          <p class="text-[#9E9082] text-xs mb-3">par <span class="font-medium text-[#6B5F52]">{{ f.instructor }}</span></p>
-
-          <!-- Rating style Udemy -->
-          <div class="flex items-center gap-2 mb-4">
-            <span class="font-bold text-sm" style="color:#9B8B6E">{{ f.rating }}</span>
-            <div class="flex text-amber-500 text-sm">★★★★★</div>
-            <span class="text-[#9E9082] text-xs">({{ f.reviews }} avis)</span>
-          </div>
-
-          <!-- Meta -->
-          <div class="flex items-center gap-3 text-[#9E9082] text-xs mb-5">
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-              </svg>
-              {{ f.lessons }}
-            </span>
-            <span class="w-1 h-1 rounded-full bg-[#C8BEB2]"></span>
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-              {{ f.students }} inscrits
-            </span>
-            <span class="ml-auto px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#F5F3EF] text-[#6B5F52]">
-              {{ f.level }}
-            </span>
-          </div>
+          <p class="text-[#9E9082] text-xs mb-4">
+            par <span class="font-medium text-[#6B5F52]">{{ getFormateurNom(f) }}</span>
+          </p>
+          <p class="text-[#6B5F52] text-sm leading-relaxed mb-5 flex-1 line-clamp-3">
+            {{ f.description }}
+          </p>
 
           <button class="btn-primary w-full justify-center mt-auto text-sm py-3">
             Voir la formation
@@ -140,6 +127,12 @@
             </svg>
           </button>
         </div>
+      </div>
+
+      <!-- Aucune formation publiée -->
+      <div *ngIf="formations.length === 0" class="col-span-3 text-center py-16 text-[#9E9082]">
+        <div class="text-5xl mb-4 opacity-40">📭</div>
+        <p>Aucune formation disponible pour le moment.</p>
       </div>
     </div>
 
