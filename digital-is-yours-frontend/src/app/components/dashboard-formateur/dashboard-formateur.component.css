@@ -2270,3 +2270,254 @@
 }
 .mq-modal-btn-primary:hover { background: #3d6b6d; }
 .mq-modal-btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+/* ══════════════════════════════════════════════════════════════
+   MODAL AJOUT QUESTION — VERSION CORRIGÉE (option D visible)
+   Copiez-collez ce bloc À LA FIN de dashboard-formateur.component.css
+══════════════════════════════════════════════════════════════ */
+
+/* ── Sheet (fenêtre modale) ── */
+.mq-add-sheet {
+  background: #FFF;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 620px;
+  height: 95vh;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 28px 80px rgba(26, 22, 18, .22);
+  animation: modalUp .3s cubic-bezier(.16, 1, .3, 1);
+  overflow: hidden;
+}
+
+/* ── Head (fixe, ne scroll pas) ── */
+.mq-add-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 26px;
+  border-bottom: 1px solid #E8E3DB;
+  flex-shrink: 0;
+}
+.mq-add-head-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mq-add-head-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fce4e4, #f5c6c6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mq-add-head-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1A1612;
+  margin: 0 0 2px;
+}
+.mq-add-head-sub {
+  font-size: 12px;
+  color: #6B5F52;
+  margin: 0;
+}
+
+/* ── Body scrollable (LA CLÉ DU CORRECTIF) ── */
+.mq-add-body {
+  flex: 1;
+  min-height: 0;             /* CRUCIAL : sans cette ligne, le scroll ne marche pas */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #FAFAF7;
+}
+.mq-add-body::-webkit-scrollbar { width: 5px; }
+.mq-add-body::-webkit-scrollbar-track { background: transparent; }
+.mq-add-body::-webkit-scrollbar-thumb { background: #D4CBBF; border-radius: 3px; }
+.mq-add-body::-webkit-scrollbar-thumb:hover { background: #C8BEB2; }
+
+/* ── Barre d'erreur ── */
+.mq-add-error-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fce4e4;
+  border: 1px solid rgba(139, 58, 58, .25);
+  border-radius: 10px;
+  font-size: 12px;
+  color: #8B3A3A;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ── Section ── */
+.mq-add-section {
+  background: #FFF;
+  border: 1px solid #E8E3DB;
+  border-radius: 14px;
+  overflow: visible;
+  flex-shrink: 0;
+}
+.mq-add-section-inner {
+  padding: 16px 18px;
+}
+
+/* ── Labels ── */
+.mq-add-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  color: #3D2C2C;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.mq-add-req { color: #8B3A3A; margin-left: 1px; }
+.mq-add-section-hint {
+  font-weight: 500;
+  color: #8B3A3A;
+  font-size: 10px;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.mq-add-section-hint-optional {
+  font-weight: 400;
+  color: #9B8B6E;
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Textarea ── */
+.mq-add-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #E8E3DB;
+  border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  color: #1A1612;
+  background: #FAFAF7;
+  resize: vertical;
+  min-height: 68px;
+  box-sizing: border-box;
+  line-height: 1.6;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.mq-add-textarea:focus {
+  border-color: #8B3A3A;
+  box-shadow: 0 0 0 3px rgba(139, 58, 58, .08);
+  background: #FFF;
+}
+.mq-add-textarea::placeholder { color: #C8BEB2; }
+
+/* ── Liste des 4 options ── */
+.mq-add-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Ligne d'une option ── */
+.mq-add-option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #E8E3DB;
+  background: #FAFAF7;
+  cursor: pointer;
+  transition: all .15s ease;
+  user-select: none;
+  flex-shrink: 0;
+}
+.mq-add-option-row:hover { border-color: #C8BEB2; background: #F5F1EB; }
+.mq-add-option-correct {
+  border-color: #27ae60 !important;
+  background: rgba(39, 174, 96, .07) !important;
+}
+.mq-add-option-correct:hover { background: rgba(39, 174, 96, .1) !important; }
+
+/* ── Radio visuel ── */
+.mq-add-radio-btn {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  border: 2px solid #D4CBBF;
+  background: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all .15s ease;
+  padding: 0;
+  color: #FFF;
+  outline: none;
+}
+.mq-add-radio-btn:hover { border-color: #27ae60; background: rgba(39, 174, 96, .1); }
+.mq-add-radio-checked {
+  border-color: #27ae60 !important;
+  background: #27ae60 !important;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, .3);
+}
+
+/* ── Badge lettre A B C D ── */
+.mq-add-opt-badge {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 7px;
+  background: #F0EBE3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #9B8B6E;
+  flex-shrink: 0;
+  transition: all .15s ease;
+}
+.mq-add-opt-badge-correct {
+  background: rgba(39, 174, 96, .18);
+  color: #27ae60;
+}
+
+/* ── Input texte option ── */
+.mq-add-opt-text-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  color: #1A1612;
+  outline: none;
+  padding: 2px 0;
+  min-width: 0;
+}
+.mq-add-opt-text-input::placeholder { color: #C8BEB2; }
+.mq-add-opt-text-correct { font-weight: 600; color: #27ae60; }
+
+/* ── Footer (fixe, ne scroll pas) ── */
+.mq-add-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 26px;
+  border-top: 1px solid #E8E3DB;
+  flex-shrink: 0;
+  background: #FFF;
+}
