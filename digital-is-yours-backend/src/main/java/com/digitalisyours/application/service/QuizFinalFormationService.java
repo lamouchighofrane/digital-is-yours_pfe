@@ -3,21 +3,24 @@ package com.digitalisyours.application.service;
 import com.digitalisyours.domain.model.OptionQuestion;
 import com.digitalisyours.domain.model.Question;
 import com.digitalisyours.domain.model.Quiz;
-import com.digitalisyours.domain.port.in.QuizFormateurUseCase;
+import com.digitalisyours.domain.port.in.QuizFinalFormationUseCase;
 import com.digitalisyours.domain.port.out.IAQuizPort;
-import com.digitalisyours.domain.port.out.QuizRepositoryPort;
+import com.digitalisyours.domain.port.out.QuizFinalFormationRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class QuizFormateurService implements QuizFormateurUseCase {
-    private final QuizRepositoryPort quizRepository;
+public class QuizFinalFormationService implements QuizFinalFormationUseCase {
+    private final QuizFinalFormationRepositoryPort quizFinalRepository;
     private final IAQuizPort iaQuizPort;
 
     // ══════════════════════════════════════════════════════════
@@ -25,62 +28,47 @@ public class QuizFormateurService implements QuizFormateurUseCase {
     // ══════════════════════════════════════════════════════════
 
     @Override
-    public Optional<Quiz> getMiniQuiz(Long formationId, Long coursId, String email) {
+    public Optional<Quiz> getQuizFinal(Long formationId, String email) {
         checkAcces(formationId, email);
-        checkCoursExists(coursId, formationId);
-        return quizRepository.findByCoursId(coursId);
+        return quizFinalRepository.findByFormationId(formationId);
     }
 
     @Override
-    public Map<String, Object> getContexte(Long formationId, Long coursId, String email) {
+    public Map<String, Object> getContexteFormation(Long formationId, String email) {
         checkAcces(formationId, email);
-        checkCoursExists(coursId, formationId);
-
-        Map<String, Object> cours = quizRepository.getCoursInfos(coursId);
-        String videoType = (String) cours.get("videoType");
-
-        Map<String, Object> ctx = new LinkedHashMap<>();
-        ctx.put("coursId",          coursId);
-        ctx.put("coursTitre",       cours.get("titre"));
-        ctx.put("coursDescription", cours.get("description"));
-        ctx.put("coursObjectifs",   cours.get("objectifs"));
-        ctx.put("videoType",        videoType != null ? videoType : "");
-        ctx.put("videoUrl",         cours.get("videoUrl") != null ? cours.get("videoUrl") : "");
-        ctx.put("hasVideo",         videoType != null);
-        ctx.put("quizExistant",     quizRepository.existsByCoursId(coursId));
-        ctx.put("documents",        List.of());
-        return ctx;
+        return quizFinalRepository.getFormationInfos(formationId);
     }
 
     // ══════════════════════════════════════════════════════════
-    // GÉNÉRATION IA — MiniQuiz
+    // GÉNÉRATION IA — Quiz Final
     // ══════════════════════════════════════════════════════════
 
     @Override
-    public Quiz genererQuizIA(Long formationId, Long coursId, String email,
-                              int nombreQuestions, String difficulte,
-                              boolean inclureDefinitions, boolean inclureCasPratiques,
-                              float notePassage, int nombreTentatives) {
-
+    public Quiz genererQuizFinalIA(Long formationId, String email,
+                                   int nombreQuestions,
+                                   String difficulte,
+                                   boolean inclureDefinitions,
+                                   boolean inclureCasPratiques,
+                                   float notePassage,
+                                   int nombreTentatives,
+                                   int dureeMinutes) {
         checkAcces(formationId, email);
-        checkCoursExists(coursId, formationId);
 
-        Map<String, Object> cours = quizRepository.getCoursInfos(coursId);
-        String coursTitre       = (String) cours.get("titre");
-        String coursDescription = (String) cours.get("description");
-        String coursObjectifs   = (String) cours.get("objectifs");
-        String videoUrl         = (String) cours.get("videoUrl");
-        String videoType        = (String) cours.get("videoType");
+        // Récupérer les infos de la formation
+        Map<String, Object> formationInfos = quizFinalRepository.getFormationInfos(formationId);
+        String formationTitre       = (String) formationInfos.get("titre");
+        String formationDescription = (String) formationInfos.get("description");
+        String formationObjectifs   = (String) formationInfos.get("objectifsApprentissage");
 
-        // MiniQuiz : on passe coursId et formationId = null
+        // Quiz Final : on passe formationId et coursId = null
         List<Question> questionsIA = iaQuizPort.genererQuestions(
-                coursTitre,
-                coursDescription,
-                coursObjectifs,
-                coursId,      // ← ID du cours
-                null,         // ← pas de formation (c'est un MiniQuiz)
-                videoUrl,
-                videoType,
+                formationTitre,
+                formationDescription,
+                formationObjectifs,
+                null,         // ← pas de cours (c'est un Quiz Final)
+                formationId,  // ← ID de la formation
+                null,         // videoUrl : non applicable au niveau formation
+                null,         // videoType : non applicable au niveau formation
                 nombreQuestions,
                 difficulte,
                 inclureDefinitions,
@@ -92,7 +80,7 @@ public class QuizFormateurService implements QuizFormateurUseCase {
         }
 
         Quiz quiz = Quiz.builder()
-                .type("MiniQuiz")
+                .type("QuizFinal")
                 .notePassage(notePassage)
                 .nombreTentatives(nombreTentatives)
                 .genereParIA(true)
@@ -100,12 +88,13 @@ public class QuizFormateurService implements QuizFormateurUseCase {
                 .inclureDefinitions(inclureDefinitions)
                 .inclureCasPratiques(inclureCasPratiques)
                 .dateCreation(LocalDateTime.now())
-                .coursId(coursId)
+                .formationId(formationId)
+                .dureeMinutes(dureeMinutes)
                 .questions(questionsIA)
                 .build();
 
-        Quiz saved = quizRepository.save(quiz);
-        log.info("Quiz IA généré : {} questions pour le cours {}", questionsIA.size(), coursId);
+        Quiz saved = quizFinalRepository.save(quiz);
+        log.info("Quiz Final IA généré : {} questions pour la formation {}", questionsIA.size(), formationId);
         return saved;
     }
 
@@ -114,50 +103,49 @@ public class QuizFormateurService implements QuizFormateurUseCase {
     // ══════════════════════════════════════════════════════════
 
     @Override
-    public Quiz updateQuestion(Long formationId, Long coursId, Long questionId,
+    public Quiz updateQuestion(Long formationId, Long questionId,
                                String email, String texte, String explication) {
         checkAcces(formationId, email);
-        Quiz quiz = getQuizOrThrow(coursId);
+        Quiz quiz = getQuizOrThrow(formationId);
         Question q = findQuestionOrThrow(quiz, questionId);
         if (texte == null || texte.isBlank())
             throw new RuntimeException("Le texte de la question est obligatoire.");
         q.setTexte(texte.trim());
         if (explication != null) q.setExplication(explication.trim());
-        return quizRepository.save(quiz);
+        return quizFinalRepository.save(quiz);
     }
 
     @Override
-    public Quiz updateOption(Long formationId, Long coursId, Long questionId,
+    public Quiz updateOption(Long formationId, Long questionId,
                              Long optionId, String email, String texte) {
         checkAcces(formationId, email);
-        Quiz quiz = getQuizOrThrow(coursId);
+        Quiz quiz = getQuizOrThrow(formationId);
         Question q = findQuestionOrThrow(quiz, questionId);
         OptionQuestion opt = findOptionOrThrow(q, optionId);
         if (texte == null || texte.isBlank())
             throw new RuntimeException("Le texte de l'option est obligatoire.");
         opt.setTexte(texte.trim());
-        return quizRepository.save(quiz);
+        return quizFinalRepository.save(quiz);
     }
 
     @Override
-    public Quiz setBonneReponse(Long formationId, Long coursId, Long questionId,
+    public Quiz setBonneReponse(Long formationId, Long questionId,
                                 Long optionId, String email) {
         checkAcces(formationId, email);
-        Quiz quiz = getQuizOrThrow(coursId);
+        Quiz quiz = getQuizOrThrow(formationId);
         Question q = findQuestionOrThrow(quiz, questionId);
         boolean optExiste = q.getOptions().stream().anyMatch(o -> o.getId().equals(optionId));
-        if (!optExiste)
-            throw new RuntimeException("Option introuvable pour cette question.");
+        if (!optExiste) throw new RuntimeException("Option introuvable.");
         q.getOptions().forEach(o -> o.setEstCorrecte(o.getId().equals(optionId)));
-        return quizRepository.save(quiz);
+        return quizFinalRepository.save(quiz);
     }
 
     @Override
-    public Quiz addQuestion(Long formationId, Long coursId, String email,
+    public Quiz addQuestion(Long formationId, String email,
                             String texte, String explication,
                             List<Map<String, Object>> optionsPayload) {
         checkAcces(formationId, email);
-        Quiz quiz = getQuizOrThrow(coursId);
+        Quiz quiz = getQuizOrThrow(formationId);
 
         if (texte == null || texte.isBlank())
             throw new RuntimeException("Le texte de la question est obligatoire.");
@@ -168,12 +156,6 @@ public class QuizFormateurService implements QuizFormateurUseCase {
                 .filter(o -> Boolean.TRUE.equals(o.get("estCorrecte"))).count();
         if (nbCorrects != 1)
             throw new RuntimeException("Exactement 1 bonne réponse est requise.");
-
-        for (Map<String, Object> o : optionsPayload) {
-            String ot = (String) o.get("texte");
-            if (ot == null || ot.isBlank())
-                throw new RuntimeException("Toutes les options doivent avoir un texte.");
-        }
 
         int nextOrdre = quiz.getQuestions().stream()
                 .mapToInt(q -> q.getOrdre() != null ? q.getOrdre() : 0).max().orElse(0) + 1;
@@ -200,31 +182,31 @@ public class QuizFormateurService implements QuizFormateurUseCase {
                 .build();
 
         quiz.getQuestions().add(newQ);
-        return quizRepository.save(quiz);
+        return quizFinalRepository.save(quiz);
     }
 
     @Override
-    public Quiz deleteQuestion(Long formationId, Long coursId, Long questionId, String email) {
+    public Quiz deleteQuestion(Long formationId, Long questionId, String email) {
         checkAcces(formationId, email);
-        Quiz quiz = getQuizOrThrow(coursId);
+        Quiz quiz = getQuizOrThrow(formationId);
         boolean removed = quiz.getQuestions().removeIf(q -> q.getId().equals(questionId));
         if (!removed) throw new RuntimeException("Question non trouvée.");
         for (int i = 0; i < quiz.getQuestions().size(); i++)
             quiz.getQuestions().get(i).setOrdre(i + 1);
-        return quizRepository.save(quiz);
+        return quizFinalRepository.save(quiz);
     }
 
     // ══════════════════════════════════════════════════════════
-    // SUPPRESSION QUIZ
+    // SUPPRESSION
     // ══════════════════════════════════════════════════════════
 
     @Override
-    public void deleteMiniQuiz(Long formationId, Long coursId, String email) {
+    public void deleteQuizFinal(Long formationId, String email) {
         checkAcces(formationId, email);
-        if (!quizRepository.existsByCoursId(coursId))
-            throw new RuntimeException("Aucun quiz trouvé pour ce cours.");
-        quizRepository.deleteByCoursId(coursId);
-        log.info("Quiz supprimé pour le cours {}", coursId);
+        if (!quizFinalRepository.existsByFormationId(formationId))
+            throw new RuntimeException("Aucun quiz final trouvé pour cette formation.");
+        quizFinalRepository.deleteByFormationId(formationId);
+        log.info("Quiz Final supprimé pour la formation {}", formationId);
     }
 
     // ══════════════════════════════════════════════════════════
@@ -232,18 +214,13 @@ public class QuizFormateurService implements QuizFormateurUseCase {
     // ══════════════════════════════════════════════════════════
 
     private void checkAcces(Long formationId, String email) {
-        if (!quizRepository.isFormateurOfFormation(formationId, email))
+        if (!quizFinalRepository.isFormateurOfFormation(formationId, email))
             throw new SecurityException("Accès interdit à cette formation.");
     }
 
-    private void checkCoursExists(Long coursId, Long formationId) {
-        if (!quizRepository.coursExistsInFormation(coursId, formationId))
-            throw new RuntimeException("Cours non trouvé dans cette formation.");
-    }
-
-    private Quiz getQuizOrThrow(Long coursId) {
-        return quizRepository.findByCoursId(coursId)
-                .orElseThrow(() -> new RuntimeException("Aucun quiz trouvé pour ce cours."));
+    private Quiz getQuizOrThrow(Long formationId) {
+        return quizFinalRepository.findByFormationId(formationId)
+                .orElseThrow(() -> new RuntimeException("Aucun quiz final trouvé."));
     }
 
     private Question findQuestionOrThrow(Quiz quiz, Long questionId) {

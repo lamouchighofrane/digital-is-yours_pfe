@@ -48,11 +48,21 @@ public class QuizEntity {
     @Builder.Default
     private Boolean inclureCasPratiques = true;
 
+    // ── Durée (QuizFinal uniquement) ─────────────────────────
+    @Column(name = "duree_minutes")
+    private Integer dureeMinutes;
+
+    // ── Cours (MiniQuiz) ─────────────────────────────────────
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cours_id", nullable = false, unique = true)
+    @JoinColumn(name = "cours_id", unique = true, nullable = true)
     private CoursEntity cours;
 
-    // ← LAZY : évite le MultipleBagFetchException
+    // ── Formation (QuizFinal) ────────────────────────────────
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "formation_id")
+    private FormationEntity formation;
+
+    // ── Questions ────────────────────────────────────────────
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<QuestionEntity> questions = new ArrayList<>();

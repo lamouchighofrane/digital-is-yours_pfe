@@ -22,6 +22,7 @@ public class IAQuizAdapter implements IAQuizPort {
             String coursDescription,
             String coursObjectifs,
             Long coursId,
+            Long formationId,
             String videoUrl,
             String videoType,
             int nombreQuestions,
@@ -29,13 +30,12 @@ public class IAQuizAdapter implements IAQuizPort {
             boolean inclureDefinitions,
             boolean inclureCasPratiques) {
 
-        // Construction du CoursInfoIA (DTO interne infrastructure)
         CoursInfoIA coursInfo = new CoursInfoIA(coursTitre, coursDescription, coursObjectifs);
 
-        // Appel de IAQuizService avec la signature exacte
         List<QuizQuestionIA> questionsIA = iaQuizService.genererQuiz(
                 coursInfo,
                 coursId,
+                formationId,
                 videoUrl,
                 videoType,
                 nombreQuestions,

@@ -10,7 +10,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 })
 export class DashboardFormateurComponent implements OnInit, OnDestroy {
 
-  activeSection: 'dashboard' | 'mes-formations' | 'profil' | 'cours' = 'dashboard';
+  activeSection: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' = 'dashboard';
   formateurUser: any = null;
   formations: any[] = [];
   stats: any = { totalApprenants: 0, tauxReussite: 0, nouveauxInscrits: 0, noteMoyenne: 0 };
@@ -131,6 +131,58 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   docDragOver = false;
   docUploading: { name: string; progress: number }[] = [];
 
+  // ══════════════════════════════════════════════════════════
+  // QUIZ FINAL
+  // ══════════════════════════════════════════════════════════
+  quizFinal: any = null;
+  quizFinalLoading = false;
+  quizFinalExists = false;
+  quizFinalGenerating = false;
+  showQuizFinalModal = false;
+  quizFinalContexte: any = null;
+  quizFinalParams: any = {
+    nombreQuestions: 20,
+    difficulte: 'MOYEN',
+    inclureDefinitions: true,
+    inclureCasPratiques: true,
+    notePassage: 70,
+    nombreTentatives: 3,
+    dureeMinutes: 45
+  };
+
+  // ── Quiz Final — édition inline ───────────────────────────
+  qfEditingId: number | null = null;
+  qfEditForm: any = null;
+  qfSaving = false;
+  qfEditError = '';
+
+  // ── Quiz Final — suppression question ─────────────────────
+  showDeleteQfModal = false;
+  qfDeleteQuestion: any = null;
+  qfDeleteIndex = 0;
+  qfDeleteSaving = false;
+
+  // ── Quiz Final — ajout question ───────────────────────────
+  showAddQfModal = false;
+  qfAddSaving = false;
+  qfAddError = '';
+  qfNewQuestion: any = {
+    texte: '', explication: '',
+    options: [
+      { ordre: 'A', texte: '', estCorrecte: true  },
+      { ordre: 'B', texte: '', estCorrecte: false },
+      { ordre: 'C', texte: '', estCorrecte: false },
+      { ordre: 'D', texte: '', estCorrecte: false }
+    ]
+  };
+
+  readonly qfTimerPresets = [
+    { val: 30,  label: '30 min', icon: '⚡' },
+    { val: 45,  label: '45 min', icon: '⏱' },
+    { val: 60,  label: '1 heure', icon: '🕐' },
+    { val: 90,  label: '1h30',   icon: '🕑' }
+  ];
+
   private api = 'http://localhost:8080/api/formateur';
   private pollingInterval: any = null;
 
@@ -190,7 +242,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     });
   }
 
-  setSection(section: 'dashboard' | 'mes-formations' | 'profil' | 'cours') {
+  setSection(section: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final') {
     this.activeSection = section;
     if (section === 'mes-formations') this.loadFormations();
     if (section === 'profil') this.loadProfil();
@@ -198,6 +250,13 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       this.selectedFormation = null;
       this.cours = [];
       this.coursStats = { total: 0, publies: 0, brouillons: 0 };
+      this.loadFormations();
+    }
+    if (section === 'quiz-final') {
+      this.selectedFormation = null;
+      this.quizFinal = null;
+      this.quizFinalExists = false;
+      this.quizFinalContexte = null;
       this.loadFormations();
     }
     this.closeNotifPanel();
@@ -222,9 +281,17 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   loadFormations() {
-    this.http.get<any[]>(`${this.api}/mes-formations`, { headers: this.headers() })
-      .subscribe({ next: d => this.formations = d || [], error: () => this.formations = [] });
-  }
+  this.http.get<any[]>(`${this.api}/mes-formations`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        this.formations = d || [];
+        this.cdr.detectChanges();
+        // AJOUT : charger le statut quiz final pour toutes les formations
+        this.loadQuizFinalStatusForAllFormations();
+      },
+      error: () => this.formations = []
+    });
+}
 
   // ── Cours ──────────────────────────────────────────────────
   voirCours(formation: any) {
@@ -245,7 +312,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
           this.coursLoading = false;
           this.cdr.detectChanges();
           this.loadNbDocumentsForAllCours();
-          this.loadQuizStatusForAllCours(); // ← NOUVEAU : charge le statut quiz pour chaque cours
+          this.loadQuizStatusForAllCours();
         },
         error: () => { this.cours = []; this.coursLoading = false; this.cdr.detectChanges(); }
       });
@@ -267,7 +334,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── NOUVEAU : charge le statut quiz (hasQuiz) pour chaque cours de la liste ──
   loadQuizStatusForAllCours() {
     if (!this.selectedFormation || !this.cours.length) return;
     this.cours.forEach(cours => {
@@ -307,7 +373,6 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.videoUploadProgress = 0;
     this.videoDragOver = false;
 
-    // Réinitialiser les états mini-quiz
     this.mqEditingId = null;
     this.mqEditForm = null;
     this.mqEditError = '';
@@ -334,13 +399,9 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       this.docTotalTaille = 0;
       this.docUploading = [];
 
-      // ── CORRECTION : pré-charger le statut quiz depuis la propriété hasQuiz
-      //    du cours (déjà chargée par loadQuizStatusForAllCours).
-      //    On remet miniQuiz à null pour forcer un rechargement propre
-      //    UNIQUEMENT quand l'utilisateur clique sur l'onglet Mini-quiz.
       this.miniQuiz = null;
       this.miniQuizContexte = null;
-      this.miniQuizExists = cours.hasQuiz === true; // ← affiche ✓ sur l'onglet dès l'ouverture
+      this.miniQuizExists = cours.hasQuiz === true;
 
     } else {
       this.coursModalMode = 'create';
@@ -474,39 +535,24 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   onCoursDrop(event: DragEvent, dropIndex: number) {
     event.preventDefault();
     event.stopPropagation();
-
     const dragIdx = this.dragIndex;
-    if (dragIdx === null || dragIdx === dropIndex) {
-      this.resetDragState();
-      return;
-    }
-
+    if (dragIdx === null || dragIdx === dropIndex) { this.resetDragState(); return; }
     const draggedCours = this.filteredCours[dragIdx];
     const targetCours  = this.filteredCours[dropIndex];
-
     const realDragIdx   = this.cours.findIndex(c => c.id === draggedCours.id);
     const realTargetIdx = this.cours.findIndex(c => c.id === targetCours.id);
-
-    if (realDragIdx === -1 || realTargetIdx === -1) {
-      this.resetDragState();
-      return;
-    }
-
+    if (realDragIdx === -1 || realTargetIdx === -1) { this.resetDragState(); return; }
     const newCours = [...this.cours];
     const [removed] = newCours.splice(realDragIdx, 1);
     newCours.splice(realTargetIdx, 0, removed);
-
     newCours.forEach((c, idx) => c.ordre = idx + 1);
     this.cours = newCours;
     this.resetDragState();
     this.cdr.detectChanges();
-
     this.sauvegarderOrdre();
   }
 
-  onCoursDragEnd() {
-    this.resetDragState();
-  }
+  onCoursDragEnd() { this.resetDragState(); }
 
   private resetDragState() {
     this.dragIndex = null;
@@ -524,10 +570,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       { headers: this.headers() }
     ).subscribe({
       next: () => this.showToast('Ordre des cours mis à jour !', 'success'),
-      error: () => {
-        this.showToast('Erreur lors de la sauvegarde de l\'ordre.', 'error');
-        this.loadCours();
-      }
+      error: () => { this.showToast('Erreur lors de la sauvegarde de l\'ordre.', 'error'); this.loadCours(); }
     });
   }
 
@@ -542,16 +585,10 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
 
   // ══ VIDÉO ═══════════════════════════════════════════════════
 
-  onVideoDragOver(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.videoDragOver = true;
-  }
+  onVideoDragOver(event: DragEvent) { event.preventDefault(); event.stopPropagation(); this.videoDragOver = true; }
 
   onVideoDrop(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.videoDragOver = false;
+    event.preventDefault(); event.stopPropagation(); this.videoDragOver = false;
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) this.uploadVideoFile(files[0]);
   }
@@ -564,62 +601,38 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   uploadVideoFile(file: File) {
     if (!this.currentCoursId || !this.selectedFormation) return;
     const allowed = ['video/mp4','video/avi','video/quicktime','video/x-msvideo','video/webm'];
-    if (!allowed.includes(file.type)) {
-      this.showToast('Format non supporté. Utilisez MP4, AVI, MOV ou WebM.', 'error'); return;
-    }
-    if (file.size > 1 * 1024 * 1024 * 1024) {
-      this.showToast('Fichier trop volumineux. Maximum 1 GB.', 'error'); return;
-    }
-
-    this.videoUploading = true;
-    this.videoUploadProgress = 0;
-    this.videoUploadingName = file.name;
+    if (!allowed.includes(file.type)) { this.showToast('Format non supporté. Utilisez MP4, AVI, MOV ou WebM.', 'error'); return; }
+    if (file.size > 1 * 1024 * 1024 * 1024) { this.showToast('Fichier trop volumineux. Maximum 1 GB.', 'error'); return; }
+    this.videoUploading = true; this.videoUploadProgress = 0; this.videoUploadingName = file.name;
     this.cdr.detectChanges();
-
     const formData = new FormData();
     formData.append('fichier', file);
     const token = localStorage.getItem('formateur_token');
     const xhr = new XMLHttpRequest();
     this.uploadXhr = xhr;
-
     xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        this.videoUploadProgress = Math.round((e.loaded / e.total) * 100);
-        this.cdr.detectChanges();
-      }
+      if (e.lengthComputable) { this.videoUploadProgress = Math.round((e.loaded / e.total) * 100); this.cdr.detectChanges(); }
     };
     xhr.onload = () => {
-      this.videoUploading = false;
-      this.uploadXhr = null;
+      this.videoUploading = false; this.uploadXhr = null;
       if (xhr.status === 200) {
         const updated = JSON.parse(xhr.responseText);
-        this.videoType = updated.videoType;
-        this.videoUrl  = updated.videoUrl;
-        this.updateCoursInList(updated);
-        this.showToast('Vidéo uploadée avec succès !', 'success');
+        this.videoType = updated.videoType; this.videoUrl = updated.videoUrl;
+        this.updateCoursInList(updated); this.showToast('Vidéo uploadée avec succès !', 'success');
       } else {
         try { this.showToast(JSON.parse(xhr.responseText).message || 'Erreur upload.', 'error'); }
         catch { this.showToast('Erreur lors de l\'upload.', 'error'); }
       }
       this.cdr.detectChanges();
     };
-    xhr.onerror = () => {
-      this.videoUploading = false;
-      this.uploadXhr = null;
-      this.showToast('Erreur réseau lors de l\'upload.', 'error');
-      this.cdr.detectChanges();
-    };
+    xhr.onerror = () => { this.videoUploading = false; this.uploadXhr = null; this.showToast('Erreur réseau lors de l\'upload.', 'error'); this.cdr.detectChanges(); };
     xhr.open('POST', `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/video/upload`);
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.send(formData);
   }
 
   cancelVideoUpload() {
-    this.uploadXhr?.abort();
-    this.uploadXhr = null;
-    this.videoUploading = false;
-    this.videoUploadProgress = 0;
-    this.cdr.detectChanges();
+    this.uploadXhr?.abort(); this.uploadXhr = null; this.videoUploading = false; this.videoUploadProgress = 0; this.cdr.detectChanges();
   }
 
   ajouterYoutube() {
@@ -631,18 +644,13 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       { headers: this.headers() }
     ).subscribe({
       next: updated => {
-        this.videoType = updated.videoType;
-        this.videoUrl  = updated.videoUrl;
-        this.youtubeUrlInput = '';
-        this.videoYoutubeAdding = false;
-        this.updateCoursInList(updated);
-        this.showToast('Vidéo YouTube associée au cours !', 'success');
-        this.cdr.detectChanges();
+        this.videoType = updated.videoType; this.videoUrl = updated.videoUrl; this.youtubeUrlInput = '';
+        this.videoYoutubeAdding = false; this.updateCoursInList(updated);
+        this.showToast('Vidéo YouTube associée au cours !', 'success'); this.cdr.detectChanges();
       },
       error: err => {
         this.videoYoutubeAdding = false;
-        this.showToast(err.error?.message || 'URL YouTube invalide.', 'error');
-        this.cdr.detectChanges();
+        this.showToast(err.error?.message || 'URL YouTube invalide.', 'error'); this.cdr.detectChanges();
       }
     });
   }
@@ -650,24 +658,16 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   supprimerVideo() {
     if (!confirm('Supprimer la vidéo de ce cours ?')) return;
     this.videoDeleting = true;
-    this.http.delete(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/video`,
-      { headers: this.headers() }
-    ).subscribe({
-      next: () => {
-        this.videoType = null;
-        this.videoUrl  = null;
-        this.videoDeleting = false;
-        const c = this.cours.find((x:any) => x.id === this.currentCoursId);
-        if (c) { c.videoType = null; c.videoUrl = null; }
-        this.showToast('Vidéo supprimée.', 'success');
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.videoDeleting = false;
-        this.showToast('Erreur lors de la suppression.', 'error');
-      }
-    });
+    this.http.delete(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/video`, { headers: this.headers() })
+      .subscribe({
+        next: () => {
+          this.videoType = null; this.videoUrl = null; this.videoDeleting = false;
+          const c = this.cours.find((x:any) => x.id === this.currentCoursId);
+          if (c) { c.videoType = null; c.videoUrl = null; }
+          this.showToast('Vidéo supprimée.', 'success'); this.cdr.detectChanges();
+        },
+        error: () => { this.videoDeleting = false; this.showToast('Erreur lors de la suppression.', 'error'); }
+      });
   }
 
   private updateCoursInList(updated: any) {
@@ -692,9 +692,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     return `${this.api}/cours/${this.currentCoursId}/video/stream/${this.videoUrl}`;
   }
 
-  onThumbError(event: Event) {
-    (event.target as HTMLImageElement).style.display = 'none';
-  }
+  onThumbError(event: Event) { (event.target as HTMLImageElement).style.display = 'none'; }
 
   formatVideoTime(seconds: number): string {
     if (!seconds) return '0:00';
@@ -713,9 +711,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   private showToast(msg: string, type: 'success' | 'error') {
-    this.coursToast = msg;
-    this.coursToastType = type;
-    this.cdr.detectChanges();
+    this.coursToast = msg; this.coursToastType = type; this.cdr.detectChanges();
     setTimeout(() => { this.coursToast = ''; this.cdr.detectChanges(); }, 3000);
   }
 
@@ -724,86 +720,50 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   loadDocuments(): void {
     if (!this.currentCoursId || !this.selectedFormation) return;
     this.docLoading = true;
-    this.http.get<any>(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents`,
-      { headers: this.headers() }
-    ).subscribe({
-      next: (res) => {
-        this.documents = (res.documents || []).map((d: any) => ({
-          ...d,
-          _editing: false,
-          _editTitre: d.titre
-        }));
-        this.docTotalTaille = res.totalTaille || 0;
-        this.docLoading = false;
-        const c = this.cours.find(x => x.id === this.currentCoursId);
-        if (c) c.nbDocuments = this.documents.length;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.documents = [];
-        this.docLoading = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.http.get<any>(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents`, { headers: this.headers() })
+      .subscribe({
+        next: (res) => {
+          this.documents = (res.documents || []).map((d: any) => ({ ...d, _editing: false, _editTitre: d.titre }));
+          this.docTotalTaille = res.totalTaille || 0;
+          this.docLoading = false;
+          const c = this.cours.find(x => x.id === this.currentCoursId);
+          if (c) c.nbDocuments = this.documents.length;
+          this.cdr.detectChanges();
+        },
+        error: () => { this.documents = []; this.docLoading = false; this.cdr.detectChanges(); }
+      });
   }
 
-  onDocDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.docDragOver = true;
-  }
+  onDocDragOver(event: DragEvent): void { event.preventDefault(); event.stopPropagation(); this.docDragOver = true; }
 
   onDocDrop(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.docDragOver = false;
+    event.preventDefault(); event.stopPropagation(); this.docDragOver = false;
     const files = event.dataTransfer?.files;
-    if (files && files.length > 0) {
-      this.uploadDocFiles(Array.from(files));
-    }
+    if (files && files.length > 0) this.uploadDocFiles(Array.from(files));
   }
 
   onDocFilesSelected(event: Event): void {
     const files = (event.target as HTMLInputElement).files;
-    if (files && files.length > 0) {
-      this.uploadDocFiles(Array.from(files));
-      (event.target as HTMLInputElement).value = '';
-    }
+    if (files && files.length > 0) { this.uploadDocFiles(Array.from(files)); (event.target as HTMLInputElement).value = ''; }
   }
 
   uploadDocFiles(files: File[]): void {
     const remaining = 10 - this.documents.length;
     const filesToUpload = files.slice(0, remaining);
-    for (const file of filesToUpload) {
-      this.uploadSingleDoc(file);
-    }
+    for (const file of filesToUpload) this.uploadSingleDoc(file);
   }
 
   uploadSingleDoc(file: File): void {
     if (!this.currentCoursId || !this.selectedFormation) return;
-
     const upEntry = { name: file.name, progress: 0 };
-    this.docUploading.push(upEntry);
-    this.cdr.detectChanges();
-
-    const formData = new FormData();
-    formData.append('fichier', file);
-
+    this.docUploading.push(upEntry); this.cdr.detectChanges();
+    const formData = new FormData(); formData.append('fichier', file);
     const token = localStorage.getItem('formateur_token');
     const xhr = new XMLHttpRequest();
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        upEntry.progress = Math.round((e.loaded / e.total) * 100);
-        this.cdr.detectChanges();
-      }
-    };
-
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) { upEntry.progress = Math.round((e.loaded / e.total) * 100); this.cdr.detectChanges(); } };
     xhr.onload = () => {
       const idx = this.docUploading.indexOf(upEntry);
       if (idx !== -1) this.docUploading.splice(idx, 1);
-
       if (xhr.status === 200) {
         const doc = JSON.parse(xhr.responseText);
         this.documents.push({ ...doc, _editing: false, _editTitre: doc.titre });
@@ -812,115 +772,83 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
         if (c) c.nbDocuments = (c.nbDocuments || 0) + 1;
         this.showToast(`"${doc.titre}" ajouté avec succès !`, 'success');
       } else {
-        try {
-          const err = JSON.parse(xhr.responseText);
-          this.showToast(err.message || 'Erreur lors de l\'upload.', 'error');
-        } catch {
-          this.showToast('Erreur lors de l\'upload.', 'error');
-        }
+        try { this.showToast(JSON.parse(xhr.responseText).message || 'Erreur lors de l\'upload.', 'error'); }
+        catch { this.showToast('Erreur lors de l\'upload.', 'error'); }
       }
       this.cdr.detectChanges();
     };
-
     xhr.onerror = () => {
       const idx = this.docUploading.indexOf(upEntry);
       if (idx !== -1) this.docUploading.splice(idx, 1);
-      this.showToast(`Erreur réseau pour "${file.name}".`, 'error');
-      this.cdr.detectChanges();
+      this.showToast(`Erreur réseau pour "${file.name}".`, 'error'); this.cdr.detectChanges();
     };
-
-    xhr.open('POST',
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/upload`
-    );
+    xhr.open('POST', `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/upload`);
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.send(formData);
   }
 
   startEditDoc(doc: any): void {
-    doc._editing = true;
-    doc._editTitre = doc.titre;
-    this.cdr.detectChanges();
-    setTimeout(() => {
-      const el = document.getElementById('doc-title-' + doc.id) as HTMLInputElement;
-      if (el) { el.focus(); el.select(); }
-    }, 50);
+    doc._editing = true; doc._editTitre = doc.titre; this.cdr.detectChanges();
+    setTimeout(() => { const el = document.getElementById('doc-title-' + doc.id) as HTMLInputElement; if (el) { el.focus(); el.select(); } }, 50);
   }
 
   saveDocTitre(doc: any): void {
     const titre = doc._editTitre?.trim();
     if (!titre) return;
-    this.http.put<any>(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}`,
-      { titre },
-      { headers: this.headers() }
-    ).subscribe({
-      next: (updated) => {
-        doc.titre = updated.titre;
-        doc._editing = false;
-        this.showToast('Titre modifié avec succès !', 'success');
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.showToast(err.error?.message || 'Erreur lors de la modification.', 'error');
-      }
-    });
+    this.http.put<any>(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}`, { titre }, { headers: this.headers() })
+      .subscribe({
+        next: (updated) => { doc.titre = updated.titre; doc._editing = false; this.showToast('Titre modifié avec succès !', 'success'); this.cdr.detectChanges(); },
+        error: (err) => this.showToast(err.error?.message || 'Erreur lors de la modification.', 'error')
+      });
   }
 
   deleteDoc(doc: any): void {
     if (!confirm(`Supprimer le document "${doc.titre}" ?`)) return;
-    this.http.delete(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}`,
-      { headers: this.headers() }
-    ).subscribe({
-      next: () => {
-        this.documents = this.documents.filter(d => d.id !== doc.id);
-        this.docTotalTaille = Math.max(0, this.docTotalTaille - (doc.taille || 0));
-        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
-        if (c && c.nbDocuments > 0) c.nbDocuments--;
-        this.showToast('Document supprimé.', 'success');
-        this.cdr.detectChanges();
-      },
-      error: () => this.showToast('Erreur lors de la suppression.', 'error')
-    });
+    this.http.delete(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}`, { headers: this.headers() })
+      .subscribe({
+        next: () => {
+          this.documents = this.documents.filter(d => d.id !== doc.id);
+          this.docTotalTaille = Math.max(0, this.docTotalTaille - (doc.taille || 0));
+          const c = this.cours.find((x: any) => x.id === this.currentCoursId);
+          if (c && c.nbDocuments > 0) c.nbDocuments--;
+          this.showToast('Document supprimé.', 'success'); this.cdr.detectChanges();
+        },
+        error: () => this.showToast('Erreur lors de la suppression.', 'error')
+      });
   }
 
   downloadDoc(doc: any): void {
     if (!this.selectedFormation || !this.currentCoursId) return;
-    this.http.get(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}/download`,
-      { headers: this.headers(), responseType: 'blob' }
-    ).subscribe({
-      next: blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = doc.nomFichier || doc.titre;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      },
-      error: () => this.showToast('Erreur lors du téléchargement.', 'error')
-    });
+    this.http.get(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/documents/${doc.id}/download`, { headers: this.headers(), responseType: 'blob' })
+      .subscribe({
+        next: blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = doc.nomFichier || doc.titre; a.click();
+          window.URL.revokeObjectURL(url);
+        },
+        error: () => this.showToast('Erreur lors du téléchargement.', 'error')
+      });
   }
 
   getDocIconClass(type: string): string {
     if (!type) return 'doc-icon-other';
-    if (type.includes('pdf'))        return 'doc-icon-pdf';
+    if (type.includes('pdf')) return 'doc-icon-pdf';
     if (type.includes('word') || type.includes('msword')) return 'doc-icon-word';
     if (type.includes('powerpoint') || type.includes('presentation')) return 'doc-icon-ppt';
     if (type.includes('excel') || type.includes('sheet')) return 'doc-icon-excel';
-    if (type.includes('image'))      return 'doc-icon-img';
-    if (type.includes('text'))       return 'doc-icon-txt';
+    if (type.includes('image')) return 'doc-icon-img';
+    if (type.includes('text')) return 'doc-icon-txt';
     return 'doc-icon-other';
   }
 
   getDocLabel(type: string): string {
     if (!type) return 'DOC';
-    if (type.includes('pdf'))        return 'PDF';
+    if (type.includes('pdf')) return 'PDF';
     if (type.includes('word') || type.includes('msword')) return 'DOC';
     if (type.includes('powerpoint') || type.includes('presentation')) return 'PPT';
     if (type.includes('excel') || type.includes('sheet')) return 'XLS';
-    if (type.includes('image'))      return 'IMG';
-    if (type.includes('text'))       return 'TXT';
+    if (type.includes('image')) return 'IMG';
+    if (type.includes('text')) return 'TXT';
     return 'FILE';
   }
 
@@ -929,107 +857,54 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.http.get<any>(`${this.api}/profil`, { headers: this.headers() })
       .subscribe({
         next: d => {
-          this.formateurUser = d;
-          this.photoPreview = d.photo || null;
+          this.formateurUser = d; this.photoPreview = d.photo || null;
           this.competences = Array.isArray(d.competences) ? [...d.competences] : [];
           const rs = d.reseauxSociaux || {};
-          this.reseauxSociaux = {
-            linkedin:  rs.linkedin  || '',
-            twitter:   rs.twitter   || '',
-            portfolio: rs.portfolio || '',
-            github:    rs.github    || '',
-          };
-          this.profilForm.patchValue({
-            prenom:           d.prenom           || '',
-            nom:              d.nom              || '',
-            telephone:        d.telephone        || '',
-            specialite:       d.specialite       || '',
-            bio:              d.bio              || '',
-            anneesExperience: d.anneesExperience || 0,
-          });
-          localStorage.setItem('formateur_user', JSON.stringify(d));
-          this.cdr.detectChanges();
+          this.reseauxSociaux = { linkedin: rs.linkedin || '', twitter: rs.twitter || '', portfolio: rs.portfolio || '', github: rs.github || '' };
+          this.profilForm.patchValue({ prenom: d.prenom || '', nom: d.nom || '', telephone: d.telephone || '', specialite: d.specialite || '', bio: d.bio || '', anneesExperience: d.anneesExperience || 0 });
+          localStorage.setItem('formateur_user', JSON.stringify(d)); this.cdr.detectChanges();
         },
-        error: err => {
-          console.error('Erreur chargement profil:', err);
-          this.profilError = 'Impossible de charger le profil. Veuillez réessayer.';
-          this.cdr.detectChanges();
-        }
+        error: err => { console.error('Erreur chargement profil:', err); this.profilError = 'Impossible de charger le profil. Veuillez réessayer.'; this.cdr.detectChanges(); }
       });
   }
 
-  // ── Photo ──────────────────────────────────────────────────
   onPhotoSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { this.profilError = 'Veuillez sélectionner une image.'; return; }
-    if (file.size > 2 * 1024 * 1024)    { this.profilError = 'La photo ne doit pas dépasser 2 Mo.'; return; }
+    if (file.size > 2 * 1024 * 1024) { this.profilError = 'La photo ne doit pas dépasser 2 Mo.'; return; }
     this.photoUploading = true;
     const reader = new FileReader();
-    reader.onload = (e) => {
-      this.photoPreview = e.target?.result as string;
-      this.photoUploading = false;
-      this.cdr.detectChanges();
-    };
+    reader.onload = (e) => { this.photoPreview = e.target?.result as string; this.photoUploading = false; this.cdr.detectChanges(); };
     reader.readAsDataURL(file);
   }
 
   removePhoto() { this.photoPreview = null; this.cdr.detectChanges(); }
 
-  // ── Compétences ────────────────────────────────────────────
   addCompetence() {
     const t = this.competenceInput.trim();
-    if (t && !this.competences.includes(t) && this.competences.length < 8) {
-      this.competences.push(t);
-      this.competenceInput = '';
-      this.cdr.detectChanges();
-    }
+    if (t && !this.competences.includes(t) && this.competences.length < 8) { this.competences.push(t); this.competenceInput = ''; this.cdr.detectChanges(); }
   }
 
-  addCompetenceOnEnter(event: KeyboardEvent) {
-    if (event.key === 'Enter') { event.preventDefault(); this.addCompetence(); }
-  }
+  addCompetenceOnEnter(event: KeyboardEvent) { if (event.key === 'Enter') { event.preventDefault(); this.addCompetence(); } }
+  removeCompetence(index: number) { this.competences.splice(index, 1); this.cdr.detectChanges(); }
+  get bioLength(): number { return this.profilForm.get('bio')?.value?.length || 0; }
 
-  removeCompetence(index: number) {
-    this.competences.splice(index, 1);
-    this.cdr.detectChanges();
-  }
-
-  get bioLength(): number {
-    return this.profilForm.get('bio')?.value?.length || 0;
-  }
-
-  // ── Sauvegarder profil ─────────────────────────────────────
   saveProfil() {
     if (this.profilForm.invalid) { this.profilForm.markAllAsTouched(); return; }
     this.profilLoading = true; this.profilSuccess = ''; this.profilError = '';
-    const payload = {
-      ...this.profilForm.value,
-      photo: this.photoPreview,
-      competences:    this.competences,
-      reseauxSociaux: this.reseauxSociaux,
-    };
+    const payload = { ...this.profilForm.value, photo: this.photoPreview, competences: this.competences, reseauxSociaux: this.reseauxSociaux };
     this.http.put<any>(`${this.api}/profil`, payload, { headers: this.headers() })
       .subscribe({
         next: res => {
-          this.profilLoading = false;
-          this.profilSuccess = 'Profil mis à jour avec succès !';
-          if (res.profil) {
-            this.formateurUser = { ...this.formateurUser, ...res.profil };
-            localStorage.setItem('formateur_user', JSON.stringify(this.formateurUser));
-          }
-          this.cdr.detectChanges();
-          setTimeout(() => { this.profilSuccess = ''; this.cdr.detectChanges(); }, 3500);
+          this.profilLoading = false; this.profilSuccess = 'Profil mis à jour avec succès !';
+          if (res.profil) { this.formateurUser = { ...this.formateurUser, ...res.profil }; localStorage.setItem('formateur_user', JSON.stringify(this.formateurUser)); }
+          this.cdr.detectChanges(); setTimeout(() => { this.profilSuccess = ''; this.cdr.detectChanges(); }, 3500);
         },
-        error: err => {
-          this.profilLoading = false;
-          this.profilError = err.error?.message || 'Erreur lors de la mise à jour.';
-          this.cdr.detectChanges();
-        }
+        error: err => { this.profilLoading = false; this.profilError = err.error?.message || 'Erreur lors de la mise à jour.'; this.cdr.detectChanges(); }
       });
   }
 
-  // ── Changer mot de passe ───────────────────────────────────
   changerMotDePasse() {
     if (this.mdpForm.invalid) { this.mdpForm.markAllAsTouched(); return; }
     const { nouveauMotDePasse, confirmMotDePasse } = this.mdpForm.value;
@@ -1037,42 +912,21 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
     this.mdpLoading = true; this.mdpSuccess = ''; this.mdpError = '';
     this.http.patch<any>(`${this.api}/profil/mot-de-passe`, this.mdpForm.value, { headers: this.headers() })
       .subscribe({
-        next: () => {
-          this.mdpLoading = false; this.mdpSuccess = 'Mot de passe modifié avec succès !';
-          this.mdpForm.reset(); this.cdr.detectChanges();
-          setTimeout(() => { this.mdpSuccess = ''; this.cdr.detectChanges(); }, 3500);
-        },
-        error: err => {
-          this.mdpLoading = false;
-          this.mdpError = err.error?.message || 'Erreur lors du changement.';
-          this.cdr.detectChanges();
-        }
+        next: () => { this.mdpLoading = false; this.mdpSuccess = 'Mot de passe modifié avec succès !'; this.mdpForm.reset(); this.cdr.detectChanges(); setTimeout(() => { this.mdpSuccess = ''; this.cdr.detectChanges(); }, 3500); },
+        error: err => { this.mdpLoading = false; this.mdpError = err.error?.message || 'Erreur lors du changement.'; this.cdr.detectChanges(); }
       });
   }
 
-  cancelProfil() {
-    this.profilSuccess = ''; this.profilError = '';
-    this.setSection('dashboard');
-  }
-
-  isProfilInvalid(field: string): boolean {
-    const c = this.profilForm.get(field); return !!(c && c.invalid && c.touched);
-  }
-  isMdpInvalid(field: string): boolean {
-    const c = this.mdpForm.get(field); return !!(c && c.invalid && c.touched);
-  }
+  cancelProfil() { this.profilSuccess = ''; this.profilError = ''; this.setSection('dashboard'); }
+  isProfilInvalid(field: string): boolean { const c = this.profilForm.get(field); return !!(c && c.invalid && c.touched); }
+  isMdpInvalid(field: string): boolean { const c = this.mdpForm.get(field); return !!(c && c.invalid && c.touched); }
 
   // ══ NOTIFICATIONS ══════════════════════════════════════════
   loadNotifications() {
     this.notifLoading = true;
     this.http.get<any[]>(`${this.api}/notifications`, { headers: this.headers() })
       .subscribe({
-        next: d => {
-          this.notifications = d || [];
-          this.notifNonLues  = this.notifications.filter(n => !n.lu).length;
-          this.notifLoading  = false;
-          this.cdr.detectChanges();
-        },
+        next: d => { this.notifications = d || []; this.notifNonLues = this.notifications.filter(n => !n.lu).length; this.notifLoading = false; this.cdr.detectChanges(); },
         error: () => { this.notifications = []; this.notifNonLues = 0; this.notifLoading = false; this.cdr.detectChanges(); }
       });
   }
@@ -1089,8 +943,7 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   toggleNotifPanel(event: Event) {
-    event.stopPropagation();
-    this.showNotifPanel = !this.showNotifPanel;
+    event.stopPropagation(); this.showNotifPanel = !this.showNotifPanel;
     if (this.showNotifPanel && this.notifications.length === 0) this.loadNotifications();
     this.cdr.detectChanges();
   }
@@ -1109,16 +962,15 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
       .subscribe({ next: () => { this.notifications.forEach(n => n.lu = true); this.notifNonLues = 0; this.showNotifPanel = false; this.cdr.detectChanges(); }, error: () => {} });
   }
 
-  // ── Helpers ────────────────────────────────────────────────
   getNotifColor(t: string) { return t === 'FORMATION_AFFECTEE' ? '#4A7C7E' : t === 'FORMATION_RETIREE' ? '#8B3A3A' : '#9B8B6E'; }
-  getNotifBg(t: string)    { return t === 'FORMATION_AFFECTEE' ? 'rgba(74,124,126,.12)' : t === 'FORMATION_RETIREE' ? 'rgba(139,58,58,.10)' : 'rgba(155,139,110,.10)'; }
+  getNotifBg(t: string) { return t === 'FORMATION_AFFECTEE' ? 'rgba(74,124,126,.12)' : t === 'FORMATION_RETIREE' ? 'rgba(139,58,58,.10)' : 'rgba(155,139,110,.10)'; }
 
   getTimeAgo(dateStr: string): string {
     if (!dateStr) return '';
     const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (diff < 60)     return 'À l\'instant';
-    if (diff < 3600)   return `Il y a ${Math.floor(diff / 60)} min`;
-    if (diff < 86400)  return `Il y a ${Math.floor(diff / 3600)}h`;
+    if (diff < 60) return 'À l\'instant';
+    if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
     if (diff < 604800) return `Il y a ${Math.floor(diff / 86400)}j`;
     return new Date(dateStr).toLocaleDateString('fr-FR');
   }
@@ -1149,135 +1001,77 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   onMiniQuizTabClick() {
     if (this.coursModalMode !== 'create') {
       this.coursModalTab = 'mini-quiz';
-      this.mqEditingId = null;
-      this.mqEditForm = null;
-      this.mqEditError = '';
-
-      // ── CORRECTION : ne pas remettre à null si le quiz est déjà chargé
-      //    On recharge uniquement si miniQuiz est null (première ouverture)
-      if (!this.miniQuiz) {
-        this.miniQuizLoading = true;
-        this.loadMiniQuiz();
-      }
+      this.mqEditingId = null; this.mqEditForm = null; this.mqEditError = '';
+      if (!this.miniQuiz) { this.miniQuizLoading = true; this.loadMiniQuiz(); }
     }
   }
 
   loadMiniQuiz() {
     if (!this.currentCoursId || !this.selectedFormation) return;
     this.miniQuizLoading = true;
-    this.http.get<any>(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz`,
-      { headers: this.headers() }
-    ).subscribe({
-      next: res => {
-        if (res && res.exists === true) {
-          this.miniQuiz = res;
-          this.miniQuizExists = true;
-          // Mettre à jour le badge dans la liste
-          const c = this.cours.find((x: any) => x.id === this.currentCoursId);
-          if (c) c.hasQuiz = true;
-        } else {
-          this.miniQuiz = null;
-          this.miniQuizExists = false;
-          this.loadMiniQuizContexte();
-        }
-        this.miniQuizLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.miniQuiz = null;
-        this.miniQuizExists = false;
-        this.miniQuizLoading = false;
-        this.loadMiniQuizContexte();
-        this.cdr.detectChanges();
-      }
-    });
+    this.http.get<any>(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz`, { headers: this.headers() })
+      .subscribe({
+        next: res => {
+          if (res && res.exists === true) {
+            this.miniQuiz = res; this.miniQuizExists = true;
+            const c = this.cours.find((x: any) => x.id === this.currentCoursId); if (c) c.hasQuiz = true;
+          } else {
+            this.miniQuiz = null; this.miniQuizExists = false; this.loadMiniQuizContexte();
+          }
+          this.miniQuizLoading = false; this.cdr.detectChanges();
+        },
+        error: () => { this.miniQuiz = null; this.miniQuizExists = false; this.miniQuizLoading = false; this.loadMiniQuizContexte(); this.cdr.detectChanges(); }
+      });
   }
 
   loadMiniQuizContexte() {
     if (!this.currentCoursId || !this.selectedFormation) return;
-    this.http.get<any>(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/contexte`,
-      { headers: this.headers() }
-    ).subscribe({
-      next: ctx => { this.miniQuizContexte = ctx; this.cdr.detectChanges(); },
-      error: () => {}
-    });
+    this.http.get<any>(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/contexte`, { headers: this.headers() })
+      .subscribe({ next: ctx => { this.miniQuizContexte = ctx; this.cdr.detectChanges(); }, error: () => {} });
   }
 
   openGenerateMiniQuiz() {
-    this.miniQuizContexte = null;
-    this.loadMiniQuizContexte();
+    this.miniQuizContexte = null; this.loadMiniQuizContexte();
     this.showMiniQuizModal = true;
-    this.miniQuizParams = {
-      nombreQuestions: 5,
-      difficulte: 'MOYEN',
-      inclureDefinitions: true,
-      inclureCasPratiques: true
-    };
+    this.miniQuizParams = { nombreQuestions: 5, difficulte: 'MOYEN', inclureDefinitions: true, inclureCasPratiques: true };
     this.cdr.detectChanges();
   }
 
   generateMiniQuiz() {
     if (!this.currentCoursId || !this.selectedFormation) return;
-    this.miniQuizGenerating = true;
-    this.cdr.detectChanges();
-
-    this.http.post<any>(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/generer-ia`,
-      this.miniQuizParams,
-      { headers: this.headers() }
-    ).subscribe({
-      next: quiz => {
-        this.miniQuizGenerating = false;
-        this.showMiniQuizModal  = false;
-        this.mqEditingId        = null;
-        this.mqEditForm         = null;
-        this.miniQuiz           = quiz;
-        this.miniQuizExists     = true;
-        this.miniQuizContexte   = null;
-        // ── NOUVEAU : mettre à jour le badge dans la liste des cours
-        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
-        if (c) c.hasQuiz = true;
-        this.showToast('Mini-quiz généré avec succès par l\'IA !', 'success');
-        this.cdr.detectChanges();
-      },
-      error: err => {
-        this.miniQuizGenerating = false;
-        this.showToast(err.error?.message || 'Erreur lors de la génération.', 'error');
-        this.cdr.detectChanges();
-      }
-    });
+    this.miniQuizGenerating = true; this.cdr.detectChanges();
+    this.http.post<any>(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/generer-ia`, this.miniQuizParams, { headers: this.headers() })
+      .subscribe({
+        next: quiz => {
+          this.miniQuizGenerating = false; this.showMiniQuizModal = false;
+          this.mqEditingId = null; this.mqEditForm = null;
+          this.miniQuiz = quiz; this.miniQuizExists = true; this.miniQuizContexte = null;
+          const c = this.cours.find((x: any) => x.id === this.currentCoursId); if (c) c.hasQuiz = true;
+          this.showToast('Mini-quiz généré avec succès par l\'IA !', 'success'); this.cdr.detectChanges();
+        },
+        error: err => { this.miniQuizGenerating = false; this.showToast(err.error?.message || 'Erreur lors de la génération.', 'error'); this.cdr.detectChanges(); }
+      });
   }
 
   deleteMiniQuiz() {
     if (!confirm('Supprimer le mini-quiz de ce cours ?')) return;
-    this.http.delete(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz`,
-      { headers: this.headers() }
-    ).subscribe({
-      next: () => {
-        this.miniQuiz = null;
-        this.miniQuizExists = false;
-        this.mqEditingId = null;
-        this.mqEditForm = null;
-        // ── NOUVEAU : retirer le badge dans la liste des cours
-        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
-        if (c) c.hasQuiz = false;
-        this.loadMiniQuizContexte();
-        this.showToast('Mini-quiz supprimé.', 'success');
-        this.cdr.detectChanges();
-      },
-      error: () => this.showToast('Erreur lors de la suppression.', 'error')
-    });
+    this.http.delete(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz`, { headers: this.headers() })
+      .subscribe({
+        next: () => {
+          this.miniQuiz = null; this.miniQuizExists = false; this.mqEditingId = null; this.mqEditForm = null;
+          const c = this.cours.find((x: any) => x.id === this.currentCoursId); if (c) c.hasQuiz = false;
+          this.loadMiniQuizContexte(); this.showToast('Mini-quiz supprimé.', 'success'); this.cdr.detectChanges();
+        },
+        error: () => this.showToast('Erreur lors de la suppression.', 'error')
+      });
   }
 
   regenerateMiniQuiz() {
     this.showMiniQuizModal = true;
     this.miniQuizParams = {
-      nombreQuestions:     this.miniQuiz?.nombreQuestions  || 5,
-      difficulte:          this.miniQuiz?.niveauDifficulte || this.miniQuiz?.difficulte || 'MOYEN',
-      inclureDefinitions:  this.miniQuiz?.inclureDefinitions  ?? true,
+      nombreQuestions: this.miniQuiz?.nombreQuestions || 5,
+      difficulte: this.miniQuiz?.niveauDifficulte || this.miniQuiz?.difficulte || 'MOYEN',
+      inclureDefinitions: this.miniQuiz?.inclureDefinitions ?? true,
       inclureCasPratiques: this.miniQuiz?.inclureCasPratiques ?? true
     };
     this.cdr.detectChanges();
@@ -1286,9 +1080,9 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   quickRegenerateWithDiff(difficulte: string) {
     if (!this.currentCoursId || !this.selectedFormation) return;
     this.miniQuizParams = {
-      nombreQuestions:     this.miniQuiz?.nombreQuestions  || 5,
-      difficulte:          difficulte,
-      inclureDefinitions:  this.miniQuiz?.inclureDefinitions  ?? true,
+      nombreQuestions: this.miniQuiz?.nombreQuestions || 5,
+      difficulte,
+      inclureDefinitions: this.miniQuiz?.inclureDefinitions ?? true,
       inclureCasPratiques: this.miniQuiz?.inclureCasPratiques ?? true
     };
     this.generateMiniQuiz();
@@ -1300,221 +1094,333 @@ export class DashboardFormateurComponent implements OnInit, OnDestroy {
   }
 
   getMiniQuizDifficulteColor(d: string): string {
-    if (d === 'FACILE')    return '#27ae60';
+    if (d === 'FACILE') return '#27ae60';
     if (d === 'DIFFICILE') return '#8B3A3A';
     return '#e67e22';
   }
 
-  // ── US-019 : Édition inline ────────────────────────────────
-
   startEditQuestion019(q: any) {
-    this.mqEditingId  = q.id;
-    this.mqEditError  = '';
-    this.mqEditForm = {
-      id:          q.id,
-      texte:       q.texte       || '',
-      explication: q.explication || '',
-      options:     (q.options || []).map((o: any) => ({ ...o }))
-    };
+    this.mqEditingId = q.id; this.mqEditError = '';
+    this.mqEditForm = { id: q.id, texte: q.texte || '', explication: q.explication || '', options: (q.options || []).map((o: any) => ({ ...o })) };
     this.cdr.detectChanges();
   }
 
-  cancelEditQuestion019() {
-    this.mqEditingId = null;
-    this.mqEditForm  = null;
-    this.mqEditError = '';
-    this.cdr.detectChanges();
-  }
+  cancelEditQuestion019() { this.mqEditingId = null; this.mqEditForm = null; this.mqEditError = ''; this.cdr.detectChanges(); }
 
   setCorrectOption019(index: number) {
     if (!this.mqEditForm?.options) return;
-    this.mqEditForm.options.forEach((o: any, i: number) => { o.estCorrecte = (i === index); });
-    this.cdr.detectChanges();
+    this.mqEditForm.options.forEach((o: any, i: number) => { o.estCorrecte = (i === index); }); this.cdr.detectChanges();
   }
 
   saveEditQuestion019() {
     if (!this.mqEditForm || !this.currentCoursId || !this.selectedFormation) return;
     if (!this.mqEditForm.texte?.trim()) { this.mqEditError = 'Le texte de la question est obligatoire.'; return; }
-    for (const opt of this.mqEditForm.options) {
-      if (!opt.texte?.trim()) { this.mqEditError = 'Toutes les options doivent avoir un texte.'; return; }
-    }
+    for (const opt of this.mqEditForm.options) { if (!opt.texte?.trim()) { this.mqEditError = 'Toutes les options doivent avoir un texte.'; return; } }
     const nbCorrects = this.mqEditForm.options.filter((o: any) => o.estCorrecte).length;
     if (nbCorrects !== 1) { this.mqEditError = 'Exactement 1 option doit être la bonne réponse.'; return; }
-
-    this.mqSaving    = true;
-    this.mqEditError = '';
-    this.cdr.detectChanges();
-
-    const qId     = this.mqEditForm.id;
-    const formId  = this.selectedFormation.id;
-    const coursId = this.currentCoursId;
+    this.mqSaving = true; this.mqEditError = ''; this.cdr.detectChanges();
+    const qId = this.mqEditForm.id; const formId = this.selectedFormation.id; const coursId = this.currentCoursId;
     const baseUrl = `${this.api}/formations/${formId}/cours/${coursId}/mini-quiz`;
-
-    this.http.put<any>(
-      `${baseUrl}/questions/${qId}`,
-      { texte: this.mqEditForm.texte.trim(), explication: this.mqEditForm.explication?.trim() || '' },
-      { headers: this.headers() }
-    ).subscribe({
-      next: (updatedQuiz) => {
-        const optionUpdates = this.mqEditForm.options.map((opt: any) =>
-          this.http.patch<any>(
-            `${baseUrl}/questions/${qId}/options/${opt.id}`,
-            { texte: opt.texte.trim() },
-            { headers: this.headers() }
-          ).toPromise().catch(() => null)
-        );
-        Promise.all(optionUpdates).then(() => {
-          const correctOpt = this.mqEditForm.options.find((o: any) => o.estCorrecte);
-          this.http.patch<any>(
-            `${baseUrl}/questions/${qId}/bonne-reponse/${correctOpt.id}`,
-            {},
-            { headers: this.headers() }
-          ).subscribe({
-            next: (finalQuiz) => {
-              this.miniQuiz    = finalQuiz;
-              this.mqEditingId = null;
-              this.mqEditForm  = null;
-              this.mqSaving    = false;
-              this.showToast('Question mise à jour avec succès !', 'success');
-              this.cdr.detectChanges();
-            },
-            error: () => {
-              this.miniQuiz    = updatedQuiz;
-              this.mqEditingId = null;
-              this.mqEditForm  = null;
-              this.mqSaving    = false;
-              this.showToast('Modifications partiellement enregistrées.', 'success');
-              this.cdr.detectChanges();
-            }
+    this.http.put<any>(`${baseUrl}/questions/${qId}`, { texte: this.mqEditForm.texte.trim(), explication: this.mqEditForm.explication?.trim() || '' }, { headers: this.headers() })
+      .subscribe({
+        next: (updatedQuiz) => {
+          const optionUpdates = this.mqEditForm.options.map((opt: any) =>
+            this.http.patch<any>(`${baseUrl}/questions/${qId}/options/${opt.id}`, { texte: opt.texte.trim() }, { headers: this.headers() }).toPromise().catch(() => null)
+          );
+          Promise.all(optionUpdates).then(() => {
+            const correctOpt = this.mqEditForm.options.find((o: any) => o.estCorrecte);
+            this.http.patch<any>(`${baseUrl}/questions/${qId}/bonne-reponse/${correctOpt.id}`, {}, { headers: this.headers() })
+              .subscribe({
+                next: (finalQuiz) => { this.miniQuiz = finalQuiz; this.mqEditingId = null; this.mqEditForm = null; this.mqSaving = false; this.showToast('Question mise à jour avec succès !', 'success'); this.cdr.detectChanges(); },
+                error: () => { this.miniQuiz = updatedQuiz; this.mqEditingId = null; this.mqEditForm = null; this.mqSaving = false; this.showToast('Modifications partiellement enregistrées.', 'success'); this.cdr.detectChanges(); }
+              });
           });
-        });
-      },
-      error: (err) => {
-        this.mqSaving    = false;
-        this.mqEditError = err.error?.message || 'Erreur lors de la sauvegarde.';
-        this.cdr.detectChanges();
-      }
-    });
+        },
+        error: (err) => { this.mqSaving = false; this.mqEditError = err.error?.message || 'Erreur lors de la sauvegarde.'; this.cdr.detectChanges(); }
+      });
   }
 
-  // ── US-019 : Suppression avec confirmation ─────────────────
-
-  confirmDeleteQuestion019(q: any, index: number) {
-    this.mqDeleteQuestion      = q;
-    this.mqDeleteQuestionIndex = index;
-    this.showDeleteQuestionModal = true;
-    this.cdr.detectChanges();
-  }
+  confirmDeleteQuestion019(q: any, index: number) { this.mqDeleteQuestion = q; this.mqDeleteQuestionIndex = index; this.showDeleteQuestionModal = true; this.cdr.detectChanges(); }
 
   deleteQuestion019() {
     if (!this.mqDeleteQuestion || !this.currentCoursId || !this.selectedFormation) return;
-    this.mqDeleteSaving = true;
-    this.cdr.detectChanges();
+    this.mqDeleteSaving = true; this.cdr.detectChanges();
     const qId = this.mqDeleteQuestion.id;
-    this.http.delete<any>(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/questions/${qId}`,
-      { headers: this.headers() }
-    ).subscribe({
-      next: () => {
-        if (this.miniQuiz?.questions) {
-          this.miniQuiz.questions = this.miniQuiz.questions.filter((q: any) => q.id !== qId);
-          this.miniQuiz.questions.forEach((q: any, i: number) => q.ordre = i + 1);
-          this.miniQuiz.nbQuestions = this.miniQuiz.questions.length;
-        }
-        this.showDeleteQuestionModal = false;
-        this.mqDeleteSaving          = false;
-        this.mqDeleteQuestion        = null;
-        if (this.miniQuiz?.questions?.length === 0) {
-          this.miniQuizExists = false;
-          this.miniQuiz       = null;
-          const c = this.cours.find((x: any) => x.id === this.currentCoursId);
-          if (c) c.hasQuiz = false;
-        }
-        this.showToast('Question supprimée.', 'success');
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.mqDeleteSaving = false;
-        this.showToast(err.error?.message || 'Erreur lors de la suppression.', 'error');
-        this.cdr.detectChanges();
-      }
-    });
+    this.http.delete<any>(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/questions/${qId}`, { headers: this.headers() })
+      .subscribe({
+        next: () => {
+          if (this.miniQuiz?.questions) { this.miniQuiz.questions = this.miniQuiz.questions.filter((q: any) => q.id !== qId); this.miniQuiz.questions.forEach((q: any, i: number) => q.ordre = i + 1); this.miniQuiz.nbQuestions = this.miniQuiz.questions.length; }
+          this.showDeleteQuestionModal = false; this.mqDeleteSaving = false; this.mqDeleteQuestion = null;
+          if (this.miniQuiz?.questions?.length === 0) { this.miniQuizExists = false; this.miniQuiz = null; const c = this.cours.find((x: any) => x.id === this.currentCoursId); if (c) c.hasQuiz = false; }
+          this.showToast('Question supprimée.', 'success'); this.cdr.detectChanges();
+        },
+        error: (err) => { this.mqDeleteSaving = false; this.showToast(err.error?.message || 'Erreur lors de la suppression.', 'error'); this.cdr.detectChanges(); }
+      });
   }
-
-  // ── US-019 : Ajout manuel ──────────────────────────────────
 
   openAddQuestionModal() {
-    this.mqNewQuestion = {
-      texte: '', explication: '',
-      options: [
-        { ordre: 'A', texte: '', estCorrecte: true  },
-        { ordre: 'B', texte: '', estCorrecte: false },
-        { ordre: 'C', texte: '', estCorrecte: false },
-        { ordre: 'D', texte: '', estCorrecte: false },
-      ]
-    };
-    this.mqAddError           = '';
-    this.showAddQuestionModal = true;
-    this.cdr.detectChanges();
+    this.mqNewQuestion = { texte: '', explication: '', options: [{ ordre: 'A', texte: '', estCorrecte: true }, { ordre: 'B', texte: '', estCorrecte: false }, { ordre: 'C', texte: '', estCorrecte: false }, { ordre: 'D', texte: '', estCorrecte: false }] };
+    this.mqAddError = ''; this.showAddQuestionModal = true; this.cdr.detectChanges();
   }
 
-  setNewCorrectOption(index: number) {
-    this.mqNewQuestion.options.forEach((o: any, i: number) => { o.estCorrecte = (i === index); });
-    this.cdr.detectChanges();
-  }
+  setNewCorrectOption(index: number) { this.mqNewQuestion.options.forEach((o: any, i: number) => { o.estCorrecte = (i === index); }); this.cdr.detectChanges(); }
 
   submitAddQuestion() {
     if (!this.currentCoursId || !this.selectedFormation) return;
     if (!this.mqNewQuestion.texte?.trim()) { this.mqAddError = 'Le texte de la question est obligatoire.'; return; }
-    for (const opt of this.mqNewQuestion.options) {
-      if (!opt.texte?.trim()) { this.mqAddError = 'Toutes les options doivent avoir un texte.'; return; }
-    }
+    for (const opt of this.mqNewQuestion.options) { if (!opt.texte?.trim()) { this.mqAddError = 'Toutes les options doivent avoir un texte.'; return; } }
     const nbCorrects = this.mqNewQuestion.options.filter((o: any) => o.estCorrecte).length;
     if (nbCorrects !== 1) { this.mqAddError = 'Sélectionnez exactement 1 bonne réponse.'; return; }
-
-    this.mqAddSaving = true;
-    this.mqAddError  = '';
-    this.cdr.detectChanges();
-
-    const payload = {
-      texte:       this.mqNewQuestion.texte.trim(),
-      explication: this.mqNewQuestion.explication?.trim() || '',
-      options:     this.mqNewQuestion.options.map((o: any) => ({
-        ordre: o.ordre, texte: o.texte.trim(), estCorrecte: o.estCorrecte
-      }))
-    };
-
-    this.http.post<any>(
-      `${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/questions`,
-      payload,
-      { headers: this.headers() }
-    ).subscribe({
-      next: (updatedQuiz) => {
-        this.miniQuiz             = updatedQuiz;
-        this.miniQuizExists       = true;
-        this.mqAddSaving          = false;
-        this.showAddQuestionModal = false;
-        // Mettre à jour le badge
-        const c = this.cours.find((x: any) => x.id === this.currentCoursId);
-        if (c) c.hasQuiz = true;
-        this.showToast('Question ajoutée avec succès !', 'success');
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.mqAddSaving = false;
-        this.mqAddError  = err.error?.message || 'Erreur lors de l\'ajout.';
-        this.cdr.detectChanges();
-      }
-    });
+    this.mqAddSaving = true; this.mqAddError = ''; this.cdr.detectChanges();
+    const payload = { texte: this.mqNewQuestion.texte.trim(), explication: this.mqNewQuestion.explication?.trim() || '', options: this.mqNewQuestion.options.map((o: any) => ({ ordre: o.ordre, texte: o.texte.trim(), estCorrecte: o.estCorrecte })) };
+    this.http.post<any>(`${this.api}/formations/${this.selectedFormation.id}/cours/${this.currentCoursId}/mini-quiz/questions`, payload, { headers: this.headers() })
+      .subscribe({
+        next: (updatedQuiz) => {
+          this.miniQuiz = updatedQuiz; this.miniQuizExists = true; this.mqAddSaving = false; this.showAddQuestionModal = false;
+          const c = this.cours.find((x: any) => x.id === this.currentCoursId); if (c) c.hasQuiz = true;
+          this.showToast('Question ajoutée avec succès !', 'success'); this.cdr.detectChanges();
+        },
+        error: (err) => { this.mqAddSaving = false; this.mqAddError = err.error?.message || 'Erreur lors de l\'ajout.'; this.cdr.detectChanges(); }
+      });
   }
 
-  // ── Aliases sans suffixe (appelés depuis le HTML) ────────
-  startEditQuestion(q: any)                { this.startEditQuestion019(q); }
-  cancelEditQuestion()                     { this.cancelEditQuestion019(); }
-  saveEditQuestion()                       { this.saveEditQuestion019(); }
-  setCorrectOption(index: number)          { this.setCorrectOption019(index); }
+  startEditQuestion(q: any) { this.startEditQuestion019(q); }
+  cancelEditQuestion() { this.cancelEditQuestion019(); }
+  saveEditQuestion() { this.saveEditQuestion019(); }
+  setCorrectOption(index: number) { this.setCorrectOption019(index); }
   confirmDeleteQuestion(q: any, i: number) { this.confirmDeleteQuestion019(q, i); }
-  deleteQuestion()                         { this.deleteQuestion019(); }
+  deleteQuestion() { this.deleteQuestion019(); }
+
+  // ══════════════════════════════════════════════════════════
+  // QUIZ FINAL METHODS
+  // ══════════════════════════════════════════════════════════
+
+  openQuizFinal(formation: any) {
+    this.selectedFormation = formation;
+    this.activeSection = 'quiz-final';
+    this.quizFinal = null;
+    this.quizFinalExists = false;
+    this.quizFinalContexte = null;
+    this.qfEditingId = null;
+    this.qfEditForm = null;
+    this.loadQuizFinal();
+    this.closeNotifPanel();
+  }
+
+  loadQuizFinal() {
+    if (!this.selectedFormation) return;
+    this.quizFinalLoading = true;
+    this.http.get<any>(`${this.api}/formations/${this.selectedFormation.id}/quiz-final`, { headers: this.headers() })
+      .subscribe({
+        next: res => {
+          if (res && res.exists === true) {
+            this.quizFinal = res;
+            this.quizFinalExists = true;
+            this.loadQuizFinalContexte();
+          } else {
+            this.quizFinal = null;
+            this.quizFinalExists = false;
+            this.loadQuizFinalContexte();
+          }
+          this.quizFinalLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.quizFinal = null;
+          this.quizFinalExists = false;
+          this.quizFinalLoading = false;
+          this.loadQuizFinalContexte();
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  loadQuizFinalContexte() {
+    if (!this.selectedFormation) return;
+    this.http.get<any>(`${this.api}/formations/${this.selectedFormation.id}/quiz-final/contexte`, { headers: this.headers() })
+      .subscribe({ next: ctx => { this.quizFinalContexte = ctx; this.cdr.detectChanges(); }, error: () => {} });
+  }
+
+  openGenerateQuizFinal() {
+    this.loadQuizFinalContexte();
+    if (this.quizFinal) {
+      this.quizFinalParams = {
+        nombreQuestions:     this.quizFinal.nombreQuestions  || 20,
+        difficulte:          this.quizFinal.niveauDifficulte || 'MOYEN',
+        inclureDefinitions:  this.quizFinal.inclureDefinitions  ?? true,
+        inclureCasPratiques: this.quizFinal.inclureCasPratiques ?? true,
+        notePassage:         this.quizFinal.notePassage || 70,
+        nombreTentatives:    this.quizFinal.nombreTentatives || 3,
+        dureeMinutes:        this.quizFinal.dureeMinutes || 45
+      };
+    } else {
+      this.quizFinalParams = { nombreQuestions: 20, difficulte: 'MOYEN', inclureDefinitions: true, inclureCasPratiques: true, notePassage: 70, nombreTentatives: 3, dureeMinutes: 45 };
+    }
+    this.showQuizFinalModal = true;
+    this.cdr.detectChanges();
+  }
+
+  generateQuizFinal() {
+    if (!this.selectedFormation) return;
+    this.quizFinalGenerating = true;
+    this.cdr.detectChanges();
+    this.http.post<any>(`${this.api}/formations/${this.selectedFormation.id}/quiz-final/generer-ia`, this.quizFinalParams, { headers: this.headers() })
+      .subscribe({
+        next: quiz => {
+          this.quizFinalGenerating = false;
+          this.showQuizFinalModal  = false;
+          this.quizFinal           = quiz;
+          this.quizFinalExists     = true;
+          this.qfEditingId         = null;
+          this.qfEditForm          = null;
+          const f = this.formations.find((x: any) => x.id === this.selectedFormation.id);
+          if (f) f.hasQuizFinal = true;
+          this.showToast('Quiz Final généré avec succès par l\'IA !', 'success');
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.quizFinalGenerating = false;
+          this.showToast(err.error?.message || 'Erreur lors de la génération.', 'error');
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  deleteQuizFinal() {
+    if (!confirm('Supprimer le quiz final de cette formation ?')) return;
+    this.http.delete(`${this.api}/formations/${this.selectedFormation.id}/quiz-final`, { headers: this.headers() })
+      .subscribe({
+        next: () => {
+          this.quizFinal = null; this.quizFinalExists = false; this.qfEditingId = null; this.qfEditForm = null;
+          const f = this.formations.find((x: any) => x.id === this.selectedFormation.id);
+          if (f) f.hasQuizFinal = false;
+          this.loadQuizFinalContexte();
+          this.showToast('Quiz Final supprimé.', 'success'); this.cdr.detectChanges();
+        },
+        error: () => this.showToast('Erreur lors de la suppression.', 'error')
+      });
+  }
+
+  quickRegenerateQfWithDiff(diff: string) {
+    if (!this.selectedFormation) return;
+    this.quizFinalParams = {
+      nombreQuestions:     this.quizFinal?.nombreQuestions  || 20,
+      difficulte:          diff,
+      inclureDefinitions:  this.quizFinal?.inclureDefinitions  ?? true,
+      inclureCasPratiques: this.quizFinal?.inclureCasPratiques ?? true,
+      notePassage:         this.quizFinal?.notePassage || 70,
+      nombreTentatives:    this.quizFinal?.nombreTentatives || 3,
+      dureeMinutes:        this.quizFinal?.dureeMinutes || 45
+    };
+    this.showQuizFinalModal = false;
+    this.generateQuizFinal();
+  }
+
+  // ── QF Édition inline ────────────────────────────────────
+  startEditQf(q: any) {
+    this.qfEditingId = q.id; this.qfEditError = '';
+    this.qfEditForm = { id: q.id, texte: q.texte || '', explication: q.explication || '', options: (q.options || []).map((o: any) => ({ ...o })) };
+    this.cdr.detectChanges();
+  }
+
+  cancelEditQf() { this.qfEditingId = null; this.qfEditForm = null; this.qfEditError = ''; this.cdr.detectChanges(); }
+
+  setCorrectQfOption(index: number) {
+    if (!this.qfEditForm?.options) return;
+    this.qfEditForm.options.forEach((o: any, i: number) => { o.estCorrecte = (i === index); }); this.cdr.detectChanges();
+  }
+
+  saveEditQf() {
+    if (!this.qfEditForm || !this.selectedFormation) return;
+    if (!this.qfEditForm.texte?.trim()) { this.qfEditError = 'Le texte est obligatoire.'; return; }
+    for (const opt of this.qfEditForm.options) { if (!opt.texte?.trim()) { this.qfEditError = 'Toutes les options doivent avoir un texte.'; return; } }
+    const nbOK = this.qfEditForm.options.filter((o: any) => o.estCorrecte).length;
+    if (nbOK !== 1) { this.qfEditError = 'Exactement 1 option doit être la bonne réponse.'; return; }
+    this.qfSaving = true; this.qfEditError = ''; this.cdr.detectChanges();
+    const qId  = this.qfEditForm.id;
+    const fId  = this.selectedFormation.id;
+    const base = `${this.api}/formations/${fId}/quiz-final`;
+    this.http.put<any>(`${base}/questions/${qId}`, { texte: this.qfEditForm.texte.trim(), explication: this.qfEditForm.explication?.trim() || '' }, { headers: this.headers() })
+      .subscribe({
+        next: (updatedQuiz) => {
+          const optUpdates = this.qfEditForm.options.map((opt: any) =>
+            this.http.patch<any>(`${base}/questions/${qId}/options/${opt.id}`, { texte: opt.texte.trim() }, { headers: this.headers() }).toPromise().catch(() => null)
+          );
+          Promise.all(optUpdates).then(() => {
+            const correctOpt = this.qfEditForm.options.find((o: any) => o.estCorrecte);
+            this.http.patch<any>(`${base}/questions/${qId}/bonne-reponse/${correctOpt.id}`, {}, { headers: this.headers() })
+              .subscribe({
+                next: (finalQuiz) => { this.quizFinal = finalQuiz; this.qfEditingId = null; this.qfEditForm = null; this.qfSaving = false; this.showToast('Question mise à jour !', 'success'); this.cdr.detectChanges(); },
+                error: () => { this.quizFinal = updatedQuiz; this.qfEditingId = null; this.qfEditForm = null; this.qfSaving = false; this.showToast('Modifications enregistrées.', 'success'); this.cdr.detectChanges(); }
+              });
+          });
+        },
+        error: (err) => { this.qfSaving = false; this.qfEditError = err.error?.message || 'Erreur lors de la sauvegarde.'; this.cdr.detectChanges(); }
+      });
+  }
+
+  // ── QF Suppression ───────────────────────────────────────
+  confirmDeleteQf(q: any, index: number) { this.qfDeleteQuestion = q; this.qfDeleteIndex = index; this.showDeleteQfModal = true; this.cdr.detectChanges(); }
+
+  deleteQfQuestion() {
+    if (!this.qfDeleteQuestion || !this.selectedFormation) return;
+    this.qfDeleteSaving = true; this.cdr.detectChanges();
+    const qId = this.qfDeleteQuestion.id;
+    this.http.delete<any>(`${this.api}/formations/${this.selectedFormation.id}/quiz-final/questions/${qId}`, { headers: this.headers() })
+      .subscribe({
+        next: () => {
+          if (this.quizFinal?.questions) {
+            this.quizFinal.questions = this.quizFinal.questions.filter((q: any) => q.id !== qId);
+            this.quizFinal.questions.forEach((q: any, i: number) => q.ordre = i + 1);
+            this.quizFinal.nbQuestions = this.quizFinal.questions.length;
+          }
+          this.showDeleteQfModal = false; this.qfDeleteSaving = false; this.qfDeleteQuestion = null;
+          if (!this.quizFinal?.questions?.length) {
+            this.quizFinalExists = false; this.quizFinal = null;
+            const f = this.formations.find((x: any) => x.id === this.selectedFormation.id);
+            if (f) f.hasQuizFinal = false;
+          }
+          this.showToast('Question supprimée.', 'success'); this.cdr.detectChanges();
+        },
+        error: (err) => { this.qfDeleteSaving = false; this.showToast(err.error?.message || 'Erreur.', 'error'); this.cdr.detectChanges(); }
+      });
+  }
+
+  // ── QF Ajout question ────────────────────────────────────
+  openAddQfModal() {
+    this.qfNewQuestion = { texte: '', explication: '', options: [{ ordre: 'A', texte: '', estCorrecte: true }, { ordre: 'B', texte: '', estCorrecte: false }, { ordre: 'C', texte: '', estCorrecte: false }, { ordre: 'D', texte: '', estCorrecte: false }] };
+    this.qfAddError = ''; this.showAddQfModal = true; this.cdr.detectChanges();
+  }
+
+  setNewCorrectQfOption(index: number) { this.qfNewQuestion.options.forEach((o: any, i: number) => { o.estCorrecte = (i === index); }); this.cdr.detectChanges(); }
+
+  submitAddQf() {
+    if (!this.selectedFormation) return;
+    if (!this.qfNewQuestion.texte?.trim()) { this.qfAddError = 'Le texte est obligatoire.'; return; }
+    for (const opt of this.qfNewQuestion.options) { if (!opt.texte?.trim()) { this.qfAddError = 'Toutes les options doivent avoir un texte.'; return; } }
+    const nbOK = this.qfNewQuestion.options.filter((o: any) => o.estCorrecte).length;
+    if (nbOK !== 1) { this.qfAddError = 'Sélectionnez exactement 1 bonne réponse.'; return; }
+    this.qfAddSaving = true; this.qfAddError = ''; this.cdr.detectChanges();
+    const payload = { texte: this.qfNewQuestion.texte.trim(), explication: this.qfNewQuestion.explication?.trim() || '', options: this.qfNewQuestion.options.map((o: any) => ({ ordre: o.ordre, texte: o.texte.trim(), estCorrecte: o.estCorrecte })) };
+    this.http.post<any>(`${this.api}/formations/${this.selectedFormation.id}/quiz-final/questions`, payload, { headers: this.headers() })
+      .subscribe({
+        next: (updatedQuiz) => {
+          this.quizFinal = updatedQuiz; this.quizFinalExists = true;
+          this.qfAddSaving = false; this.showAddQfModal = false;
+          const f = this.formations.find((x: any) => x.id === this.selectedFormation.id);
+          if (f) f.hasQuizFinal = true;
+          this.showToast('Question ajoutée !', 'success'); this.cdr.detectChanges();
+        },
+        error: (err) => { this.qfAddSaving = false; this.qfAddError = err.error?.message || 'Erreur.'; this.cdr.detectChanges(); }
+      });
+  }
+
+  loadQuizFinalStatusForAllFormations() {
+    this.formations.forEach((f: any) => {
+      this.http.get<any>(`${this.api}/formations/${f.id}/quiz-final`, { headers: this.headers() })
+        .subscribe({ next: (res) => { f.hasQuizFinal = res && res.exists === true; this.cdr.detectChanges(); }, error: () => { f.hasQuizFinal = false; } });
+    });
+  }
 
   logout() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);

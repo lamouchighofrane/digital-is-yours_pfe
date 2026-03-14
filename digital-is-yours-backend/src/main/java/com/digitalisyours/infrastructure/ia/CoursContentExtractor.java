@@ -1,7 +1,9 @@
 package com.digitalisyours.infrastructure.ia;
 
 
+import com.digitalisyours.infrastructure.persistence.entity.CoursEntity;
 import com.digitalisyours.infrastructure.persistence.entity.DocumentEntity;
+import com.digitalisyours.infrastructure.persistence.repository.CoursJpaRepository;
 import com.digitalisyours.infrastructure.persistence.repository.DocumentJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CoursContentExtractor {
     private final DocumentJpaRepository documentRepository;
+    private final CoursJpaRepository coursRepository;
 
     @Value("${app.upload.dir:uploads/videos}")
     private String uploadDir;
@@ -42,7 +45,7 @@ public class CoursContentExtractor {
             .build();
 
     // ══════════════════════════════════════════════════════════
-    // EXTRACTION TEXTE PDF
+    // EXTRACTION TEXTE PDF — pour un cours unique (MiniQuiz)
     // ══════════════════════════════════════════════════════════
 
     /**
@@ -59,7 +62,6 @@ public class CoursContentExtractor {
             String type = doc.getTypeFichier();
             if (type == null) continue;
 
-            // Accepter PDF et Word (.doc et .docx)
             boolean isPdf  = "application/pdf".equals(type);
             boolean isDocx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document".equals(type);
             boolean isDoc  = "application/msword".equals(type);
@@ -71,7 +73,6 @@ public class CoursContentExtractor {
                 String texte = "";
 
                 if (isPdf) {
-                    // ── Extraction PDF ────────────────────────────
                     PDDocument pdDoc = Loader.loadPDF(filePath.toFile());
                     PDFTextStripper stripper = new PDFTextStripper();
                     texte = stripper.getText(pdDoc);
@@ -79,7 +80,6 @@ public class CoursContentExtractor {
                     log.info("PDF extrait : '{}'", doc.getTitre());
 
                 } else if (isDocx) {
-                    // ── Extraction Word .docx ─────────────────────
                     try (FileInputStream fis = new FileInputStream(filePath.toFile());
                          XWPFDocument xwpf = new XWPFDocument(fis);
                          XWPFWordExtractor extractor = new XWPFWordExtractor(xwpf)) {
@@ -88,7 +88,6 @@ public class CoursContentExtractor {
                     log.info("Word .docx extrait : '{}'", doc.getTitre());
 
                 } else {
-                    // ── Extraction Word .doc (ancien format) ──────
                     try (FileInputStream fis = new FileInputStream(filePath.toFile());
                          HWPFDocument hwpf = new HWPFDocument(fis);
                          WordExtractor extractor = new WordExtractor(hwpf)) {
@@ -97,12 +96,10 @@ public class CoursContentExtractor {
                     log.info("Word .doc extrait : '{}'", doc.getTitre());
                 }
 
-                // Nettoyage commun
                 texte = texte.replaceAll("[ \t]+", " ")
                         .replaceAll("(\r?\n){3,}", "\n\n")
                         .trim();
 
-                // Limiter à 3000 caractères par document
                 if (texte.length() > 3000) {
                     texte = texte.substring(0, 3000) + "...";
                 }
@@ -123,12 +120,52 @@ public class CoursContentExtractor {
     }
 
     // ══════════════════════════════════════════════════════════
-    // EXTRACTION TRANSCRIPTION YOUTUBE (sous-titres automatiques)
+    // EXTRACTION TOUS COURS D'UNE FORMATION — pour Quiz Final
+    // ══════════════════════════════════════════════════════════
+
+    /**
+     * Extrait le texte de TOUS les documents (PDF, Word) de TOUS les cours d'une formation.
+     * Utilisé pour générer le Quiz Final qui couvre toute la formation.
+     * Limite globale à 12 000 caractères pour ne pas surcharger Groq.
+     */
+    public String extraireTousLesCoursDeLaFormation(Long formationId) {
+        List<CoursEntity> cours = coursRepository.findByFormationIdOrderByOrdre(formationId);
+        if (cours.isEmpty()) return "";
+
+        StringBuilder contenuGlobal = new StringBuilder();
+        int totalCours = 0;
+
+        for (CoursEntity c : cours) {
+            String contenuCours = extrairePdfs(c.getId());
+            if (!contenuCours.isBlank()) {
+                contenuGlobal
+                        .append("═══ COURS ").append(++totalCours).append(" : ")
+                        .append(c.getTitre()).append(" ═══\n");
+                if (c.getObjectifs() != null && !c.getObjectifs().isBlank()) {
+                    contenuGlobal.append("OBJECTIFS : ").append(c.getObjectifs()).append("\n\n");
+                }
+                contenuGlobal.append(contenuCours).append("\n\n");
+            }
+
+            // Limiter à 12 000 caractères total pour ne pas surcharger Groq
+            if (contenuGlobal.length() > 12000) {
+                contenuGlobal.append("... (contenu tronqué pour optimisation IA)");
+                break;
+            }
+        }
+
+        log.info("Extraction formation {} : {} cours avec documents, {} caractères total",
+                formationId, totalCours, contenuGlobal.length());
+
+        return contenuGlobal.toString().trim();
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // EXTRACTION TRANSCRIPTION YOUTUBE
     // ══════════════════════════════════════════════════════════
 
     /**
      * Récupère la transcription automatique d'une vidéo YouTube via ses sous-titres.
-     * Fonctionne gratuitement sans API key, via l'URL de sous-titres intégrée à la page YouTube.
      */
     public String extraireTranscriptionYoutube(String videoUrl) {
         if (videoUrl == null || videoUrl.isBlank()) return "";
@@ -140,18 +177,15 @@ public class CoursContentExtractor {
         }
 
         try {
-            // Étape 1 : charger la page YouTube pour trouver l'URL des sous-titres
             String pageHtml = fetchYoutubePage(videoId);
             if (pageHtml == null) return "";
 
-            // Étape 2 : extraire l'URL de caption depuis le JSON embarqué
             String captionUrl = extractCaptionUrl(pageHtml);
             if (captionUrl == null) {
                 log.warn("Pas de sous-titres disponibles pour la vidéo YouTube : {}", videoId);
                 return "";
             }
 
-            // Étape 3 : récupérer et parser le XML des sous-titres
             String xmlContent = fetchCaptionXml(captionUrl);
             if (xmlContent == null || xmlContent.isBlank()) return "";
 
@@ -161,7 +195,6 @@ public class CoursContentExtractor {
                 return "";
             }
 
-            // Limiter à 3000 caractères
             if (transcription.length() > 3000) {
                 transcription = transcription.substring(0, 3000) + "...";
             }
@@ -189,7 +222,6 @@ public class CoursContentExtractor {
     }
 
     private String fetchYoutubePage(String videoId) throws Exception {
-        // Headers complets simulant un vrai navigateur Chrome pour éviter le blocage anti-bot
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://www.youtube.com/watch?v=" + videoId))
                 .header("User-Agent",
@@ -215,8 +247,6 @@ public class CoursContentExtractor {
         }
 
         String body = response.body();
-
-        // Vérifier si YouTube a bloqué la requête (anti-bot)
         if (body.contains("unusual traffic") || body.contains("captcha") || body.length() < 50000) {
             log.warn("YouTube semble avoir bloqué la requête pour la vidéo {} (taille: {} chars)", videoId, body.length());
         }
@@ -237,14 +267,11 @@ public class CoursContentExtractor {
     }
 
     private String extractCaptionUrl(String pageContent) {
-
-        // Nettoyage des échappements JSON multiples avant la recherche
         String cleaned = pageContent
                 .replace("\\u0026", "&")
                 .replace("\\\\u0026", "&")
                 .replace("\u0026", "&");
 
-        // Pattern 1 : format standard captionTracks
         Pattern p1 = Pattern.compile(
                 "\"captionTracks\":\\[\\{\"baseUrl\":\"(https://[^\"]+)\"",
                 Pattern.DOTALL
@@ -256,7 +283,6 @@ public class CoursContentExtractor {
             return url;
         }
 
-        // Pattern 2 : baseUrl direct timedtext
         Pattern p2 = Pattern.compile(
                 "\"baseUrl\":\"(https://www\\.youtube\\.com/api/timedtext[^\"]+)\""
         );
@@ -267,7 +293,6 @@ public class CoursContentExtractor {
             return url;
         }
 
-        // Pattern 3 : chercher n'importe quelle URL timedtext dans la page
         Pattern p3 = Pattern.compile(
                 "(https://www\\.youtube\\.com/api/timedtext\\?[^\\s\"]+)"
         );
@@ -277,7 +302,6 @@ public class CoursContentExtractor {
             return m3.group(1);
         }
 
-        // Pattern 4 : format JSON avec playerCaptionsTracklistRenderer
         Pattern p4 = Pattern.compile(
                 "playerCaptionsTracklistRenderer.*?\"baseUrl\":\"(https://[^\"]+timedtext[^\"]+)\"",
                 Pattern.DOTALL

@@ -24,13 +24,20 @@ public class Quiz {
     private Boolean inclureCasPratiques;
     private LocalDateTime dateCreation;
 
-    // Cours associé
+    // ── Cours associé (MiniQuiz) ────────────────────────────
     private Long coursId;
     private String coursTitre;
     private String coursDescription;
     private String coursObjectifs;
     private String videoType;
     private String videoUrl;
+
+    // ── Formation associée (QuizFinal) ──────────────────────
+    private Long formationId;
+    private String formationTitre;
+
+    // ── Chronomètre (QuizFinal) ─────────────────────────────
+    private Integer dureeMinutes;         // Durée totale du quiz en minutes
 
     @Builder.Default
     private List<Question> questions = new ArrayList<>();
