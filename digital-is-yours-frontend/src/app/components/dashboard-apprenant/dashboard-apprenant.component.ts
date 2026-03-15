@@ -12,7 +12,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' = 'dashboard';
   apprenantUser: any = null;
 
-  // ── KPI Dashboard ─────────────────────────────────────────
   stats: any = {
     formationsEnCours: 0,
     formationsTerminees: 0,
@@ -20,19 +19,22 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     progressionGlobale: 0
   };
 
-  // ── Formations ────────────────────────────────────────────
   formations: any[]      = [];
   formationsLoading      = false;
   formationsSearch       = '';
   formationsFilterNiveau = '';
 
-  // ── Notifications ──────────────────────────────────────────
+  recommandations: any[]    = [];
+  recommandationsLoading    = false;
+  recommandationsError      = '';
+  recommandationsRefreshing = false;
+  profilIncomplet           = false; // ✅ Nouveau flag profil incomplet
+
   notifications: any[] = [];
   notifNonLues         = 0;
   showNotifPanel       = false;
   notifLoading         = false;
 
-  // ── Profil ─────────────────────────────────────────────────
   profilActiveTab: 'identite' | 'preferences' | 'securite' = 'identite';
   profilLoading  = false;
   profilSuccess  = '';
@@ -47,26 +49,20 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   photoPreview: string | null = null;
   photoUploading = false;
 
-  // Formulaire infos perso
-  profilForm = {
-    prenom: '', nom: '', telephone: '', bio: ''
-  };
+  profilForm = { prenom: '', nom: '', telephone: '', bio: '' };
 
-  // Formulaire préférences
   prefsForm = {
     niveauActuel: 'DEBUTANT',
     objectifsApprentissage: '',
     disponibilitesHeuresParSemaine: null as number | null
   };
 
-  // Formulaire mot de passe
   mdpForm = {
     ancienMotDePasse: '',
     nouveauMotDePasse: '',
     confirmMotDePasse: ''
   };
 
-  // ✅ Domaines : champ texte libre (plus de tableau de chips)
   domainesInput  = '';
   disponibilites: string[] = [];
 
@@ -110,7 +106,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     return new HttpHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` });
   }
 
-  // ── Navigation ─────────────────────────────────────────────
   setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats') {
     this.activeSection = s;
     if (s === 'formations') this.loadFormations();
@@ -119,14 +114,74 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     this.closeNotifPanel();
   }
 
-  // ── Chargement dashboard ───────────────────────────────────
   loadDashboardData() {
     this.loadFormations();
+    this.loadRecommandations();
     this.http.get<any>(`${this.api}/stats`, { headers: this.headers() })
       .subscribe({ next: d => { this.stats = d; this.cdr.detectChanges(); }, error: () => {} });
   }
 
-  // ── Formations ────────────────────────────────────────────
+  // ✅ Recommandations avec gestion profil incomplet
+  loadRecommandations() {
+    this.recommandationsLoading = true;
+    this.recommandationsError   = '';
+    this.profilIncomplet        = false;
+
+    this.http.get<any[]>(`${this.api}/recommandations`, { headers: this.headers() })
+      .subscribe({
+        next: d => {
+          this.recommandations        = d || [];
+          this.recommandationsLoading = false;
+          // Si liste vide → profil incomplet (domaines et objectifs vides)
+          if (this.recommandations.length === 0) {
+            this.profilIncomplet = true;
+          }
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.recommandations        = [];
+          this.recommandationsLoading = false;
+          this.recommandationsError   = 'Impossible de charger les recommandations.';
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  rafraichirRecommandations() {
+    this.recommandationsRefreshing = true;
+    this.profilIncomplet           = false;
+    this.http.delete(`${this.api}/recommandations/cache`, { headers: this.headers() })
+      .subscribe({
+        next: () => { this.recommandationsRefreshing = false; this.loadRecommandations(); },
+        error: () => { this.recommandationsRefreshing = false; this.loadRecommandations(); }
+      });
+  }
+
+  getScoreColor(score: number): string {
+    if (score >= 80) return '#27ae60';
+    if (score >= 60) return '#e67e22';
+    if (score >= 40) return '#4A7C7E';
+    return '#9B8B6E';
+  }
+
+  getScoreBg(score: number): string {
+    if (score >= 80) return 'rgba(39,174,96,.1)';
+    if (score >= 60) return 'rgba(230,126,34,.1)';
+    if (score >= 40) return 'rgba(74,124,126,.1)';
+    return 'rgba(155,139,110,.1)';
+  }
+
+  getScoreLabel(score: number): string {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Très bien';
+    if (score >= 40) return 'Bien';
+    return 'Possible';
+  }
+
+  voirFormation(formationId: number) {
+    this.router.navigate(['/catalogue', formationId]);
+  }
+
   loadFormations() {
     this.formationsLoading = true;
     this.http.get<any[]>(`${this.api}/mes-formations`, { headers: this.headers() })
@@ -145,7 +200,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Profil : chargement ───────────────────────────────────
   loadProfil() {
     this.http.get<any>(`${this.api}/profil`, { headers: this.headers() })
       .subscribe({
@@ -159,7 +213,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ── Patch formulaires depuis les données utilisateur ──────
   patchFormsFromUser(u: any) {
     this.profilForm = {
       prenom:    u?.prenom    || '',
@@ -173,14 +226,12 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
       objectifsApprentissage:         u?.objectifsApprentissage || '',
       disponibilitesHeuresParSemaine: u?.disponibilitesHeuresParSemaine ?? null
     };
-    // ✅ Tableau → string séparée par virgules
     this.domainesInput = Array.isArray(u?.domainesInteret)
       ? u.domainesInteret.join(', ')
       : (u?.domainesInteret || '');
     this.disponibilites = Array.isArray(u?.disponibilites) ? [...u.disponibilites] : [];
   }
 
-  // ── Profil : sauvegarde infos ─────────────────────────────
   saveProfil() {
     this.profilLoading = true; this.profilSuccess = ''; this.profilError = '';
     const payload = { ...this.profilForm, photo: this.photoPreview };
@@ -198,22 +249,19 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
         },
         error: err => {
           this.profilLoading = false;
-          this.profilError = err.error?.message || 'Erreur lors de la mise à jour.';
+          this.profilError   = err.error?.message || 'Erreur lors de la mise à jour.';
           this.cdr.detectChanges();
         }
       });
   }
 
-  // ── Profil : sauvegarde préférences ───────────────────────
+  // ✅ Après sauvegarde préférences → recalcul recommandations automatique
   savePreferences() {
     this.profilLoading = true; this.profilSuccess = ''; this.profilError = '';
     const payload = {
       ...this.prefsForm,
-      // ✅ String → tableau en splitant par virgule
       domainesInteret: this.domainesInput
-        .split(',')
-        .map(d => d.trim())
-        .filter(d => d.length > 0),
+        .split(',').map(d => d.trim()).filter(d => d.length > 0),
       disponibilites: this.disponibilites
     };
     this.http.put<any>(`${this.api}/profil`, payload, { headers: this.headers() })
@@ -225,18 +273,21 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
             this.apprenantUser = { ...this.apprenantUser, ...res.profil };
             localStorage.setItem('user', JSON.stringify(this.apprenantUser));
           }
+          // ✅ Invalider le cache et recalculer les recommandations
+          this.profilIncomplet = false;
+          this.http.delete(`${this.api}/recommandations/cache`, { headers: this.headers() })
+            .subscribe({ next: () => this.loadRecommandations(), error: () => this.loadRecommandations() });
           this.cdr.detectChanges();
           setTimeout(() => { this.profilSuccess = ''; this.cdr.detectChanges(); }, 3500);
         },
         error: err => {
           this.profilLoading = false;
-          this.profilError = err.error?.message || 'Erreur.';
+          this.profilError   = err.error?.message || 'Erreur.';
           this.cdr.detectChanges();
         }
       });
   }
 
-  // ── Profil : mot de passe ─────────────────────────────────
   changerMotDePasse() {
     this.mdpSuccess = ''; this.mdpError = '';
     if (!this.mdpForm.ancienMotDePasse || !this.mdpForm.nouveauMotDePasse || !this.mdpForm.confirmMotDePasse) {
@@ -260,19 +311,18 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
         },
         error: err => {
           this.mdpLoading = false;
-          this.mdpError = err.error?.message || 'Erreur lors du changement.';
+          this.mdpError   = err.error?.message || 'Erreur lors du changement.';
           this.cdr.detectChanges();
         }
       });
   }
 
   resetMdpForm() {
-    this.mdpForm = { ancienMotDePasse: '', nouveauMotDePasse: '', confirmMotDePasse: '' };
+    this.mdpForm    = { ancienMotDePasse: '', nouveauMotDePasse: '', confirmMotDePasse: '' };
     this.mdpError   = '';
     this.mdpSuccess = '';
   }
 
-  // ── Photo ──────────────────────────────────────────────────
   onPhotoSelected(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
@@ -281,7 +331,7 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     this.photoUploading = true;
     const reader = new FileReader();
     reader.onload = (e) => {
-      this.photoPreview = e.target?.result as string;
+      this.photoPreview   = e.target?.result as string;
       this.photoUploading = false;
       this.cdr.detectChanges();
     };
@@ -290,7 +340,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
 
   removePhoto() { this.photoPreview = null; this.cdr.detectChanges(); }
 
-  // ── Disponibilités ────────────────────────────────────────
   toggleJour(j: string) {
     const idx = this.disponibilites.indexOf(j);
     if (idx >= 0) this.disponibilites.splice(idx, 1);
@@ -298,7 +347,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // ══ NOTIFICATIONS ══════════════════════════════════════════
   loadNotifications() {
     this.notifLoading = true;
     this.http.get<any[]>(`${this.api}/notifications`, { headers: this.headers() })
@@ -309,7 +357,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
           this.notifLoading  = false;
           this.cdr.detectChanges();
         },
-        error: () => { this.notifications = []; this.notifNonLues = 0; this.notifLoading = false; this.cdr.detectChanges(); }
+        error: () => {
+          this.notifications = []; this.notifNonLues = 0;
+          this.notifLoading  = false; this.cdr.detectChanges();
+        }
       });
   }
 
@@ -320,7 +371,8 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
           const n = d.count || 0;
           if (n > this.notifNonLues) this.loadNotifications();
           else { this.notifNonLues = n; this.cdr.detectChanges(); }
-        }, error: () => {}
+        },
+        error: () => {}
       });
   }
 
@@ -336,16 +388,30 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   marquerLue(notif: any) {
     if (notif.lu) return;
     this.http.patch(`${this.api}/notifications/${notif.id}/lire`, {}, { headers: this.headers() })
-      .subscribe({ next: () => { notif.lu = true; this.notifNonLues = Math.max(0, this.notifNonLues - 1); this.cdr.detectChanges(); }, error: () => {} });
+      .subscribe({
+        next: () => {
+          notif.lu          = true;
+          this.notifNonLues = Math.max(0, this.notifNonLues - 1);
+          this.cdr.detectChanges();
+        },
+        error: () => {}
+      });
   }
 
   marquerToutesLues(event: Event) {
     event.stopPropagation();
     this.http.patch(`${this.api}/notifications/tout-lire`, {}, { headers: this.headers() })
-      .subscribe({ next: () => { this.notifications.forEach(n => n.lu = true); this.notifNonLues = 0; this.showNotifPanel = false; this.cdr.detectChanges(); }, error: () => {} });
+      .subscribe({
+        next: () => {
+          this.notifications.forEach(n => n.lu = true);
+          this.notifNonLues   = 0;
+          this.showNotifPanel = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {}
+      });
   }
 
-  // ── Mot de passe : force ────────────────────────────────────
   getPwStrength(): number {
     const p = this.mdpForm.nouveauMotDePasse;
     if (!p) return 0;
@@ -364,7 +430,8 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   hasMaj(): boolean     { return /[A-Z]/.test(this.mdpForm.nouveauMotDePasse); }
   hasChiffre(): boolean { return /[0-9]/.test(this.mdpForm.nouveauMotDePasse); }
   hasSpecial(): boolean { return /[^A-Za-z0-9]/.test(this.mdpForm.nouveauMotDePasse); }
-  mdpMatch(): boolean   {
+
+  mdpMatch(): boolean {
     return !!this.mdpForm.confirmMotDePasse &&
            this.mdpForm.confirmMotDePasse === this.mdpForm.nouveauMotDePasse;
   }
@@ -373,7 +440,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
            this.mdpForm.confirmMotDePasse !== this.mdpForm.nouveauMotDePasse;
   }
 
-  // ── Helpers ────────────────────────────────────────────────
   getInitiales(): string {
     const p = this.profilForm.prenom?.[0] || '';
     const n = this.profilForm.nom?.[0]    || '';
@@ -397,10 +463,15 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   }
 
   getNotifColor(t: string) {
-    return t === 'NOUVELLE_FORMATION' ? '#4A7C7E' : t === 'CERTIFICAT' ? '#27ae60' : '#9B8B6E';
+    return t === 'NOUVELLE_FORMATION' ? '#4A7C7E'
+         : t === 'CERTIFICAT'         ? '#27ae60'
+         : '#9B8B6E';
   }
+
   getNotifBg(t: string) {
-    return t === 'NOUVELLE_FORMATION' ? 'rgba(74,124,126,.12)' : t === 'CERTIFICAT' ? 'rgba(39,174,96,.1)' : 'rgba(155,139,110,.1)';
+    return t === 'NOUVELLE_FORMATION' ? 'rgba(74,124,126,.12)'
+         : t === 'CERTIFICAT'         ? 'rgba(39,174,96,.1)'
+         : 'rgba(155,139,110,.1)';
   }
 
   getTimeAgo(dateStr: string): string {

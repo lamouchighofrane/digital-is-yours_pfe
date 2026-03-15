@@ -32,4 +32,7 @@ public interface FormationJpaRepository extends JpaRepository<FormationEntity, L
     @Transactional
     @Query("UPDATE FormationEntity f SET f.categorie = null WHERE f.categorie.id = :categorieId")
     void detacherCategorie(@Param("categorieId") Long categorieId);
+    @Query("SELECT f FROM FormationEntity f LEFT JOIN FETCH f.categorie WHERE f.statut = 'PUBLIE' ORDER BY f.noteMoyenne DESC NULLS LAST, f.nombreInscrits DESC")
+    List<FormationEntity> findFormationsNonInscrites(@Param("emailApprenant") String emailApprenant);
 }
+

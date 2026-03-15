@@ -12,10 +12,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RestController
-@RequestMapping("/api/formateur/notifications")
+@RequestMapping({"/api/formateur/notifications", "/api/apprenant/notifications"})
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:4200")
 @Slf4j
@@ -23,12 +24,28 @@ public class NotificationController {
     private final NotificationUseCase notificationUseCase;
     private final JwtUtil jwtUtil;
 
+    // Types de notifications réservés aux formateurs
+    private static final List<String> TYPES_FORMATEUR = List.of(
+            "FORMATION_AFFECTEE", "FORMATION_RETIREE", "FORMATEUR"
+    );
+
     @GetMapping
     public ResponseEntity<?> getMesNotifications(
-            @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader,
+            @RequestHeader(value = "X-Request-URI", required = false) String requestUri) {
         String email = extractEmail(authHeader);
         if (email == null) return unauthorized();
+
         List<Notification> notifs = notificationUseCase.getMesNotifications(email);
+
+        // ✅ Si appel depuis /api/apprenant → filtrer les notifs de type formateur
+        String role = extractRole(authHeader);
+        if ("APPRENANT".equals(role)) {
+            notifs = notifs.stream()
+                    .filter(n -> !TYPES_FORMATEUR.contains(n.getType()))
+                    .collect(Collectors.toList());
+        }
+
         return ResponseEntity.ok(notifs);
     }
 
@@ -37,6 +54,18 @@ public class NotificationController {
             @RequestHeader("Authorization") String authHeader) {
         String email = extractEmail(authHeader);
         if (email == null) return unauthorized();
+
+        // ✅ Pour un apprenant, compter uniquement ses notifications apprenant
+        String role = extractRole(authHeader);
+        if ("APPRENANT".equals(role)) {
+            List<Notification> notifs = notificationUseCase.getMesNotifications(email);
+            long count = notifs.stream()
+                    .filter(n -> !TYPES_FORMATEUR.contains(n.getType()))
+                    .filter(n -> !n.isLu())
+                    .count();
+            return ResponseEntity.ok(Map.of("count", count));
+        }
+
         return ResponseEntity.ok(Map.of("count", notificationUseCase.getNonLuesCount(email)));
     }
 
@@ -47,11 +76,9 @@ public class NotificationController {
         String email = extractEmail(authHeader);
         if (email == null) return unauthorized();
         try {
-            // Vérifier que la notif appartient à cet utilisateur
             List<Notification> notifs = notificationUseCase.getMesNotifications(email);
             boolean appartient = notifs.stream().anyMatch(n -> n.getId().equals(id));
             if (!appartient) return ResponseEntity.notFound().build();
-
             notificationUseCase.marquerCommentLue(id, email);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (RuntimeException e) {
@@ -65,7 +92,8 @@ public class NotificationController {
         String email = extractEmail(authHeader);
         if (email == null) return unauthorized();
         notificationUseCase.marquerToutesLues(email);
-        return ResponseEntity.ok(Map.of("success", true, "message", "Toutes les notifications marquées comme lues"));
+        return ResponseEntity.ok(Map.of("success", true,
+                "message", "Toutes les notifications marquées comme lues"));
     }
 
     private String extractEmail(String authHeader) {
@@ -73,6 +101,16 @@ public class NotificationController {
             if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
             String token = authHeader.substring(7);
             return jwtUtil.isValid(token) ? jwtUtil.extractEmail(token) : null;
+        } catch (Exception e) { return null; }
+    }
+
+    private String extractRole(String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
+            String token = authHeader.substring(7);
+            if (!jwtUtil.isValid(token)) return null;
+            // Extraire le rôle depuis le token JWT
+            return jwtUtil.extractRole(token);
         } catch (Exception e) { return null; }
     }
 
