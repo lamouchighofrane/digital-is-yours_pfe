@@ -27,6 +27,9 @@ import { FormationsComponent } from './components/admin/formations/formations.co
 import { CompetencesComponent } from './components/admin/competences/competences.component';
 import { DashboardFormateurComponent } from './components/dashboard-formateur/dashboard-formateur.component';
 import { DashboardApprenantComponent } from './components/dashboard-apprenant/dashboard-apprenant.component';
+import { FormationDetailComponent } from './components/shared/formation-detail/formation-detail.component';
+import { PaiementSuccesComponent } from './components/shared/paiement-succes/paiement-succes.component';
+import { PaiementAnnuleComponent } from './components/shared/paiement-annule/paiement-annule.component';
 
 
 
@@ -38,7 +41,8 @@ import { DashboardApprenantComponent } from './components/dashboard-apprenant/da
     FeaturesComponent, StatsComponent, TestimonialsComponent,
     CtaComponent, RegisterComponent, LoginComponent,
     ForgotPasswordComponent,SplashScreenComponent,VerifyEmailComponent,AdminLoginComponent,
-    AdminDashboardComponent,CategoriesComponent, FormationsComponent,CompetencesComponent,DashboardFormateurComponent,DashboardApprenantComponent
+    AdminDashboardComponent,CategoriesComponent, FormationsComponent,CompetencesComponent,DashboardFormateurComponent,DashboardApprenantComponent,FormationDetailComponent,PaiementSuccesComponent,
+    PaiementAnnuleComponent,
   ],
   imports: [
     BrowserModule, AppRoutingModule,

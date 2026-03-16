@@ -60,19 +60,13 @@ public class FormationRepositoryAdapter implements FormationRepositoryPort {
     }
 
     @Override
-    public long countAll() {
-        return formationJpaRepository.countAll();
-    }
+    public long countAll() { return formationJpaRepository.countAll(); }
 
     @Override
-    public long countPubliees() {
-        return formationJpaRepository.countPubliees();
-    }
+    public long countPubliees() { return formationJpaRepository.countPubliees(); }
 
     @Override
-    public long countBrouillons() {
-        return formationJpaRepository.countBrouillons();
-    }
+    public long countBrouillons() { return formationJpaRepository.countBrouillons(); }
 
     @Override
     @Transactional(readOnly = true)
@@ -118,6 +112,7 @@ public class FormationRepositoryAdapter implements FormationRepositoryPort {
                 .dureeEstimee(e.getDureeEstimee())
                 .niveau(e.getNiveau())
                 .statut(e.getStatut())
+                .prix(e.getPrix())                    // ★ AJOUT
                 .dateCreation(e.getDateCreation())
                 .datePublication(e.getDatePublication())
                 .nombreInscrits(e.getNombreInscrits())
@@ -164,6 +159,7 @@ public class FormationRepositoryAdapter implements FormationRepositoryPort {
                 .dureeEstimee(f.getDureeEstimee())
                 .niveau(f.getNiveau())
                 .statut(f.getStatut())
+                .prix(f.getPrix() != null ? f.getPrix() : 29.99)  // ★ AJOUT
                 .categorie(categorie)
                 .formateur(formateur)
                 .dateCreation(f.getDateCreation())

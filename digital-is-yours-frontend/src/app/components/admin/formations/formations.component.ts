@@ -32,6 +32,7 @@ interface Formation {
   dureeEstimee: number;
   niveau: string;
   statut: string;
+  prix: number;                        // ★ AJOUT
   categorieId?: number | null;
   categorieNom?: string;
   categorieCouleur?: string;
@@ -349,6 +350,8 @@ export class FormationsComponent implements OnInit {
   saveFormation() {
     if (!this.form.titre?.trim()) { this.showToast('Le titre est obligatoire', 'error'); return; }
     if (!this.form.niveau)        { this.showToast('Choisissez un niveau', 'error'); return; }
+    // ★ Validation prix
+    if (!this.form.prix || this.form.prix <= 0) { this.showToast('Le prix doit être supérieur à 0', 'error'); return; }
     this.isSaving = true;
     if (this.selectedFile) {
       this.toBase64(this.selectedFile).then(b64 => {
@@ -491,6 +494,7 @@ export class FormationsComponent implements OnInit {
       titre: '', description: '', objectifsApprentissage: '',
       prerequis: '', pourQui: '', imageCouverture: '',
       dureeEstimee: 1, niveau: 'DEBUTANT', statut: 'BROUILLON',
+      prix: 29.99,                          // ★ AJOUT
       categorieId: null, formateurId: null
     };
   }

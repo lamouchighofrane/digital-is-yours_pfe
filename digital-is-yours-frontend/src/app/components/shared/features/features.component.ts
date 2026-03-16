@@ -173,9 +173,9 @@ export class FeaturesComponent implements OnInit, AfterViewInit {
     this.resetFiltres(true);
   }
 
-  voirFormation(formationId: number): void {
-    this.router.navigate(['/login']);
-  }
+ voirFormation(formationId: number): void {
+    this.router.navigate(['/formation', formationId]);
+}
 
   // ── Actions filtres ───────────────────────────────────
 

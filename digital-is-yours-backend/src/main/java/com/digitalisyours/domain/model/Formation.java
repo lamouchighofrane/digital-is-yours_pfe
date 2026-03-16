@@ -28,7 +28,7 @@ public class Formation {
     private Long categorieId;
     private String categorieNom;
 
-    // ★★★ AJOUT : Formateur ★★★
+    // Formateur
     private Long formateurId;
     private String formateurNom;
     private String formateurPrenom;
@@ -41,5 +41,8 @@ public class Formation {
     private Integer nombreCertifies;
     private Float noteMoyenne;
     private Float tauxReussite;
+
+    // ★ Prix
+    private Double prix;
 
 }

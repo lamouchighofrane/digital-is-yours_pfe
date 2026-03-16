@@ -940,4 +940,233 @@
 
     </section>
   </main>
+  <!-- OVERLAY -->
+<div *ngIf="showPaiementModal" class="modal-overlay" (click)="fermerModalPaiement()">
+  <div class="modal-paiement" (click)="$event.stopPropagation()">
+ 
+    <!-- ── Header modal ── -->
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon">
+          <svg width="20" height="20" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke-width="1.8"/>
+            <line x1="1" y1="10" x2="23" y2="10" stroke-width="1.8"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="modal-title">Paiement sécurisé</h2>
+          <p class="modal-subtitle">{{ paiementFormation?.titre || paiementFormation?.formationTitre }}</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="fermerModalPaiement()"
+              *ngIf="paiementEtape !== 'traitement'">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+ 
+    <!-- ════════════════════════════════════════
+         ÉTAPE 1 : FORMULAIRE CARTE
+    ════════════════════════════════════════ -->
+    <div *ngIf="paiementEtape === 'formulaire'" class="modal-body">
+ 
+      <!-- Récapitulatif montant -->
+      <div class="recap-montant">
+        <div class="recap-left">
+          <span class="recap-label">Montant à payer</span>
+          <span class="recap-montant-val">{{ paiementMontant | number:'1.2-2' }} TND</span>
+        </div>
+        <div class="recap-badges">
+          <span class="secure-badge">
+            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Sécurisé
+          </span>
+          <span class="ssl-badge">SSL 256-bit</span>
+        </div>
+      </div>
+ 
+      <!-- Carte visuelle -->
+      <div class="carte-visuelle" [class.carte-visa]="getCarteType()==='visa'"
+           [class.carte-mc]="getCarteType()==='mastercard'">
+        <div class="carte-chip"></div>
+        <div class="carte-numero">
+          {{ carteForm.numeroCarte || '•••• •••• •••• ••••' }}
+        </div>
+        <div class="carte-bas">
+          <div>
+            <p class="carte-label-sm">Titulaire</p>
+            <p class="carte-holder">{{ carteForm.nomCarte || 'VOTRE NOM' }}</p>
+          </div>
+          <div>
+            <p class="carte-label-sm">Expire</p>
+            <p class="carte-exp">{{ carteForm.expiration || 'MM/AA' }}</p>
+          </div>
+          <div class="carte-brand">
+            <span *ngIf="getCarteType()==='visa'" class="brand-visa">VISA</span>
+            <span *ngIf="getCarteType()==='mastercard'" class="brand-mc">
+              <span class="mc-c1"></span><span class="mc-c2"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- Formulaire -->
+      <div class="paiement-form">
+ 
+        <!-- Numéro de carte -->
+        <div class="pay-field pay-field-full">
+          <label class="pay-label">Numéro de carte</label>
+          <div class="pay-input-wrap">
+            <svg class="pay-input-icon" width="16" height="16" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24">
+              <rect x="1" y="4" width="22" height="16" rx="2" stroke-width="1.5"/>
+              <line x1="1" y1="10" x2="23" y2="10" stroke-width="1.5"/>
+            </svg>
+            <input class="pay-input" type="text" placeholder="1234 5678 9012 3456"
+                   maxlength="19"
+                   [value]="carteForm.numeroCarte"
+                   (input)="formatCarteNumero($event)"
+                   inputmode="numeric">
+          </div>
+          <p class="pay-hint">Carte test acceptée : 4242 4242 4242 4242</p>
+        </div>
+ 
+        <!-- Nom du titulaire -->
+        <div class="pay-field pay-field-full">
+          <label class="pay-label">Nom du titulaire</label>
+          <div class="pay-input-wrap">
+            <svg class="pay-input-icon" width="16" height="16" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24">
+              <path stroke-width="1.5" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>
+            </svg>
+            <input class="pay-input" type="text" placeholder="PRÉNOM NOM"
+                   [(ngModel)]="carteForm.nomCarte"
+                   (input)="carteForm.nomCarte = $any($event.target).value.toUpperCase()">
+          </div>
+        </div>
+ 
+        <!-- Expiration + CVV -->
+        <div class="pay-row">
+          <div class="pay-field">
+            <label class="pay-label">Date d'expiration</label>
+            <div class="pay-input-wrap">
+              <svg class="pay-input-icon" width="16" height="16" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24">
+                <path stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <input class="pay-input" type="text" placeholder="MM/AA"
+                     maxlength="5"
+                     [value]="carteForm.expiration"
+                     (input)="formatExpiration($event)"
+                     inputmode="numeric">
+            </div>
+          </div>
+          <div class="pay-field">
+            <label class="pay-label">CVV</label>
+            <div class="pay-input-wrap">
+              <svg class="pay-input-icon" width="16" height="16" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24">
+                <path stroke-width="1.5" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <input class="pay-input" [type]="showCvv ? 'text' : 'password'"
+                     placeholder="•••" maxlength="4"
+                     [(ngModel)]="carteForm.cvv" inputmode="numeric">
+              <button type="button" class="pay-eye" (click)="showCvv = !showCvv">
+                <svg *ngIf="!showCvv" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="1.8" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3" stroke-width="1.8"/>
+                </svg>
+                <svg *ngIf="showCvv" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="1.8" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- Actions -->
+      <div class="modal-actions">
+        <button class="btn-annuler" (click)="fermerModalPaiement()">Annuler</button>
+        <button class="btn-payer" (click)="payerFormation()" [disabled]="!paiementFormValide">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Payer {{ paiementMontant | number:'1.2-2' }} TND
+        </button>
+      </div>
+    </div>
+ 
+    <!-- ════════════════════════════════════════
+         ÉTAPE 2 : TRAITEMENT EN COURS
+    ════════════════════════════════════════ -->
+    <div *ngIf="paiementEtape === 'traitement'" class="modal-body modal-center">
+      <div class="traitement-anim">
+        <div class="traitement-ring"></div>
+        <svg width="28" height="28" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <rect x="1" y="4" width="22" height="16" rx="2" stroke-width="1.8"/>
+          <line x1="1" y1="10" x2="23" y2="10" stroke-width="1.8"/>
+        </svg>
+      </div>
+      <h3 class="traitement-titre">Traitement en cours...</h3>
+      <p class="traitement-sub">Veuillez patienter, ne fermez pas cette fenêtre</p>
+      <div class="traitement-steps">
+        <div class="t-step t-step-done">✓ Données chiffrées</div>
+        <div class="t-step t-step-active">⟳ Validation bancaire</div>
+        <div class="t-step">  Confirmation inscription</div>
+      </div>
+    </div>
+ 
+    <!-- ════════════════════════════════════════
+         ÉTAPE 3 : SUCCÈS
+    ════════════════════════════════════════ -->
+    <div *ngIf="paiementEtape === 'succes'" class="modal-body modal-center">
+      <div class="succes-circle">
+        <svg width="40" height="40" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+          <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h3 class="succes-titre">Paiement accepté !</h3>
+      <p class="succes-sub">Vous êtes maintenant inscrit à la formation</p>
+      <div class="succes-formation">
+        <strong>{{ paiementFormation?.titre || paiementFormation?.formationTitre }}</strong>
+      </div>
+      <div class="succes-ref">
+        <span class="ref-label">Référence</span>
+        <span class="ref-val">{{ paiementReference }}</span>
+      </div>
+      <p class="succes-hint">Conservez cette référence pour vos dossiers</p>
+      <div class="modal-actions" style="justify-content:center">
+        <button class="btn-payer" (click)="fermerModalPaiement(); setSection('formations')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          Accéder à ma formation
+        </button>
+      </div>
+    </div>
+ 
+    <!-- ════════════════════════════════════════
+         ÉTAPE 4 : ÉCHEC
+    ════════════════════════════════════════ -->
+    <div *ngIf="paiementEtape === 'echec'" class="modal-body modal-center">
+      <div class="echec-circle">
+        <svg width="40" height="40" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+          <path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </div>
+      <h3 class="echec-titre">Paiement refusé</h3>
+      <p class="echec-msg">{{ paiementErreur }}</p>
+      <div class="modal-actions" style="justify-content:center;gap:12px">
+        <button class="btn-annuler" (click)="fermerModalPaiement()">Annuler</button>
+        <button class="btn-payer" (click)="reessayerPaiement()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Réessayer
+        </button>
+      </div>
+    </div>
+ 
+  </div>
+</div>
 </div>

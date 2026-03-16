@@ -24,8 +24,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   formationsSearch       = '';
   formationsFilterNiveau = '';
 
-
-
   recommandations: any[]    = [];
   recommandationsLoading    = false;
   recommandationsError      = '';
@@ -68,6 +66,27 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   domainesInput  = '';
   disponibilites: string[] = [];
 
+  // ══════════════════════════════════════════════════════
+  // PAIEMENT
+  // ══════════════════════════════════════════════════════
+
+  showPaiementModal   = false;
+  paiementFormation: any = null;   // formation courante (depuis recommandations)
+  paiementEtape: 'formulaire' | 'traitement' | 'succes' | 'echec' = 'formulaire';
+  paiementReference   = '';
+  paiementMontant     = 0;
+  paiementErreur      = '';
+  showCvv             = false;
+
+  carteForm = {
+    numeroCarte: '',
+    nomCarte:    '',
+    expiration:  '',
+    cvv:         ''
+  };
+
+  // ──────────────────────────────────────────────────────
+
   readonly joursDispos = [
     { key: 'LUN', label: 'Lun' }, { key: 'MAR', label: 'Mar' },
     { key: 'MER', label: 'Mer' }, { key: 'JEU', label: 'Jeu' },
@@ -81,7 +100,7 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     { value: 'AVANCE',        label: 'Avancé' }
   ];
 
-  private api       = 'http://localhost:8080/api/apprenant';
+  private api              = 'http://localhost:8080/api/apprenant';
   private pollingInterval: any = null;
 
   constructor(
@@ -124,7 +143,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     this.closeNotifPanel();
   }
 
-  // Catalogue = redirige vers la page d'accueil
   goToCatalogue() {
     this.router.navigate(['/']);
   }
@@ -154,10 +172,7 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
         next: d => {
           this.recommandations        = d || [];
           this.recommandationsLoading = false;
-          // Si liste vide → profil incomplet (domaines et objectifs vides)
-          if (this.recommandations.length === 0) {
-            this.profilIncomplet = true;
-          }
+          if (this.recommandations.length === 0) this.profilIncomplet = true;
           this.cdr.detectChanges();
         },
         error: () => {
@@ -174,7 +189,7 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     this.profilIncomplet           = false;
     this.http.delete(`${this.api}/recommandations/cache`, { headers: this.headers() })
       .subscribe({
-        next: () => { this.recommandationsRefreshing = false; this.loadRecommandations(); },
+        next:  () => { this.recommandationsRefreshing = false; this.loadRecommandations(); },
         error: () => { this.recommandationsRefreshing = false; this.loadRecommandations(); }
       });
   }
@@ -200,8 +215,149 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     return 'Possible';
   }
 
+  /** Clique sur "Voir la formation" → ouvre le modal paiement */
   voirFormation(formationId: number) {
-    this.router.navigate(['/catalogue', formationId]);
+    // Chercher la formation dans les recommandations
+    const reco = this.recommandations.find(r => r.formationId === formationId || r.id === formationId);
+    this.ouvrirModalPaiement(reco || { formationId, id: formationId });
+  }
+
+  // ══════════════════════════════════════════════════════
+  // PAIEMENT — MODAL
+  // ══════════════════════════════════════════════════════
+
+  /** Ouvre le modal paiement pour une formation donnée */
+  ouvrirModalPaiement(formation: any) {
+    const formationId = formation.formationId || formation.id;
+
+    // 1. Vérifier si déjà inscrit
+    this.http.get<any>(
+      `http://localhost:8080/api/apprenant/formations/${formationId}/statut-inscription`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: res => {
+        if (res.inscrit) {
+          // Déjà inscrit → aller directement à la section formations
+          this.setSection('formations');
+          return;
+        }
+        // 2. Initier le paiement (crée l'inscription EN_ATTENTE)
+        this.http.post<any>(
+          `http://localhost:8080/api/apprenant/formations/${formationId}/paiement/initier`,
+          {},
+          { headers: this.headers() }
+        ).subscribe({
+          next: info => {
+            this.paiementFormation = { ...formation, prix: info.montant, titre: info.formationTitre };
+            this.paiementMontant   = info.montant;
+            this.paiementEtape     = 'formulaire';
+            this.paiementErreur    = '';
+            this.carteForm         = { numeroCarte: '', nomCarte: '', expiration: '', cvv: '' };
+            this.showPaiementModal = true;
+            this.cdr.detectChanges();
+          },
+          error: err => {
+            const msg = err.error?.message || 'Impossible d\'initier le paiement';
+            if (msg.includes('déjà inscrit')) {
+              this.setSection('formations');
+            } else {
+              alert(msg);
+            }
+          }
+        });
+      },
+      error: () => alert('Erreur de vérification. Veuillez réessayer.')
+    });
+  }
+
+  /** Ferme le modal */
+  fermerModalPaiement() {
+    this.showPaiementModal = false;
+    this.paiementFormation = null;
+    this.paiementEtape     = 'formulaire';
+    this.paiementErreur    = '';
+    this.cdr.detectChanges();
+  }
+
+  /** Soumet le formulaire de paiement */
+  payerFormation() {
+    if (!this.paiementFormation) return;
+    const formationId = this.paiementFormation.formationId || this.paiementFormation.id;
+
+    this.paiementEtape  = 'traitement';
+    this.paiementErreur = '';
+    this.cdr.detectChanges();
+
+    // Simuler un délai réseau pour l'effet visuel
+    setTimeout(() => {
+      this.http.post<any>(
+        `http://localhost:8080/api/apprenant/formations/${formationId}/paiement/confirmer`,
+        {
+          numeroCarte: this.carteForm.numeroCarte,
+          nomCarte:    this.carteForm.nomCarte,
+          expiration:  this.carteForm.expiration,
+          cvv:         this.carteForm.cvv
+        },
+        { headers: this.headers() }
+      ).subscribe({
+        next: res => {
+          this.paiementReference = res.reference;
+          this.paiementEtape     = 'succes';
+          // Recharger les formations
+          this.loadFormations();
+          this.loadDashboardData();
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          this.paiementErreur = err.error?.message || 'Paiement refusé. Veuillez réessayer.';
+          this.paiementEtape  = 'echec';
+          this.cdr.detectChanges();
+        }
+      });
+    }, 2000); // 2s délai pour l'animation
+  }
+
+  /** Réessayer après un échec */
+  reessayerPaiement() {
+    this.paiementEtape  = 'formulaire';
+    this.paiementErreur = '';
+    this.carteForm      = { numeroCarte: '', nomCarte: '', expiration: '', cvv: '' };
+    this.cdr.detectChanges();
+  }
+
+  /** Formatage automatique du numéro de carte (XXXX XXXX XXXX XXXX) */
+  formatCarteNumero(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.replace(/\D/g, '').substring(0, 16);
+    val = val.replace(/(.{4})/g, '$1 ').trim();
+    this.carteForm.numeroCarte = val;
+    input.value = val;
+  }
+
+  /** Formatage automatique expiration (MM/AA) */
+  formatExpiration(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.replace(/\D/g, '').substring(0, 4);
+    if (val.length >= 2) val = val.substring(0, 2) + '/' + val.substring(2);
+    this.carteForm.expiration = val;
+    input.value = val;
+  }
+
+  /** Icône selon type de carte (Visa / Mastercard) */
+  getCarteType(): 'visa' | 'mastercard' | 'unknown' {
+    const n = this.carteForm.numeroCarte.replace(/\s/g, '');
+    if (n.startsWith('4')) return 'visa';
+    if (n.startsWith('5') || n.startsWith('2')) return 'mastercard';
+    return 'unknown';
+  }
+
+  /** Formulaire valide ? */
+  get paiementFormValide(): boolean {
+    const n = this.carteForm.numeroCarte.replace(/\s/g, '');
+    return n.length === 16 &&
+           this.carteForm.nomCarte.trim().length > 0 &&
+           /^\d{2}\/\d{2}$/.test(this.carteForm.expiration) &&
+           this.carteForm.cvv.length >= 3;
   }
 
   // ══════════════════════════════════════════════════════
@@ -298,7 +454,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ✅ Après sauvegarde préférences → invalide cache et recalcule les recommandations
   savePreferences() {
     this.profilLoading = true;
     this.profilSuccess = '';
@@ -306,7 +461,7 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     const payload = {
       ...this.prefsForm,
       domainesInteret: this.domainesInput
-        .split(',').map(d => d.trim()).filter(d => d.length > 0),
+        .split(',').map((d: string) => d.trim()).filter((d: string) => d.length > 0),
       disponibilites: this.disponibilites
     };
     this.http.put<any>(`${this.api}/profil`, payload, { headers: this.headers() })
@@ -318,7 +473,6 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
             this.apprenantUser = { ...this.apprenantUser, ...res.profil };
             localStorage.setItem('user', JSON.stringify(this.apprenantUser));
           }
-          // Invalider le cache recommandations et recalculer
           this.profilIncomplet = false;
           this.http.delete(`${this.api}/recommandations/cache`, { headers: this.headers() })
             .subscribe({

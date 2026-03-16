@@ -1543,3 +1543,35 @@
     flex-direction: column;
   }
 }
+/* Input prix avec préfixe TND */
+.prix-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+ 
+.prix-currency {
+  position: absolute;
+  left: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8B3A3A;
+  pointer-events: none;
+  z-index: 1;
+}
+ 
+.prix-input {
+  padding-left: 44px !important;
+}
+ 
+/* Badge prix sur la carte */
+.fc-stat-prix {
+  color: #8B3A3A;
+  font-weight: 700;
+  margin-left: auto;
+}
+ 
+.fc-stat-prix svg {
+  opacity: 1;
+}
+ 

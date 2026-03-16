@@ -49,6 +49,11 @@ public class FormationEntity {
     @Column(length = 20, nullable = false)
     private String statut;
 
+    // ★ Prix de la formation
+    @Column(name = "prix", nullable = false, columnDefinition = "DECIMAL(10,2) DEFAULT 29.99")
+    @Builder.Default
+    private Double prix = 29.99;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categorie_id")
     private CategorieEntity categorie;
@@ -87,10 +92,11 @@ public class FormationEntity {
 
     @PrePersist
     public void prePersist() {
-        if (this.dateCreation == null) this.dateCreation = LocalDateTime.now();
-        if (this.statut == null) this.statut = "BROUILLON";
+        if (this.dateCreation   == null) this.dateCreation   = LocalDateTime.now();
+        if (this.statut         == null) this.statut         = "BROUILLON";
         if (this.nombreInscrits == null) this.nombreInscrits = 0;
-        if (this.nombreCertifies == null) this.nombreCertifies = 0;
-        if (this.dureeEstimee == null) this.dureeEstimee = 1;
+        if (this.nombreCertifies== null) this.nombreCertifies= 0;
+        if (this.dureeEstimee   == null) this.dureeEstimee   = 1;
+        if (this.prix           == null) this.prix           = 29.99;
     }
 }

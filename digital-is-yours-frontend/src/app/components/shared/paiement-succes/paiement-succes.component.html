@@ -1,0 +1,31 @@
+<!-- Chargement -->
+<div class="page-container" *ngIf="chargement">
+  <div class="card">
+    <div class="spinner"></div>
+    <p class="texte-chargement">Confirmation de votre inscription...</p>
+  </div>
+</div>
+
+<!-- Succès -->
+<div class="page-container" *ngIf="!chargement">
+  <div class="card">
+    <div class="icone-succes">
+      <svg viewBox="0 0 52 52" class="checkmark">
+        <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+        <path class="checkmark-check" fill="none" d="M14 27l8 8 16-16"/>
+      </svg>
+    </div>
+
+    <h1>Paiement accepté !</h1>
+    <p class="sous-titre">Vous êtes maintenant inscrit à la formation.</p>
+
+    <div class="reference-box" *ngIf="reference">
+      <span class="label-ref">Référence</span>
+      <span class="valeur-ref">{{ reference }}</span>
+    </div>
+
+    <button class="btn-dashboard" (click)="allerDashboard()">
+      Accéder à mes formations →
+    </button>
+  </div>
+</div>

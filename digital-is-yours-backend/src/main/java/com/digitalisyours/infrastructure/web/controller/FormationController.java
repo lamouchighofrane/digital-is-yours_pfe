@@ -139,7 +139,7 @@ public class FormationController {
         }
     }
 
-    // ── Helper ────────────────────────────────────────────────────
+    // ── Helper ────────────────────────────────────────────────────────
     private Formation fromPayload(Map<String, Object> payload) {
         return Formation.builder()
                 .titre((String) payload.get("titre"))
@@ -152,6 +152,9 @@ public class FormationController {
                         ? Integer.valueOf(payload.get("dureeEstimee").toString()) : null)
                 .niveau((String) payload.get("niveau"))
                 .statut((String) payload.get("statut"))
+                // ★ prix lu depuis le payload
+                .prix(payload.get("prix") != null
+                        ? Double.valueOf(payload.get("prix").toString()) : null)
                 .categorieId(payload.get("categorieId") != null
                         ? Long.valueOf(payload.get("categorieId").toString()) : null)
                 .formateurId(payload.get("formateurId") != null

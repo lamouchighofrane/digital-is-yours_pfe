@@ -52,6 +52,7 @@ public class FormationService implements FormationUseCase {
         if (formation.getNombreInscrits() == null) formation.setNombreInscrits(0);
         if (formation.getNombreCertifies() == null) formation.setNombreCertifies(0);
         if (formation.getDureeEstimee() == null) formation.setDureeEstimee(1);
+        if (formation.getPrix() == null) formation.setPrix(29.99);  // ★ valeur par défaut
         if ("PUBLIE".equals(formation.getStatut())) {
             formation.setDatePublication(LocalDateTime.now());
         }
@@ -82,6 +83,8 @@ public class FormationService implements FormationUseCase {
         existing.setStatut(newStatut);
         existing.setCategorieId(formation.getCategorieId());
         existing.setFormateurId(formation.getFormateurId());
+        // ★ AJOUT : mise à jour du prix
+        existing.setPrix(formation.getPrix() != null ? formation.getPrix() : existing.getPrix());
 
         if ("PUBLIE".equals(newStatut) && wasNotPublie) {
             existing.setDatePublication(LocalDateTime.now());

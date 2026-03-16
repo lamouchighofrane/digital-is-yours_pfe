@@ -1,0 +1,61 @@
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f0eb;
+  font-family: 'Georgia', serif;
+}
+
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 56px 48px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 90%;
+}
+
+.icone-annule {
+  width: 80px;
+  height: 80px;
+  background: #ffeaea;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #e53935;
+  margin: 0 auto 24px;
+  font-weight: bold;
+}
+
+h1 {
+  font-size: 28px;
+  color: #7b2d3e;
+  margin: 0 0 8px;
+}
+
+.sous-titre {
+  color: #666;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.btn-retour {
+  background: #7b2d3e;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+}
+
+.btn-retour:hover {
+  background: #6a2535;
+}

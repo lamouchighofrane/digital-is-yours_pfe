@@ -10,6 +10,9 @@ import { AdminLoginComponent } from './components/admin/adminlogin/adminLogin.co
 import { AdminDashboardComponent } from './components/admin/admindashboard/adminDashboard.component';
 import { DashboardFormateurComponent } from './components/dashboard-formateur/dashboard-formateur.component';
 import { DashboardApprenantComponent } from './components/dashboard-apprenant/dashboard-apprenant.component';
+import { FormationDetailComponent } from './components/shared/formation-detail/formation-detail.component';
+import { PaiementSuccesComponent } from './components/shared/paiement-succes/paiement-succes.component';
+import { PaiementAnnuleComponent } from './components/shared/paiement-annule/paiement-annule.component';
 const routes: Routes = [
   { path: '', component: SplashScreenComponent },
   { path: 'home', component: HomeComponent, title: 'Digital Is Yours' },
@@ -21,6 +24,9 @@ const routes: Routes = [
   { path: 'admin/dashboard', component: AdminDashboardComponent },
   { path: 'formateur/dashboard', component: DashboardFormateurComponent},
   { path: 'apprenant/dashboard', component: DashboardApprenantComponent },
+  { path: 'formation/:id', component: FormationDetailComponent },
+  { path: 'paiement-succes', component: PaiementSuccesComponent, title: 'Paiement accepté' },
+  { path: 'paiement-annule', component: PaiementAnnuleComponent, title: 'Paiement annulé' },
   { path: '**', redirectTo: '' },   // ← toujours EN DERNIER
 ];
 

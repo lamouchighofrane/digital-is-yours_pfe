@@ -165,6 +165,14 @@
             </svg>
             {{ f.noteMoyenne | number:'1.1-1' }}
           </span>
+          <!-- ★ AJOUT PRIX sur la carte -->
+          <span class="fc-stat fc-stat-prix" style="margin-left:auto">
+            <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="1" y="4" width="22" height="16" rx="2" stroke-width="1.8"/>
+              <line x1="1" y1="10" x2="23" y2="10" stroke-width="1.8"/>
+            </svg>
+            {{ f.prix | number:'1.2-2' }} TND
+          </span>
         </div>
 
         <!-- SECTION FORMATEUR -->
@@ -303,6 +311,26 @@
           </div>
         </div>
 
+        <!-- ★ AJOUT CHAMP PRIX -->
+        <div class="ms-field">
+          <label class="ms-label">
+            Prix (TND) <span class="ms-req">*</span>
+          </label>
+          <div class="prix-input-wrap">
+            <span class="prix-currency">TND</span>
+            <input type="number"
+                   class="ms-input prix-input"
+                   [(ngModel)]="form.prix"
+                   min="0"
+                   step="0.01"
+                   placeholder="29.99"/>
+          </div>
+          <p style="font-size:11px;color:#6B5F52;margin-top:4px">
+            Prix affiché aux apprenants lors de l'inscription
+          </p>
+        </div>
+        <!-- ★ FIN CHAMP PRIX -->
+
         <div class="ms-field">
           <label class="ms-label">Description complète</label>
           <textarea class="ms-textarea" [(ngModel)]="form.description" rows="3"
@@ -439,6 +467,14 @@
                     <path stroke-width="1.8" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z"/>
                   </svg>
                   0 inscrits
+                </span>
+                <!-- ★ AJOUT PRIX dans l'aperçu -->
+                <span class="fc-stat fc-stat-prix" style="margin-left:auto">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="1" y="4" width="22" height="16" rx="2" stroke-width="1.8"/>
+                    <line x1="1" y1="10" x2="23" y2="10" stroke-width="1.8"/>
+                  </svg>
+                  {{ form.prix | number:'1.2-2' }} TND
                 </span>
               </div>
             </div>
