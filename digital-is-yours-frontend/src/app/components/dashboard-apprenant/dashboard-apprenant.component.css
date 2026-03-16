@@ -644,3 +644,6 @@
   padding: 10px 24px 14px;
   margin: 0;
 }
+/* Bouton explorer catalogue */
+.cat-explore-btn{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;border:1.5px solid #4A7C7E;background:#f0f7f7;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:#4A7C7E;cursor:pointer;transition:all .2s;white-space:nowrap}
+.cat-explore-btn:hover{background:#4A7C7E;color:#FFF}

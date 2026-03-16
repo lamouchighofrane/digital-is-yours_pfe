@@ -1,7 +1,9 @@
 <section id="about" class="section bg-white">
   <div class="container-diy">
 
-    <!-- ── CATÉGORIES ── -->
+    <!-- ══════════════════════════════════════
+         CATÉGORIES
+    ══════════════════════════════════════ -->
     <div class="text-center mb-14 reveal">
       <span class="eyebrow mb-5 block">Nos domaines d'expertise</span>
       <h2 class="font-display text-[clamp(32px,4vw,52px)] font-bold text-[#1E1A16] mb-4">
@@ -13,42 +15,35 @@
       </p>
     </div>
 
-    <!-- Loading catégories -->
     <div *ngIf="isLoadingCats" class="flex justify-center py-16">
       <div class="w-8 h-8 border-4 border-[#EDE8DF] border-t-[#8B3A3A] rounded-full animate-spin"></div>
     </div>
 
-    <!-- Grille catégories dynamiques -->
-    <div *ngIf="!isLoadingCats" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
+    <div *ngIf="!isLoadingCats" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
       <div *ngFor="let cat of categories; let i = index"
            class="reveal card group cursor-pointer overflow-hidden flex flex-col"
-           [style.transition-delay]="(i*70)+'ms'">
-
-        <!-- Image -->
+           [style.transition-delay]="(i*70)+'ms'"
+           (click)="voirCategorie(cat.id)">
         <div class="relative h-40 overflow-hidden">
           <img *ngIf="cat.imageCouverture" [src]="cat.imageCouverture" [alt]="cat.nom"
                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"/>
-          <div *ngIf="!cat.imageCouverture"
-               class="w-full h-full flex items-center justify-center bg-[#EDE8DF]">
+          <div *ngIf="!cat.imageCouverture" class="w-full h-full flex items-center justify-center bg-[#EDE8DF]">
             <span class="text-4xl opacity-30">📚</span>
           </div>
-          <!-- Overlay gradient -->
           <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-          <!-- Count -->
-          <span class="absolute bottom-3 right-3 text-[11px] text-white/80 font-medium">
+          <div *ngIf="modeAffichage === cat.id"
+               class="absolute top-2 left-2 bg-white text-[#8B3A3A] text-[10px] font-bold
+                      px-2 py-0.5 rounded-full shadow-sm">✓ Sélectionné</div>
+          <span class="absolute bottom-3 right-3 text-[11px] text-white/80 font-medium
+                       bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">
             {{ getNbFormations(cat.id) }} cours
           </span>
         </div>
-
-        <!-- Contenu -->
         <div class="p-5 flex flex-col flex-1">
           <h3 class="font-display font-bold text-lg text-[#1E1A16] mb-2 leading-tight
-                     group-hover:text-[#8B3A3A] transition-colors duration-300">
-            {{ cat.nom }}
-          </h3>
-          <p class="text-[#6B5F52] text-xs leading-relaxed mb-4 flex-1">{{ cat.description }}</p>
-          <div class="flex items-center gap-1.5 text-sm font-semibold
-                      group-hover:gap-3 transition-all duration-300"
+                     group-hover:text-[#8B3A3A] transition-colors duration-300">{{ cat.nom }}</h3>
+          <p class="text-[#6B5F52] text-xs leading-relaxed mb-4 flex-1 line-clamp-3">{{ cat.description }}</p>
+          <div class="flex items-center gap-1.5 text-sm font-semibold group-hover:gap-3 transition-all duration-300"
                [style.color]="cat.couleur || '#8B3A3A'">
             Explorer
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,89 +52,272 @@
           </div>
         </div>
       </div>
-
-      <!-- Aucune catégorie -->
       <div *ngIf="categories.length === 0" class="col-span-4 text-center py-12 text-[#9E9082]">
         <div class="text-4xl mb-3 opacity-40">📭</div>
         <p>Aucune catégorie disponible pour le moment.</p>
       </div>
     </div>
 
-    <!-- ── FORMATIONS ── -->
-    <div class="flex items-end justify-between mb-12 reveal">
-      <div>
-        <span class="eyebrow mb-4 block">Formations populaires</span>
-        <h2 class="font-display text-[clamp(28px,3.5vw,46px)] font-bold text-[#1E1A16]">
-          Les plus <em class="not-italic" style="color:#8B3A3A">suivies</em> en ce moment
-        </h2>
-      </div>
-      <a href="#" class="btn-ghost hidden md:inline-flex">Tout le catalogue →</a>
+    <!-- Bouton voir tout catalogue sous catégories -->
+    <div *ngIf="!isLoadingCats && categories.length > 0" class="flex justify-center mb-24 reveal">
+      <button (click)="voirToutCatalogue()"
+              class="btn-ghost flex items-center gap-2 px-8 py-3 text-sm">
+        Voir tout le catalogue
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </button>
     </div>
 
-    <!-- Loading formations -->
-    <div *ngIf="isLoading" class="flex justify-center py-16">
-      <div class="w-8 h-8 border-4 border-[#EDE8DF] border-t-[#8B3A3A] rounded-full animate-spin"></div>
-    </div>
+    <!-- ══════════════════════════════════════
+         SECTION FORMATIONS
+    ══════════════════════════════════════ -->
+    <div id="formations-section">
 
-    <!-- Grille formations depuis l'API -->
-    <div *ngIf="!isLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
-      <div *ngFor="let f of formations; let i = index"
-           class="reveal card overflow-hidden group cursor-pointer flex flex-col"
-           [style.transition-delay]="(i*90)+'ms'">
+      <!-- En-tête -->
+      <div class="flex items-start justify-between mb-8 reveal flex-wrap gap-4">
+        <div>
+          <!-- Fil d'ariane -->
+          <div *ngIf="modeAffichage !== null"
+               class="flex items-center gap-2 mb-3 text-sm text-[#9E9082]">
+            <button (click)="reinitialiserCategorie()"
+                    class="hover:text-[#8B3A3A] transition-colors bg-transparent border-none cursor-pointer p-0">
+              Formations populaires
+            </button>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18l6-6-6-6"/>
+            </svg>
+            <span class="text-[#3D362E] font-medium">{{ titreSection }}</span>
+          </div>
 
-        <!-- Image cours -->
-        <div class="relative h-48 overflow-hidden bg-[#EDE8DF] flex items-center justify-center">
-          <img *ngIf="f.imageCouverture" [src]="f.imageCouverture" [alt]="f.titre"
-               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"/>
-          <span *ngIf="!f.imageCouverture" class="text-5xl opacity-30">📚</span>
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-          <!-- Badge niveau -->
-          <div class="absolute bottom-4 left-4">
-            <span class="text-xs font-semibold px-3 py-1.5 rounded-full text-white backdrop-blur-sm"
-                  [style.background]="getAccentColor(f.niveau) + 'cc'">
-              {{ f.niveau }}
-            </span>
-          </div>
-          <!-- Durée -->
-          <div class="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs
-                      font-medium px-2.5 py-1 rounded-full">
-            {{ getDuree(f.dureeEstimee) }}
-          </div>
+          <span *ngIf="modeAffichage === null" class="eyebrow mb-4 block">Formations populaires</span>
+
+          <h2 class="font-display text-[clamp(28px,3.5vw,46px)] font-bold text-[#1E1A16]">
+            <ng-container *ngIf="modeAffichage === null">
+              Les plus <em class="not-italic" style="color:#8B3A3A">suivies</em> en ce moment
+            </ng-container>
+            <ng-container *ngIf="modeAffichage === 'all'">
+              Toutes les <em class="not-italic" style="color:#8B3A3A">formations</em>
+            </ng-container>
+            <ng-container *ngIf="typeof_number(modeAffichage)">
+              Formations <em class="not-italic" style="color:#8B3A3A">{{ categorieSelectionnee?.nom }}</em>
+            </ng-container>
+          </h2>
+
+          <p *ngIf="modeAffichage !== null" class="text-[#9E9082] text-sm mt-2">
+            {{ nbResultats }} formation(s) trouvée(s)
+          </p>
         </div>
 
-        <!-- Corps -->
-        <div class="p-6 flex flex-col flex-1">
-          <h3 class="font-display font-bold text-[19px] text-[#1E1A16] mb-2 leading-tight
-                     group-hover:text-[#8B3A3A] transition-colors duration-300">
-            {{ f.titre }}
-          </h3>
-          <p class="text-[#9E9082] text-xs mb-4">
-            par <span class="font-medium text-[#6B5F52]">{{ getFormateurNom(f) }}</span>
-          </p>
-          <p class="text-[#6B5F52] text-sm leading-relaxed mb-5 flex-1 line-clamp-3">
-            {{ f.description }}
-          </p>
-
-          <button class="btn-primary w-full justify-center mt-auto text-sm py-3">
-            Voir la formation
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-            </svg>
+        <!-- Boutons droite -->
+        <div class="hidden md:flex items-center gap-3 mt-2">
+          <button *ngIf="modeAffichage !== null" (click)="retourTop3()"
+                  class="btn-ghost flex items-center gap-2 text-sm">
+            ← Formations populaires
+          </button>
+          <button *ngIf="modeAffichage === null" (click)="voirToutCatalogue()"
+                  class="btn-ghost flex items-center gap-2">
+            Tout le catalogue →
           </button>
         </div>
       </div>
 
-      <!-- Aucune formation publiée -->
-      <div *ngIf="formations.length === 0" class="col-span-3 text-center py-16 text-[#9E9082]">
-        <div class="text-5xl mb-4 opacity-40">📭</div>
-        <p>Aucune formation disponible pour le moment.</p>
+      <!-- ══ BARRE RECHERCHE + FILTRES (visible en mode catalogue) ══ -->
+      <div *ngIf="afficherFiltres" class="mb-8 space-y-4">
+
+        <!-- Recherche -->
+        <div class="relative">
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9E9082]"
+               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text"
+                 [(ngModel)]="recherche"
+                 (ngModelChange)="onRecherche()"
+                 placeholder="Rechercher une formation, un thème..."
+                 class="w-full pl-11 pr-10 py-3 rounded-xl border border-[#EDE8DF]
+                        bg-[#FAFAF7] text-sm text-[#1E1A16] outline-none
+                        focus:border-[#8B3A3A] focus:ring-2 focus:ring-[#8B3A3A]/10
+                        transition-all duration-200 placeholder:text-[#C8BEB2]"/>
+          <button *ngIf="recherche"
+                  (click)="recherche=''; onRecherche()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-[#9E9082]
+                         hover:text-[#8B3A3A] bg-transparent border-none cursor-pointer p-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Filtres en ligne -->
+        <div class="flex flex-wrap items-center gap-3">
+
+          <!-- Filtre catégorie (uniquement en mode 'all') -->
+          <div *ngIf="modeAffichage === 'all'" class="flex items-center gap-2">
+            <select [(ngModel)]="filtreCategorie" (ngModelChange)="onFiltreChange()"
+                    class="px-3 py-2 rounded-lg border border-[#EDE8DF] bg-white text-sm
+                           text-[#3D362E] outline-none focus:border-[#8B3A3A] cursor-pointer
+                           transition-colors duration-200">
+              <option value="">Toutes les catégories</option>
+              <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.nom }}</option>
+            </select>
+          </div>
+
+          <!-- Filtre niveau -->
+          <select [(ngModel)]="filtreNiveau" (ngModelChange)="onFiltreChange()"
+                  class="px-3 py-2 rounded-lg border border-[#EDE8DF] bg-white text-sm
+                         text-[#3D362E] outline-none focus:border-[#8B3A3A] cursor-pointer
+                         transition-colors duration-200">
+            <option value="">Tous les niveaux</option>
+            <option value="DEBUTANT">Débutant</option>
+            <option value="INTERMEDIAIRE">Intermédiaire</option>
+            <option value="AVANCE">Avancé</option>
+          </select>
+
+          <!-- Tri -->
+          <select [(ngModel)]="triPar" (ngModelChange)="onTriChange()"
+                  class="px-3 py-2 rounded-lg border border-[#EDE8DF] bg-white text-sm
+                         text-[#3D362E] outline-none focus:border-[#8B3A3A] cursor-pointer
+                         transition-colors duration-200">
+            <option value="popularite">Trier : Popularité</option>
+            <option value="titre">Trier : A → Z</option>
+            <option value="duree_asc">Trier : Durée croissante</option>
+            <option value="duree_desc">Trier : Durée décroissante</option>
+          </select>
+
+          <!-- Reset filtres -->
+          <button *ngIf="filtreNiveau || filtreCategorie || recherche || triPar !== 'popularite'"
+                  (click)="resetFiltres()"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-[#9E9082]
+                         hover:text-[#8B3A3A] hover:bg-[#f9f0f0] transition-all duration-200
+                         bg-transparent border border-[#EDE8DF] cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Réinitialiser
+          </button>
+
+          <!-- Compteur résultats -->
+          <span class="ml-auto text-sm text-[#9E9082]">
+            <strong class="text-[#3D362E]">{{ nbResultats }}</strong> formation(s)
+          </span>
+        </div>
       </div>
-    </div>
 
-    <!-- Mobile voir tout -->
-    <div class="mt-10 text-center md:hidden reveal">
-      <a href="#" class="btn-ghost">Tout le catalogue →</a>
-    </div>
+      <!-- Loading -->
+      <div *ngIf="isLoading" class="flex justify-center py-16">
+        <div class="w-8 h-8 border-4 border-[#EDE8DF] border-t-[#8B3A3A] rounded-full animate-spin"></div>
+      </div>
 
+      <!-- Grille formations -->
+      <div *ngIf="!isLoading && formationsPaginees.length > 0"
+           class="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
+        <div *ngFor="let f of formationsPaginees; let i = index"
+             class="card overflow-hidden group cursor-pointer flex flex-col animate-fade-in"
+             [style.animation-delay]="(i*60)+'ms'">
+
+          <!-- Image -->
+          <div class="relative h-48 overflow-hidden bg-[#EDE8DF] flex items-center justify-center">
+            <img *ngIf="f.imageCouverture" [src]="f.imageCouverture" [alt]="f.titre"
+                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"/>
+            <span *ngIf="!f.imageCouverture" class="text-5xl opacity-30">📚</span>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            <div class="absolute bottom-4 left-4">
+              <span class="text-xs font-semibold px-3 py-1.5 rounded-full text-white backdrop-blur-sm"
+                    [style.background]="getAccentColor(f.niveau) + 'cc'">
+                {{ getNiveauLabel(f.niveau) }}
+              </span>
+            </div>
+            <div class="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white text-xs
+                        font-medium px-2.5 py-1 rounded-full">
+              {{ getDuree(f.dureeEstimee) }}
+            </div>
+          </div>
+
+          <!-- Corps -->
+          <div class="p-6 flex flex-col flex-1">
+            <h3 class="font-display font-bold text-[19px] text-[#1E1A16] mb-2 leading-tight
+                       group-hover:text-[#8B3A3A] transition-colors duration-300">{{ f.titre }}</h3>
+            <p class="text-[#9E9082] text-xs mb-4">
+              par <span class="font-medium text-[#6B5F52]">{{ getFormateurNom(f) }}</span>
+            </p>
+            <p class="text-[#6B5F52] text-sm leading-relaxed mb-5 flex-1 line-clamp-3">{{ f.description }}</p>
+            <button (click)="voirFormation(f.id)"
+                    class="btn-primary w-full justify-center mt-auto text-sm py-3">
+              Voir la formation
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aucun résultat -->
+      <div *ngIf="!isLoading && formationsPaginees.length === 0 && modeAffichage !== null"
+           class="text-center py-16 text-[#9E9082]">
+        <div class="text-5xl mb-4 opacity-40">🔍</div>
+        <p class="text-lg font-medium text-[#3D362E] mb-2">Aucune formation trouvée</p>
+        <p class="text-sm mb-6">Modifiez vos critères de recherche ou réinitialisez les filtres.</p>
+        <button (click)="resetFiltres()" class="btn-ghost">Réinitialiser les filtres</button>
+      </div>
+
+      <!-- Pagination (mode catalogue uniquement) -->
+      <div *ngIf="!isLoading && modeAffichage !== null && totalPages > 1"
+           class="flex items-center justify-center gap-2 mt-12">
+        <!-- Précédent -->
+        <button (click)="goToPage(page - 1)" [disabled]="page === 1"
+                class="w-9 h-9 rounded-lg border border-[#EDE8DF] bg-white flex items-center justify-center
+                       text-[#9E9082] hover:border-[#8B3A3A] hover:text-[#8B3A3A] disabled:opacity-30
+                       disabled:cursor-not-allowed transition-all cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+
+        <!-- Numéros de pages -->
+        <ng-container *ngFor="let p of pages">
+          <button (click)="goToPage(p)"
+                  class="w-9 h-9 rounded-lg border text-sm font-semibold transition-all cursor-pointer"
+                  [class.bg-[#8B3A3A]]="p === page"
+                  [class.text-white]="p === page"
+                  [class.border-[#8B3A3A]]="p === page"
+                  [class.border-[#EDE8DF]]="p !== page"
+                  [class.bg-white]="p !== page"
+                  [class.text-[#3D362E]]="p !== page"
+                  [class.hover:border-[#8B3A3A]]="p !== page">
+            {{ p }}
+          </button>
+        </ng-container>
+
+        <!-- Suivant -->
+        <button (click)="goToPage(page + 1)" [disabled]="page === totalPages"
+                class="w-9 h-9 rounded-lg border border-[#EDE8DF] bg-white flex items-center justify-center
+                       text-[#9E9082] hover:border-[#8B3A3A] hover:text-[#8B3A3A] disabled:opacity-30
+                       disabled:cursor-not-allowed transition-all cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Bouton Tout le catalogue (sous top 3) -->
+      <div *ngIf="!isLoading && modeAffichage === null && formations.length > 3"
+           class="mt-10 flex justify-center reveal">
+        <button (click)="voirToutCatalogue()" class="btn-ghost flex items-center gap-2 px-8 py-3">
+          Tout le catalogue ({{ formations.length }} formations) →
+        </button>
+      </div>
+
+      <!-- Retour mobile -->
+      <div *ngIf="!isLoading && modeAffichage !== null" class="mt-8 flex justify-center md:hidden">
+        <button (click)="retourTop3()" class="btn-ghost flex items-center gap-2 px-6 py-3">
+          ← Retour aux formations populaires
+        </button>
+      </div>
+
+    </div><!-- /formations-section -->
   </div>
 </section>

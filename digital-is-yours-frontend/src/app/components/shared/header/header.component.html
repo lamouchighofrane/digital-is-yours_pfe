@@ -5,7 +5,7 @@
   <nav class="max-w-6xl mx-auto px-6">
     <div class="flex items-center justify-between h-[72px]">
 
-      <!-- Logo image -->
+      <!-- Logo -->
       <a routerLink="/" class="flex items-center shrink-0 group">
         <img src="assets/images/logo.png" alt="Digital Is Yours"
              class="h-11 w-auto object-contain
@@ -27,8 +27,8 @@
         </button>
       </div>
 
-      <!-- Desktop CTA -->
-      <div class="hidden md:flex items-center gap-3">
+      <!-- ── CTA VISITEUR (non connecté) ── -->
+      <div *ngIf="!isConnected" class="hidden md:flex items-center gap-3">
         <button (click)="navigateToLogin()" class="btn-ghost">Connexion</button>
         <button (click)="navigateToRegister()" class="btn-primary">
           S'inscrire
@@ -38,7 +38,53 @@
         </button>
       </div>
 
-      <!-- Burger -->
+      <!-- ── CTA CONNECTÉ ── -->
+      <div *ngIf="isConnected" class="hidden md:flex items-center gap-3">
+        <!-- Bouton Mon espace -->
+        <button (click)="navigateToDashboard()"
+                class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold
+                       text-[#8B3A3A] border border-[#8B3A3A]/30 bg-[#f9f0f0]
+                       hover:bg-[#8B3A3A] hover:text-white transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.8"/>
+            <rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.8"/>
+            <rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.8"/>
+            <rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.8"/>
+          </svg>
+          Mon espace
+        </button>
+
+        <!-- Avatar + prénom -->
+        <div class="flex items-center gap-2 cursor-pointer group" (click)="navigateToDashboard()">
+          <div class="w-9 h-9 rounded-full overflow-hidden border-2 border-[#8B3A3A]/20
+                      group-hover:border-[#8B3A3A] transition-all duration-200 flex-shrink-0"
+               [style.background-image]="userPhoto ? 'url('+userPhoto+')' : ''"
+               [style.background-size]="'cover'"
+               [style.background-position]="'center'"
+               [ngClass]="userPhoto ? '' : 'bg-gradient-to-br from-[#8B3A3A] to-[#a84848] flex items-center justify-center'">
+            <span *ngIf="!userPhoto"
+                  class="text-white text-xs font-bold w-full h-full flex items-center justify-center">
+              {{ userInitiales }}
+            </span>
+          </div>
+          <span class="text-sm font-semibold text-[#3D362E] group-hover:text-[#8B3A3A] transition-colors">
+            {{ userName }}
+          </span>
+        </div>
+
+        <!-- Déconnexion -->
+        <button (click)="logout()"
+                class="px-3 py-2 rounded-full text-xs font-medium text-[#9E9082]
+                       hover:text-[#8B3A3A] hover:bg-[#f9f0f0] transition-all duration-200
+                       bg-transparent border-none cursor-pointer"
+                title="Se déconnecter">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Burger mobile -->
       <button (click)="toggleMobileMenu()"
               class="md:hidden w-9 h-9 flex flex-col items-center justify-center gap-[5px]
                      rounded-xl hover:bg-[#F5F3EF] transition-colors">
@@ -68,11 +114,36 @@
           Catalogue
         </button>
         <div class="h-px bg-[#EDE8DF] my-2"></div>
-        <div class="flex gap-3">
+
+        <!-- Mobile : visiteur -->
+        <div *ngIf="!isConnected" class="flex gap-3">
           <button (click)="navigateToLogin(); toggleMobileMenu()"
                   class="btn-ghost flex-1 justify-center">Connexion</button>
           <button (click)="navigateToRegister(); toggleMobileMenu()"
                   class="btn-primary flex-1 justify-center">S'inscrire</button>
+        </div>
+
+        <!-- Mobile : connecté -->
+        <div *ngIf="isConnected" class="flex flex-col gap-2">
+          <div class="flex items-center gap-3 px-4 py-2">
+            <div class="w-9 h-9 rounded-full overflow-hidden border-2 border-[#8B3A3A]/20 flex-shrink-0"
+                 [style.background-image]="userPhoto ? 'url('+userPhoto+')' : ''"
+                 [style.background-size]="'cover'"
+                 [ngClass]="userPhoto ? '' : 'bg-gradient-to-br from-[#8B3A3A] to-[#a84848] flex items-center justify-center'">
+              <span *ngIf="!userPhoto" class="text-white text-xs font-bold w-full h-full flex items-center justify-center">
+                {{ userInitiales }}
+              </span>
+            </div>
+            <span class="text-sm font-semibold text-[#3D362E]">{{ userName }}</span>
+          </div>
+          <button (click)="navigateToDashboard(); toggleMobileMenu()"
+                  class="btn-primary justify-center">
+            Mon espace →
+          </button>
+          <button (click)="logout(); toggleMobileMenu()"
+                  class="btn-ghost justify-center text-[#9E9082]">
+            Se déconnecter
+          </button>
         </div>
       </div>
     </div>

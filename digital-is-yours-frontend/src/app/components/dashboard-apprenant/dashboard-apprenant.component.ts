@@ -24,11 +24,13 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   formationsSearch       = '';
   formationsFilterNiveau = '';
 
+
+
   recommandations: any[]    = [];
   recommandationsLoading    = false;
   recommandationsError      = '';
   recommandationsRefreshing = false;
-  profilIncomplet           = false; // ✅ Nouveau flag profil incomplet
+  profilIncomplet           = false;
 
   notifications: any[] = [];
   notifNonLues         = 0;
@@ -79,7 +81,7 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     { value: 'AVANCE',        label: 'Avancé' }
   ];
 
-  private api = 'http://localhost:8080/api/apprenant';
+  private api       = 'http://localhost:8080/api/apprenant';
   private pollingInterval: any = null;
 
   constructor(
@@ -87,6 +89,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private cdr: ChangeDetectorRef
   ) {}
+
+  // ══════════════════════════════════════════════════════
+  // LIFECYCLE
+  // ══════════════════════════════════════════════════════
 
   ngOnInit() {
     const token = localStorage.getItem('token');
@@ -106,6 +112,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     return new HttpHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` });
   }
 
+  // ══════════════════════════════════════════════════════
+  // NAVIGATION
+  // ══════════════════════════════════════════════════════
+
   setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats') {
     this.activeSection = s;
     if (s === 'formations') this.loadFormations();
@@ -114,6 +124,15 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     this.closeNotifPanel();
   }
 
+  // Catalogue = redirige vers la page d'accueil
+  goToCatalogue() {
+    this.router.navigate(['/']);
+  }
+
+  // ══════════════════════════════════════════════════════
+  // DASHBOARD
+  // ══════════════════════════════════════════════════════
+
   loadDashboardData() {
     this.loadFormations();
     this.loadRecommandations();
@@ -121,7 +140,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
       .subscribe({ next: d => { this.stats = d; this.cdr.detectChanges(); }, error: () => {} });
   }
 
-  // ✅ Recommandations avec gestion profil incomplet
+  // ══════════════════════════════════════════════════════
+  // RECOMMANDATIONS IA
+  // ══════════════════════════════════════════════════════
+
   loadRecommandations() {
     this.recommandationsLoading = true;
     this.recommandationsError   = '';
@@ -182,12 +204,24 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     this.router.navigate(['/catalogue', formationId]);
   }
 
+  // ══════════════════════════════════════════════════════
+  // MES FORMATIONS
+  // ══════════════════════════════════════════════════════
+
   loadFormations() {
     this.formationsLoading = true;
     this.http.get<any[]>(`${this.api}/mes-formations`, { headers: this.headers() })
       .subscribe({
-        next: d => { this.formations = d || []; this.formationsLoading = false; this.cdr.detectChanges(); },
-        error: () => { this.formations = []; this.formationsLoading = false; this.cdr.detectChanges(); }
+        next: d => {
+          this.formations        = d || [];
+          this.formationsLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.formations        = [];
+          this.formationsLoading = false;
+          this.cdr.detectChanges();
+        }
       });
   }
 
@@ -200,6 +234,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ══════════════════════════════════════════════════════
+  // PROFIL
+  // ══════════════════════════════════════════════════════
+
   loadProfil() {
     this.http.get<any>(`${this.api}/profil`, { headers: this.headers() })
       .subscribe({
@@ -209,7 +247,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
           localStorage.setItem('user', JSON.stringify(d));
           this.cdr.detectChanges();
         },
-        error: () => { this.profilError = 'Impossible de charger le profil.'; this.cdr.detectChanges(); }
+        error: () => {
+          this.profilError = 'Impossible de charger le profil.';
+          this.cdr.detectChanges();
+        }
       });
   }
 
@@ -233,7 +274,9 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   }
 
   saveProfil() {
-    this.profilLoading = true; this.profilSuccess = ''; this.profilError = '';
+    this.profilLoading = true;
+    this.profilSuccess = '';
+    this.profilError   = '';
     const payload = { ...this.profilForm, photo: this.photoPreview };
     this.http.put<any>(`${this.api}/profil`, payload, { headers: this.headers() })
       .subscribe({
@@ -255,9 +298,11 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ✅ Après sauvegarde préférences → recalcul recommandations automatique
+  // ✅ Après sauvegarde préférences → invalide cache et recalcule les recommandations
   savePreferences() {
-    this.profilLoading = true; this.profilSuccess = ''; this.profilError = '';
+    this.profilLoading = true;
+    this.profilSuccess = '';
+    this.profilError   = '';
     const payload = {
       ...this.prefsForm,
       domainesInteret: this.domainesInput
@@ -273,10 +318,13 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
             this.apprenantUser = { ...this.apprenantUser, ...res.profil };
             localStorage.setItem('user', JSON.stringify(this.apprenantUser));
           }
-          // ✅ Invalider le cache et recalculer les recommandations
+          // Invalider le cache recommandations et recalculer
           this.profilIncomplet = false;
           this.http.delete(`${this.api}/recommandations/cache`, { headers: this.headers() })
-            .subscribe({ next: () => this.loadRecommandations(), error: () => this.loadRecommandations() });
+            .subscribe({
+              next: () => this.loadRecommandations(),
+              error: () => this.loadRecommandations()
+            });
           this.cdr.detectChanges();
           setTimeout(() => { this.profilSuccess = ''; this.cdr.detectChanges(); }, 3500);
         },
@@ -289,7 +337,8 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   }
 
   changerMotDePasse() {
-    this.mdpSuccess = ''; this.mdpError = '';
+    this.mdpSuccess = '';
+    this.mdpError   = '';
     if (!this.mdpForm.ancienMotDePasse || !this.mdpForm.nouveauMotDePasse || !this.mdpForm.confirmMotDePasse) {
       this.mdpError = 'Tous les champs sont requis.'; return;
     }
@@ -343,9 +392,13 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   toggleJour(j: string) {
     const idx = this.disponibilites.indexOf(j);
     if (idx >= 0) this.disponibilites.splice(idx, 1);
-    else this.disponibilites.push(j);
+    else          this.disponibilites.push(j);
     this.cdr.detectChanges();
   }
+
+  // ══════════════════════════════════════════════════════
+  // NOTIFICATIONS
+  // ══════════════════════════════════════════════════════
 
   loadNotifications() {
     this.notifLoading = true;
@@ -358,8 +411,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: () => {
-          this.notifications = []; this.notifNonLues = 0;
-          this.notifLoading  = false; this.cdr.detectChanges();
+          this.notifications = [];
+          this.notifNonLues  = 0;
+          this.notifLoading  = false;
+          this.cdr.detectChanges();
         }
       });
   }
@@ -412,6 +467,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
       });
   }
 
+  // ══════════════════════════════════════════════════════
+  // HELPERS — MOT DE PASSE
+  // ══════════════════════════════════════════════════════
+
   getPwStrength(): number {
     const p = this.mdpForm.nouveauMotDePasse;
     if (!p) return 0;
@@ -435,10 +494,15 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     return !!this.mdpForm.confirmMotDePasse &&
            this.mdpForm.confirmMotDePasse === this.mdpForm.nouveauMotDePasse;
   }
+
   mdpNoMatch(): boolean {
     return !!this.mdpForm.confirmMotDePasse &&
            this.mdpForm.confirmMotDePasse !== this.mdpForm.nouveauMotDePasse;
   }
+
+  // ══════════════════════════════════════════════════════
+  // HELPERS — AFFICHAGE
+  // ══════════════════════════════════════════════════════
 
   getInitiales(): string {
     const p = this.profilForm.prenom?.[0] || '';
@@ -462,13 +526,13 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     return '#4A7C7E';
   }
 
-  getNotifColor(t: string) {
+  getNotifColor(t: string): string {
     return t === 'NOUVELLE_FORMATION' ? '#4A7C7E'
          : t === 'CERTIFICAT'         ? '#27ae60'
          : '#9B8B6E';
   }
 
-  getNotifBg(t: string) {
+  getNotifBg(t: string): string {
     return t === 'NOUVELLE_FORMATION' ? 'rgba(74,124,126,.12)'
          : t === 'CERTIFICAT'         ? 'rgba(39,174,96,.1)'
          : 'rgba(155,139,110,.1)';
@@ -492,6 +556,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     };
     return { 'background': 'linear-gradient(135deg, #4A7C7E30 0%, #4A7C7E60 100%)' };
   }
+
+  // ══════════════════════════════════════════════════════
+  // LOGOUT
+  // ══════════════════════════════════════════════════════
 
   logout() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);
