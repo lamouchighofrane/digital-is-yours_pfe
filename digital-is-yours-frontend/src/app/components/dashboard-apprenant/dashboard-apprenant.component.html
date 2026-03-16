@@ -498,9 +498,12 @@
             <div class="fc-progress-bar">
               <div class="fc-progress-fill" [style.width]="(f.progression||0)+'%'"></div>
             </div>
-            <span class="fc-statut-badge" [class.badge-publie]="f.statut==='PUBLIE'" [class.badge-draft]="f.statut!=='PUBLIE'">
-              <span class="badge-dot"></span>{{ f.statut==='PUBLIE'?'Inscrit':'En attente' }}
-            </span>
+            <span class="fc-statut-badge" 
+      [class.badge-publie]="f.statutPaiement==='PAYE'" 
+      [class.badge-draft]="f.statutPaiement!=='PAYE'">
+  <span class="badge-dot"></span>
+  {{ f.statutPaiement==='PAYE' ? 'Inscrit' : 'En attente' }}
+</span>
           </div>
           <div class="fc-body">
             <h3 class="fc-titre">{{ f.titre }}</h3>

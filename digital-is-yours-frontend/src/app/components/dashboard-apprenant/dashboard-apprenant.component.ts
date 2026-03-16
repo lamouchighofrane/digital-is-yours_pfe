@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard-apprenant',
@@ -103,11 +103,12 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   private api              = 'http://localhost:8080/api/apprenant';
   private pollingInterval: any = null;
 
-  constructor(
-    private router: Router,
-    private http: HttpClient,
-    private cdr: ChangeDetectorRef
-  ) {}
+ constructor(
+  private router: Router,
+  private route: ActivatedRoute,   // ← ajouter
+  private http: HttpClient,
+  private cdr: ChangeDetectorRef
+) {}
 
   // ══════════════════════════════════════════════════════
   // LIFECYCLE
@@ -121,6 +122,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     this.loadDashboardData();
     this.loadNotifications();
     this.pollingInterval = setInterval(() => this.pollNotifCount(), 30000);
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+  if (tab === 'mes-formations') {
+    this.setSection('formations');
+  }
   }
 
   ngOnDestroy() {
@@ -366,7 +371,7 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
 
   loadFormations() {
     this.formationsLoading = true;
-    this.http.get<any[]>(`${this.api}/mes-formations`, { headers: this.headers() })
+    this.http.get<any[]>(`${this.api}/formations/mes-inscriptions`, { headers: this.headers() })
       .subscribe({
         next: d => {
           this.formations        = d || [];

@@ -47,6 +47,7 @@ export class PaiementSuccesComponent implements OnInit {
   }
 
   allerDashboard(): void {
-    this.router.navigate(['/apprenant/dashboard']);
-  }
-}
+  this.router.navigate(['/apprenant/dashboard'], { 
+    queryParams: { tab: 'mes-formations' } 
+  });
+  }}
