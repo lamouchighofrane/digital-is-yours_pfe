@@ -9,7 +9,30 @@ import { ActivatedRoute, Router } from '@angular/router';
 })
 export class DashboardApprenantComponent implements OnInit, OnDestroy {
 
-  activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' = 'dashboard';
+  activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' = 'dashboard';
+  // ══════════════════════════════════════════════════════
+// CALENDRIER
+// ══════════════════════════════════════════════════════
+sessions: any[]        = [];
+sessionsLoading        = false;
+calViewMode: 'mois' | 'semaine' | 'jour' = 'mois';
+calCurrentDate         = new Date();
+showSessionModal       = false;
+sessionModalMode: 'ajouter' | 'modifier' = 'ajouter';
+sessionEnEdition: any  = null;
+sessionForm = {
+  titre:        '',
+  formationId:  null as number | null,
+  dateSession:  '',
+  heure:        '09:00',
+  dureeMinutes: 60,
+  typeSession:  'COURS',
+  notes:        '',
+  rappel24h:    true
+};
+sessionLoading  = false;
+sessionSuccess  = '';
+sessionError    = '';
   apprenantUser: any = null;
 
   stats: any = {
@@ -126,6 +149,10 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   if (tab === 'mes-formations') {
     this.setSection('formations');
   }
+  const section = this.route.snapshot.queryParamMap.get('section');
+  if (section === 'calendrier') {
+    this.setSection('calendrier');
+  }
   }
 
   ngOnDestroy() {
@@ -140,13 +167,14 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
   // NAVIGATION
   // ══════════════════════════════════════════════════════
 
-  setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats') {
-    this.activeSection = s;
-    if (s === 'formations') this.loadFormations();
-    if (s === 'profil')     this.loadProfil();
-    if (s === 'dashboard')  this.loadDashboardData();
-    this.closeNotifPanel();
-  }
+ setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier') {
+  this.activeSection = s;
+  if (s === 'formations')  this.loadFormations();
+  if (s === 'profil')      this.loadProfil();
+  if (s === 'dashboard')   this.loadDashboardData();
+  if (s === 'calendrier')  this.loadSessions();
+  this.closeNotifPanel();
+}
 
   goToCatalogue() {
     this.router.navigate(['/']);
@@ -725,4 +753,318 @@ export class DashboardApprenantComponent implements OnInit, OnDestroy {
     localStorage.clear();
     this.router.navigate(['/login']);
   }
+  // ══════════════════════════════════════════════════════
+// CALENDRIER — MÉTHODES
+// ══════════════════════════════════════════════════════
+
+loadSessions() {
+  this.sessionsLoading = true;
+  this.http.get<any[]>(`${this.api}/calendrier`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        this.sessions = (d || []).map(s => ({
+          ...s,
+          dateSession: new Date(s.dateSession)
+        }));
+        this.sessionsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.sessions = [];
+        this.sessionsLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+}
+
+// Navigation calendrier
+calPrecedent() {
+  const d = new Date(this.calCurrentDate);
+  if (this.calViewMode === 'mois')   d.setMonth(d.getMonth() - 1);
+  if (this.calViewMode === 'semaine') d.setDate(d.getDate() - 7);
+  if (this.calViewMode === 'jour')   d.setDate(d.getDate() - 1);
+  this.calCurrentDate = d;
+  this.cdr.detectChanges();
+}
+
+calSuivant() {
+  const d = new Date(this.calCurrentDate);
+  if (this.calViewMode === 'mois')   d.setMonth(d.getMonth() + 1);
+  if (this.calViewMode === 'semaine') d.setDate(d.getDate() + 7);
+  if (this.calViewMode === 'jour')   d.setDate(d.getDate() + 1);
+  this.calCurrentDate = d;
+  this.cdr.detectChanges();
+}
+
+calAujourdhui() {
+  this.calCurrentDate = new Date();
+  this.cdr.detectChanges();
+}
+
+// Titre du mois/semaine affiché
+get calTitre(): string {
+  const opts: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' };
+  return this.calCurrentDate.toLocaleDateString('fr-FR', opts)
+    .replace(/^\w/, c => c.toUpperCase());
+}
+
+// Génération grille mois (6 semaines x 7 jours)
+get calJoursMois(): Date[] {
+  const debut = new Date(
+    this.calCurrentDate.getFullYear(),
+    this.calCurrentDate.getMonth(), 1);
+  const fin = new Date(
+    this.calCurrentDate.getFullYear(),
+    this.calCurrentDate.getMonth() + 1, 0);
+
+  // Lundi = 0
+  let jourDebut = debut.getDay() === 0 ? 6 : debut.getDay() - 1;
+  const grid: Date[] = [];
+
+  for (let i = jourDebut; i > 0; i--) {
+    const d = new Date(debut);
+    d.setDate(d.getDate() - i);
+    grid.push(d);
+  }
+  for (let d = new Date(debut); d <= fin; d.setDate(d.getDate() + 1)) {
+    grid.push(new Date(d));
+  }
+  while (grid.length < 42) {
+    const last = grid[grid.length - 1];
+    const next = new Date(last);
+    next.setDate(next.getDate() + 1);
+    grid.push(next);
+  }
+  return grid;
+}
+
+// Sessions d'un jour donné
+getSessionsDuJour(date: Date): any[] {
+  return this.sessions.filter(s => {
+    const sd = new Date(s.dateSession);
+    return sd.getDate()     === date.getDate() &&
+           sd.getMonth()    === date.getMonth() &&
+           sd.getFullYear() === date.getFullYear();
+  }).sort((a, b) =>
+    new Date(a.dateSession).getTime() -
+    new Date(b.dateSession).getTime());
+}
+
+estAujourdhuiCal(date: Date): boolean {
+  const today = new Date();
+  return date.getDate()     === today.getDate() &&
+         date.getMonth()    === today.getMonth() &&
+         date.getFullYear() === today.getFullYear();
+}
+
+estMoisCourant(date: Date): boolean {
+  return date.getMonth() === this.calCurrentDate.getMonth() &&
+         date.getFullYear() === this.calCurrentDate.getFullYear();
+}
+
+// Couleur par type de session
+getSessionColor(type: string): string {
+  return type === 'COURS'     ? '#4A7C7E'
+       : type === 'QUIZ'      ? '#27ae60'
+       : type === 'EVENEMENT' ? '#f39c12'
+       : '#9B8B6E';
+}
+
+getSessionBg(type: string): string {
+  return type === 'COURS'     ? 'rgba(74,124,126,.15)'
+       : type === 'QUIZ'      ? 'rgba(39,174,96,.15)'
+       : type === 'EVENEMENT' ? 'rgba(243,156,18,.15)'
+       : 'rgba(155,139,110,.15)';
+}
+
+getSessionIcon(type: string): string {
+  return type === 'COURS'     ? '📚'
+       : type === 'QUIZ'      ? '✏️'
+       : type === 'EVENEMENT' ? '📅'
+       : '📌';
+}
+
+// Prochaines sessions (3 max)
+get prochainesSessions(): any[] {
+  const now = new Date();
+  return this.sessions
+    .filter(s => new Date(s.dateSession) > now && !s.isTerminee)
+    .sort((a, b) =>
+      new Date(a.dateSession).getTime() -
+      new Date(b.dateSession).getTime())
+    .slice(0, 4);
+}
+
+get sessionImminente(): any | null {
+  return this.prochainesSessions[0] || null;
+}
+
+estBientot(s: any): boolean {
+  const diff = new Date(s.dateSession).getTime() - Date.now();
+  return diff > 0 && diff < 24 * 3600 * 1000;
+}
+
+// Statistiques hebdo/mensuel
+get heuresSemaine(): number {
+  const debut = new Date();
+  debut.setDate(debut.getDate() - debut.getDay() + 1);
+  debut.setHours(0, 0, 0, 0);
+  const fin = new Date(debut);
+  fin.setDate(fin.getDate() + 6);
+  return Math.round(
+    this.sessions
+      .filter(s => {
+        const d = new Date(s.dateSession);
+        return d >= debut && d <= fin;
+      })
+      .reduce((acc, s) => acc + (s.dureeMinutes || 60), 0) / 60
+  );
+}
+
+get heuresMois(): number {
+  return Math.round(
+    this.sessions
+      .filter(s => {
+        const d = new Date(s.dateSession);
+        return d.getMonth()    === this.calCurrentDate.getMonth() &&
+               d.getFullYear() === this.calCurrentDate.getFullYear();
+      })
+      .reduce((acc, s) => acc + (s.dureeMinutes || 60), 0) / 60
+  );
+}
+
+// Modal ajouter
+ouvrirModalAjouter(date?: Date) {
+  this.sessionModalMode = 'ajouter';
+  this.sessionEnEdition = null;
+  this.sessionError     = '';
+  this.sessionSuccess   = '';
+  const d = date || new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  this.sessionForm = {
+    titre:        '',
+    formationId:  null,
+    dateSession:  `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
+    heure:        '09:00',
+    dureeMinutes: 60,
+    typeSession:  'COURS',
+    notes:        '',
+    rappel24h:    true
+  };
+  this.showSessionModal = true;
+  this.cdr.detectChanges();
+}
+
+// Modal modifier
+ouvrirModalModifier(session: any, event: Event) {
+  event.stopPropagation();
+  this.sessionModalMode = 'modifier';
+  this.sessionEnEdition = session;
+  this.sessionError     = '';
+  this.sessionSuccess   = '';
+  const d   = new Date(session.dateSession);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  this.sessionForm = {
+    titre:        session.titrePersonnalise,
+    formationId:  session.formationId || null,
+    dateSession:  `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,
+    heure:        `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+    dureeMinutes: session.dureeMinutes || 60,
+    typeSession:  session.typeSession  || 'COURS',
+    notes:        session.notes        || '',
+    rappel24h:    session.rappel24h
+  };
+  this.showSessionModal = true;
+  this.cdr.detectChanges();
+}
+
+fermerModalSession() {
+  this.showSessionModal = false;
+  this.sessionEnEdition = null;
+  this.sessionError     = '';
+  this.cdr.detectChanges();
+}
+
+// Construire dateSession ISO
+get sessionDateISO(): string {
+  return `${this.sessionForm.dateSession}T${this.sessionForm.heure}:00`;
+}
+
+// Récap lisible
+get sessionRecap(): string {
+  if (!this.sessionForm.dateSession || !this.sessionForm.heure) return '';
+  const d = new Date(`${this.sessionForm.dateSession}T${this.sessionForm.heure}`);
+  const h = Math.floor(this.sessionForm.dureeMinutes / 60);
+  const m = this.sessionForm.dureeMinutes % 60;
+  const duree = h > 0 ? `${h}h${m > 0 ? m + 'min' : ''}` : `${m}min`;
+  return d.toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  }) + ` à ${this.sessionForm.heure} (${duree})`;
+}
+
+sauvegarderSession() {
+  if (!this.sessionForm.titre.trim()) {
+    this.sessionError = 'Le titre est requis.'; return;
+  }
+  if (!this.sessionForm.dateSession) {
+    this.sessionError = 'La date est requise.'; return;
+  }
+
+  this.sessionLoading = true;
+  this.sessionError   = '';
+
+  const payload = {
+    titre:        this.sessionForm.titre,
+    formationId:  this.sessionForm.formationId,
+    dateSession:  this.sessionDateISO,
+    dureeMinutes: this.sessionForm.dureeMinutes,
+    typeSession:  this.sessionForm.typeSession,
+    notes:        this.sessionForm.notes,
+    rappel24h:    this.sessionForm.rappel24h
+  };
+
+  const req$ = this.sessionModalMode === 'ajouter'
+    ? this.http.post<any>(
+        `${this.api}/calendrier`, payload,
+        { headers: this.headers() })
+    : this.http.put<any>(
+        `${this.api}/calendrier/${this.sessionEnEdition.id}`,
+        payload, { headers: this.headers() });
+
+  req$.subscribe({
+    next: () => {
+      this.sessionLoading = false;
+      this.fermerModalSession();
+      this.loadSessions();
+    },
+    error: err => {
+      this.sessionLoading = false;
+      this.sessionError   = err.error?.message || 'Erreur.';
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+supprimerSession(session: any, event: Event) {
+  event.stopPropagation();
+  if (!confirm(`Supprimer "${session.titrePersonnalise}" ?`)) return;
+  this.http.delete(
+    `${this.api}/calendrier/${session.id}`,
+    { headers: this.headers() }
+  ).subscribe({
+    next:  () => this.loadSessions(),
+    error: () => {}
+  });
+}
+
+formatHeure(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+}
+
+formatDuree(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h > 0 ? `${h}h${m > 0 ? m + 'min' : ''}` : `${m}min`;
+}
 }
