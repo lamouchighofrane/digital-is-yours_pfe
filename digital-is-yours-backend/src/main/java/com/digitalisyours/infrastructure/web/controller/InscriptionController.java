@@ -30,8 +30,20 @@ public class InscriptionController {
         String email = extractEmail(request);
         if (email == null) return unauthorized();
         try {
-            List<Inscription> inscriptions = inscriptionUseCase.getMesInscriptions(email);
-            return ResponseEntity.ok(inscriptions);
+            List<Map<String, Object>> result = inscriptionUseCase.getMesInscriptions(email)
+                    .stream()
+                    .map(i -> Map.<String, Object>of(
+                            "id",              i.getId(),
+                            "titre",           i.getFormationTitre() != null ? i.getFormationTitre() : "",
+                            "description",     i.getFormationDescription() != null ? i.getFormationDescription() : "",
+                            "imageCouverture", i.getFormationImage() != null ? i.getFormationImage() : "",
+                            "niveau",          i.getFormationNiveau() != null ? i.getFormationNiveau() : "DEBUTANT",
+                            "progression",     i.getProgression() != null ? i.getProgression() : 0,
+                            "statutPaiement",  i.getStatutPaiement() != null ? i.getStatutPaiement() : "",
+                            "dateInscription", i.getDateInscription() != null ? i.getDateInscription().toString() : ""
+                    ))
+                    .toList();
+            return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }

@@ -113,6 +113,7 @@ public class InscriptionRepositoryAdapter implements InscriptionRepositoryPort {
                 i.setFormationImage(e.getFormation().getImageCouverture());
                 i.setFormationNiveau(e.getFormation().getNiveau());
                 i.setFormationPrix(e.getFormation().getPrix());
+                i.setFormationDescription(e.getFormation().getDescription()); // ← AJOUTER
             }
         } catch (Exception ex) { /* lazy proxy */ }
 

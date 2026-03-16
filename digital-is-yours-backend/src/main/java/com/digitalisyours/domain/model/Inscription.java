@@ -23,6 +23,7 @@ public class Inscription {
     private String formationImage;
     private String formationNiveau;
     private Double formationPrix;
+    private String formationDescription;
 
     // Progression
     private LocalDateTime dateInscription;
