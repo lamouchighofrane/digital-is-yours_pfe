@@ -9,7 +9,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 })
 export class DashboardApprenantComponent implements OnInit, OnDestroy {
 
-  activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' = 'dashboard';
+  activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' = 'dashboard';
   // ══════════════════════════════════════════════════════
 // CALENDRIER
 // ══════════════════════════════════════════════════════
@@ -46,6 +46,14 @@ sessionError    = '';
   formationsLoading      = false;
   formationsSearch       = '';
   formationsFilterNiveau = '';
+  // ── Section Cours (US-028) ──
+selectedFormation: any = null;
+cours: any[]           = [];
+coursLoading           = false;
+coursError             = '';
+coursActiveTab: 'cours' | 'progression' | 'forum' | 'ressources' = 'cours';
+quizNotePassage: number | null = null;
+quizExiste: boolean = false;
 
   recommandations: any[]    = [];
   recommandationsLoading    = false;
@@ -174,6 +182,26 @@ sessionError    = '';
   if (s === 'dashboard')   this.loadDashboardData();
   if (s === 'calendrier')  this.loadSessions();
   this.closeNotifPanel();
+}
+voirCours(formation: any) {
+  this.selectedFormation = formation;
+  this.activeSection     = 'cours' as any;
+  this.coursActiveTab    = 'cours';
+  this.cours             = [];
+  this.coursError        = '';
+  
+  console.log('formation sélectionnée:', formation); // ← DEBUG temporaire
+  console.log('formationId:', formation.formationId, 'id:', formation.id);
+  
+  this.loadCours();
+  this.closeNotifPanel();
+}
+
+retourFormations() {
+  this.selectedFormation = null;
+  this.cours = [];
+  this.activeSection = 'formations';
+  this.cdr.detectChanges();
 }
 
   goToCatalogue() {
@@ -422,6 +450,54 @@ sessionError    = '';
       return matchSearch && matchNiveau;
     });
   }
+ loadCours() {
+  if (!this.selectedFormation) return;
+  
+  // formationId d'abord (ID de la formation), sinon id (ID inscription)
+  const fid = this.selectedFormation.formationId || this.selectedFormation.id;
+  
+  this.coursLoading = true;
+  this.coursError   = '';
+  this.http.get<any>(`${this.api}/formations/${fid}/cours`, { headers: this.headers() })
+    .subscribe({
+      next: res => { 
+        this.cours = res.cours || [];
+        // ← Récupérer les infos du quiz final
+        if (res.quiz) {
+         this.quizNotePassage = res.quiz.notePassage ?? null;
+          this.quizExiste      = res.quiz.existe || false;
+        }
+        this.coursLoading = false; 
+        this.cdr.detectChanges(); 
+      },
+      error: err => { 
+        this.coursError = err.error?.message || 'Impossible de charger les cours.'; 
+        this.coursLoading = false; 
+        this.cdr.detectChanges(); 
+      }
+    });
+}
+
+getCoursStatut(c: any, i: number): 'termine' | 'en-cours' | 'disponible' | 'verrouille' {
+  if (c.estTermine) return 'termine';
+  if (c.estEnCours) return 'en-cours';
+  if (i > 0 && !this.cours[i - 1].estTermine) return 'verrouille';
+  return 'disponible';
+}
+
+get coursTerminesCount(): number { return this.cours.filter(c => c.estTermine).length; }
+
+get progressionPct(): number {
+  if (this.cours.length) return Math.round((this.coursTerminesCount / this.cours.length) * 100);
+  return this.selectedFormation?.progression || 0;
+}
+
+continuerFormation() {
+  const premier = this.cours.find((c, i) => this.getCoursStatut(c, i) !== 'termine');
+  if (premier) console.log('Continuer:', premier.titre);
+}
+
+
 
   // ══════════════════════════════════════════════════════
   // PROFIL

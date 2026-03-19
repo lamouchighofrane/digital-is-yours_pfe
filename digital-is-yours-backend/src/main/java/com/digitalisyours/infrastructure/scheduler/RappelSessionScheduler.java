@@ -46,7 +46,6 @@ public class RappelSessionScheduler {
                 apprenantRepo.findById(s.getApprenantId())
                         .ifPresent(apprenant -> {
                             try {
-                                // ── Email HTML ──
                                 String html = buildRappelEmail(
                                         apprenant.getPrenom(),
                                         s.getTitrePersonnalise(),
@@ -58,7 +57,7 @@ public class RappelSessionScheduler {
                                 MimeMessage message = mailSender.createMimeMessage();
                                 MimeMessageHelper helper = new MimeMessageHelper(
                                         message, true, "UTF-8");
-                                helper.setFrom(fromEmail); // ← email config
+                                helper.setFrom(fromEmail);
                                 helper.setTo(apprenant.getEmail());
                                 helper.setSubject("Rappel — Session demain : "
                                         + s.getTitrePersonnalise());
@@ -67,7 +66,6 @@ public class RappelSessionScheduler {
                                 log.info("Rappel HTML envoyé à {} pour session {}",
                                         apprenant.getEmail(), s.getId());
 
-                                // ── Notification cloche ──
                                 userRepo.findByEmail(apprenant.getEmail())
                                         .ifPresent(user -> {
                                             NotificationEntity notif =
@@ -170,7 +168,7 @@ public class RappelSessionScheduler {
                   </table>
                 </div>
                 <div style="text-align:center;margin:32px 0">
-                 <a href="http://localhost:4200/apprenant/dashboard?section=calendrier"
+                  <a href="http://localhost:4200/apprenant/dashboard?section=calendrier"
                      style="display:inline-block;padding:16px 40px;background:#4A7C7E;
                      color:#fff;text-decoration:none;border-radius:12px;
                      font-weight:600;font-size:15px">

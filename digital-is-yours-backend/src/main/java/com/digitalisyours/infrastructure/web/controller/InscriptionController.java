@@ -32,16 +32,19 @@ public class InscriptionController {
         try {
             List<Map<String, Object>> result = inscriptionUseCase.getMesInscriptions(email)
                     .stream()
-                    .map(i -> Map.<String, Object>of(
-                            "id",              i.getId(),
-                            "titre",           i.getFormationTitre() != null ? i.getFormationTitre() : "",
-                            "description",     i.getFormationDescription() != null ? i.getFormationDescription() : "",
-                            "imageCouverture", i.getFormationImage() != null ? i.getFormationImage() : "",
-                            "niveau",          i.getFormationNiveau() != null ? i.getFormationNiveau() : "DEBUTANT",
-                            "progression",     i.getProgression() != null ? i.getProgression() : 0,
-                            "statutPaiement",  i.getStatutPaiement() != null ? i.getStatutPaiement() : "",
-                            "dateInscription", i.getDateInscription() != null ? i.getDateInscription().toString() : ""
-                    ))
+                    .map(i -> {
+                        Map<String, Object> m = new java.util.LinkedHashMap<>();
+                        m.put("id",              i.getId());
+                        m.put("formationId",     i.getFormationId());          // ← AJOUT CRUCIAL
+                        m.put("titre",           i.getFormationTitre()       != null ? i.getFormationTitre()       : "");
+                        m.put("description",     i.getFormationDescription() != null ? i.getFormationDescription() : "");
+                        m.put("imageCouverture", i.getFormationImage()        != null ? i.getFormationImage()       : "");
+                        m.put("niveau",          i.getFormationNiveau()       != null ? i.getFormationNiveau()      : "DEBUTANT");
+                        m.put("progression",     i.getProgression()           != null ? i.getProgression()          : 0);
+                        m.put("statutPaiement",  i.getStatutPaiement()        != null ? i.getStatutPaiement()       : "");
+                        m.put("dateInscription", i.getDateInscription()       != null ? i.getDateInscription().toString() : "");
+                        return m;
+                    })
                     .toList();
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
