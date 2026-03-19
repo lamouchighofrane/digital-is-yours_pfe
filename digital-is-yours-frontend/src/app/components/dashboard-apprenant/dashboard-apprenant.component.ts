@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-dashboard-apprenant',
@@ -54,6 +55,12 @@ coursError             = '';
 coursActiveTab: 'cours' | 'progression' | 'forum' | 'ressources' = 'cours';
 quizNotePassage: number | null = null;
 quizExiste: boolean = false;
+// ── US-029 : Cours actif + documents + vidéo ──
+coursActif: any = null;
+showCoursDetail = false;
+documentsActifs: any[] = [];
+documentsLoading = false;
+documentsError = '';
 
   recommandations: any[]    = [];
   recommandationsLoading    = false;
@@ -138,7 +145,10 @@ quizExiste: boolean = false;
   private router: Router,
   private route: ActivatedRoute,   // ← ajouter
   private http: HttpClient,
-  private cdr: ChangeDetectorRef
+  private cdr: ChangeDetectorRef,
+  private sanitizer: DomSanitizer 
+  
+  
 ) {}
 
   // ══════════════════════════════════════════════════════
@@ -146,22 +156,53 @@ quizExiste: boolean = false;
   // ══════════════════════════════════════════════════════
 
   ngOnInit() {
-    const token = localStorage.getItem('token');
-    if (!token) { this.router.navigate(['/login']); return; }
-    this.apprenantUser = JSON.parse(localStorage.getItem('user') || '{}');
-    this.patchFormsFromUser(this.apprenantUser);
-    this.loadDashboardData();
-    this.loadNotifications();
-    this.pollingInterval = setInterval(() => this.pollNotifCount(), 30000);
-    const tab = this.route.snapshot.queryParamMap.get('tab');
+  const token = localStorage.getItem('token');
+  if (!token) { this.router.navigate(['/login']); return; }
+  this.apprenantUser = JSON.parse(localStorage.getItem('user') || '{}');
+  this.patchFormsFromUser(this.apprenantUser);
+  this.loadDashboardData();
+  this.loadNotifications();
+  this.pollingInterval = setInterval(() => this.pollNotifCount(), 30000);
+  
+  const tab = this.route.snapshot.queryParamMap.get('tab');
   if (tab === 'mes-formations') {
     this.setSection('formations');
   }
+  
   const section = this.route.snapshot.queryParamMap.get('section');
   if (section === 'calendrier') {
     this.setSection('calendrier');
   }
+  
+  // ← NOUVEAU BLOC :
+  const formationId = this.route.snapshot.queryParamMap.get('formationId');
+  if (formationId) {
+    const fid = +formationId;
+    this.http.get<any[]>(`${this.api}/formations/mes-inscriptions`, { headers: this.headers() })
+      .subscribe({
+        next: d => {
+          this.formations = d || [];
+          this.formationsLoading = false;
+          const formation = this.formations.find(
+            f => (f.formationId || f.id) === fid
+          );
+          if (formation) {
+            this.selectedFormation = formation;
+            this.activeSection = 'cours' as any;
+            this.coursActiveTab = 'cours';
+            this.cours = [];
+            this.coursError = '';
+            this.loadCours();
+          }
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.formationsLoading = false;
+          this.cdr.detectChanges();
+        }
+      });
   }
+}
 
   ngOnDestroy() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);
@@ -495,6 +536,103 @@ get progressionPct(): number {
 continuerFormation() {
   const premier = this.cours.find((c, i) => this.getCoursStatut(c, i) !== 'termine');
   if (premier) console.log('Continuer:', premier.titre);
+}
+// ── Suivre un cours ─────────────────────────────────────
+
+ouvrirCours(c: any, i: number) {
+  const statut = this.getCoursStatut(c, i);
+  if (statut === 'verrouille') return;
+  
+  const fid = this.selectedFormation?.formationId || this.selectedFormation?.id;
+  
+  this.router.navigate(
+    ['/apprenant/cours', fid, c.id],
+    { queryParams: { titre: this.selectedFormation?.titre } }
+  );
+}
+
+
+fermerCours() {
+  this.coursActif      = null;
+  this.showCoursDetail = false;
+  this.documentsActifs = [];
+}
+
+loadDocumentsCours(c: any) {
+  if (!this.selectedFormation) return;
+  const fid = this.selectedFormation.formationId || this.selectedFormation.id;
+  this.documentsLoading = true;
+  this.http.get<any>(
+    `${this.api}/formations/${fid}/cours/${c.id}/documents`,
+    { headers: this.headers() }
+  ).subscribe({
+    next: res => {
+      this.documentsActifs  = res.documents || [];
+      this.documentsLoading = false;
+      this.cdr.detectChanges();
+    },
+    error: () => {
+      this.documentsActifs  = [];
+      this.documentsLoading = false;
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+getVideoUrl(c: any): SafeResourceUrl {
+  if (!c || !c.videoType) return '';
+  const fid = this.selectedFormation?.formationId || this.selectedFormation?.id;
+  if (c.videoType === 'YOUTUBE') {
+    return this.sanitizer.bypassSecurityTrustResourceUrl(c.videoUrl || '');
+  }
+  if (c.videoType === 'LOCAL' && c.videoUrl) {
+    const url = `http://localhost:8080/api/apprenant/cours/${c.id}/video/stream/${c.videoUrl}?formationId=${fid}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+  return '';
+}
+
+getYoutubeEmbedUrl(url: string): SafeResourceUrl {
+  if (!url) return '';
+  const m = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  const embedUrl = m ? `https://www.youtube.com/embed/${m[1]}?autoplay=0&rel=0` : '';
+  return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
+}
+
+downloadDocument(doc: any) {
+  if (!this.selectedFormation || !this.coursActif) return;
+  const fid = this.selectedFormation.formationId || this.selectedFormation.id;
+  const token = localStorage.getItem('token');
+  fetch(
+    `http://localhost:8080/api/apprenant/formations/${fid}/cours/${this.coursActif.id}/documents/${doc.id}/download`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  ).then(res => res.blob()).then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = doc.nomFichier || doc.titre;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }).catch(() => {});
+}
+
+getDocIconLabel(type: string): string {
+  if (!type) return 'FILE';
+  if (type.includes('pdf')) return 'PDF';
+  if (type.includes('word') || type.includes('msword')) return 'DOC';
+  if (type.includes('powerpoint') || type.includes('presentation')) return 'PPT';
+  if (type.includes('excel') || type.includes('sheet')) return 'XLS';
+  if (type.includes('image')) return 'IMG';
+  if (type.includes('text')) return 'TXT';
+  return 'FILE';
+}
+
+formatTailleDoc(bytes: number): string {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
 

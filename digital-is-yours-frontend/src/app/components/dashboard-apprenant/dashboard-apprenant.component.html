@@ -536,7 +536,7 @@
         </div>
       </div>
     </section>
-    <!-- ═══ COURS D'UNE FORMATION (US-028) ═══ -->
+ <!-- ═══ COURS D'UNE FORMATION (US-028) ═══ -->
 <section *ngIf="activeSection==='cours'" class="page-content">
 
   <div class="cours-formation-header">
@@ -592,11 +592,14 @@
     </button>
   </div>
 
+  <!-- ── TAB COURS ── -->
   <div *ngIf="coursActiveTab==='cours'">
+
     <div *ngIf="coursLoading" class="cours-loading">
       <div class="cours-spinner"></div>
       <span>Chargement des cours...</span>
     </div>
+
     <div *ngIf="!coursLoading && coursError" class="cours-error-card">
       <svg width="20" height="20" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
@@ -608,6 +611,7 @@
       </div>
       <button class="cours-retry-btn" (click)="loadCours()">Réessayer</button>
     </div>
+
     <div *ngIf="!coursLoading && !coursError && cours.length===0" class="cours-empty">
       <div class="cours-empty-icon">
         <svg width="28" height="28" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
@@ -617,6 +621,7 @@
       <p class="cours-empty-title">Aucun cours disponible</p>
       <p class="cours-empty-sub">Le formateur n'a pas encore publié de cours pour cette formation.</p>
     </div>
+
     <div *ngIf="!coursLoading && !coursError && cours.length>0" class="appr-cours-list">
       <div *ngFor="let c of cours; let i=index"
            class="appr-cours-card"
@@ -678,9 +683,9 @@
           </p>
         </div>
         <div class="appr-cours-action">
-          <button *ngIf="getCoursStatut(c,i)==='termine'"    class="appr-btn appr-btn-revoir"    (click)="continuerFormation()">Revoir</button>
-          <button *ngIf="getCoursStatut(c,i)==='en-cours'"   class="appr-btn appr-btn-continuer" (click)="continuerFormation()">Continuer</button>
-          <button *ngIf="getCoursStatut(c,i)==='disponible'" class="appr-btn appr-btn-demarrer"  (click)="continuerFormation()">Démarrer</button>
+          <button *ngIf="getCoursStatut(c,i)==='termine'"    class="appr-btn appr-btn-revoir"    (click)="ouvrirCours(c,i)">Revoir</button>
+          <button *ngIf="getCoursStatut(c,i)==='en-cours'"   class="appr-btn appr-btn-continuer" (click)="ouvrirCours(c,i)">Continuer</button>
+          <button *ngIf="getCoursStatut(c,i)==='disponible'" class="appr-btn appr-btn-demarrer"  (click)="ouvrirCours(c,i)">Démarrer</button>
           <span   *ngIf="getCoursStatut(c,i)==='verrouille'" class="appr-verr-icon">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
@@ -689,6 +694,11 @@
         </div>
       </div>
     </div>
+    <!-- FIN appr-cours-list -->
+
+    
+
+    <!-- Quiz Final -->
     <div *ngIf="!coursLoading && !coursError && cours.length>0" class="appr-quiz-final">
       <div class="appr-qf-icon">
         <svg width="26" height="26" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
@@ -699,12 +709,10 @@
       </div>
       <div class="appr-qf-info">
         <h4 class="appr-qf-titre">Quiz Final</h4>
- <p class="appr-qf-sub">
-    Disponible après 100% de progression
-    <span *ngIf="quizNotePassage !== null">
-        · Note de passage : {{ quizNotePassage }}%
-    </span>
-</p>
+        <p class="appr-qf-sub">
+          Disponible après 100% de progression
+          <span *ngIf="quizNotePassage !== null">· Note de passage : {{ quizNotePassage }}%</span>
+        </p>
       </div>
       <button class="appr-qf-btn" [disabled]="progressionPct < 100">
         Passer quiz final
@@ -713,8 +721,11 @@
         </svg>
       </button>
     </div>
-  </div>
 
+  </div>
+  <!-- FIN TAB COURS -->
+
+  <!-- ── AUTRES TABS ── -->
   <div *ngIf="coursActiveTab==='progression'" class="appr-tab-soon">
     <svg width="40" height="40" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24"><path stroke-width="1.4" d="M3 13l4-4 4 4 4-6 4 6"/></svg>
     <p>Suivi de progression — bientôt disponible</p>
@@ -729,6 +740,9 @@
   </div>
 
 </section>
+<!-- FIN SECTION COURS -->
+   
+  
 
     <!-- ═══ PROGRESSION ═══ -->
     <section *ngIf="activeSection==='progression'" class="page-content">

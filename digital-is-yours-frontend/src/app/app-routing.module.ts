@@ -13,6 +13,7 @@ import { DashboardApprenantComponent } from './components/dashboard-apprenant/da
 import { FormationDetailComponent } from './components/shared/formation-detail/formation-detail.component';
 import { PaiementSuccesComponent } from './components/shared/paiement-succes/paiement-succes.component';
 import { PaiementAnnuleComponent } from './components/shared/paiement-annule/paiement-annule.component';
+import { CoursDetailComponent } from './components/cours-detail/cours-detail.component';
 const routes: Routes = [
   { path: '', component: SplashScreenComponent },
   { path: 'home', component: HomeComponent, title: 'Digital Is Yours' },
@@ -27,6 +28,7 @@ const routes: Routes = [
   { path: 'formation/:id', component: FormationDetailComponent },
   { path: 'paiement-succes', component: PaiementSuccesComponent, title: 'Paiement accepté' },
   { path: 'paiement-annule', component: PaiementAnnuleComponent, title: 'Paiement annulé' },
+  { path: 'apprenant/cours/:formationId/:coursId', component: CoursDetailComponent },
   { path: '**', redirectTo: '' },   // ← toujours EN DERNIER
 ];
 
