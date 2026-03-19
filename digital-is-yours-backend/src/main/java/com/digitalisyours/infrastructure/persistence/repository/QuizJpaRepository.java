@@ -29,4 +29,9 @@ public interface QuizJpaRepository extends JpaRepository<QuizEntity, Long> {
     @Modifying
     @Transactional
     void deleteByCoursId(Long coursId);
+    // ── US-028 : Quiz Final d'une formation ──────────────────
+    @Query("SELECT q FROM QuizEntity q " +
+            "WHERE q.type = 'QuizFinal' " +
+            "AND q.formation.id = :formationId")
+    Optional<QuizEntity> findQuizFinalByFormationId(@Param("formationId") Long formationId);
 }
