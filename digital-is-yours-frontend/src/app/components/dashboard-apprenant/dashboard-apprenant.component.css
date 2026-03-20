@@ -1592,3 +1592,181 @@
 .cdp-doc-meta{font-size:11px;color:#9B8B6E;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cdp-doc-dl{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px solid #E8E3DB;background:#FFF;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:#4A7C7E;cursor:pointer;transition:all .2s;flex-shrink:0}
 .cdp-doc-dl:hover{background:#4A7C7E;color:#FFF;border-color:#4A7C7E}
+/* ══════════════════════════════════════════════════
+   MA PROGRESSION — 
+   ══════════════════════════════════════════════════ */
+
+.prog-loading-zone {
+  display: flex; align-items: center; gap: 12px;
+  padding: 60px; color: #8B7E74; font-size: 14px;
+  justify-content: center;
+}
+.progression-error {
+  padding: 16px; background: rgba(231,76,60,.08);
+  border: 1px solid rgba(231,76,60,.2);
+  border-radius: 12px; color: #c0392b; font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* Stats globales */
+.prog-stats-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 14px; margin-bottom: 24px;
+}
+.prog-stat-card {
+  background: #FFF; border: 1.5px solid #EDE8E2;
+  border-radius: 16px; padding: 18px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 2px 8px rgba(26,22,18,.04);
+}
+.prog-stat-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.prog-stat-icon.blue   { background: rgba(74,124,126,.12); }
+.prog-stat-icon.green  { background: rgba(39,174,96,.12); }
+.prog-stat-icon.orange { background: rgba(230,126,34,.12); }
+.prog-stat-icon.yellow { background: rgba(241,196,15,.15); }
+.prog-stat-val {
+  display: block; font-size: 22px; font-weight: 800;
+  color: #1A1612; line-height: 1;
+}
+.prog-stat-label {
+  display: block; font-size: 12px; color: #8B7E74; margin-top: 3px;
+}
+
+/* Formation cards */
+.prog-formations-list { display: flex; flex-direction: column; gap: 20px; }
+.prog-formation-card {
+  background: #FFF; border: 1.5px solid #EDE8E2;
+  border-radius: 20px; padding: 24px;
+  box-shadow: 0 2px 12px rgba(26,22,18,.05);
+  transition: box-shadow .2s;
+}
+.prog-formation-card:hover { box-shadow: 0 6px 24px rgba(26,22,18,.1); }
+
+/* Header de la carte */
+.prog-formation-header {
+  display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px;
+}
+.prog-formation-img {
+  width: 72px; height: 72px; border-radius: 14px;
+  overflow: hidden; flex-shrink: 0; background: #F0EDE8;
+}
+.prog-formation-img img { width: 100%; height: 100%; object-fit: cover; }
+.prog-formation-img-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.prog-formation-info { flex: 1; }
+.prog-formation-meta { display: flex; gap: 8px; margin-bottom: 6px; }
+.prog-niveau-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 8px;
+  border-radius: 6px; background: #F0EDE8; color: #6B5F52;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.prog-statut-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+}
+.statut-termine  { background: rgba(39,174,96,.12); color: #27ae60; }
+.statut-en_cours { background: rgba(74,124,126,.12); color: #4A7C7E; }
+.statut-a_faire  { background: #F0EDE8; color: #8B7E74; }
+.prog-formation-titre {
+  font-size: 16px; font-weight: 700; color: #1A1612;
+  margin: 0 0 4px; line-height: 1.3;
+}
+.prog-formation-stats-text { font-size: 12px; color: #8B7E74; margin: 0; }
+
+/* Cercle */
+.prog-circle-container {
+  position: relative; width: 80px; height: 80px; flex-shrink: 0;
+}
+.prog-circle-svg { width: 80px; height: 80px; }
+.prog-circle-text {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.prog-circle-pct { font-size: 14px; font-weight: 800; color: #1A1612; }
+
+/* Barre globale */
+.prog-bar-zone {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+}
+.prog-bar-track {
+  flex: 1; height: 8px; border-radius: 99px;
+  background: #F0EDE8; overflow: hidden;
+}
+.prog-bar-fill {
+  height: 100%; border-radius: 99px; transition: width .6s ease;
+}
+.prog-bar-label {
+  font-size: 12px; font-weight: 700; color: #6B5F52; min-width: 36px; text-align: right;
+}
+
+/* 3 composantes */
+.prog-composantes { display: flex; gap: 16px; margin-bottom: 18px; }
+.prog-composante  { flex: 1; }
+.prog-comp-header {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; color: #6B5F52; margin-bottom: 6px;
+}
+.prog-comp-bar-track {
+  height: 5px; border-radius: 99px;
+  background: #F0EDE8; overflow: hidden; margin-bottom: 4px;
+}
+.prog-comp-bar-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
+.prog-comp-bar-fill.video { background: #4A7C7E; }
+.prog-comp-bar-fill.doc   { background: #e67e22; }
+.prog-comp-bar-fill.quiz  { background: #9b59b6; }
+.prog-comp-count { font-size: 11px; font-weight: 700; color: #1A1612; }
+
+/* Détail cours */
+.prog-cours-list {
+  border-top: 1px solid #F0EDE8; padding-top: 16px;
+  margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px;
+}
+.prog-cours-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 10px;
+  background: #FAFAF7; font-size: 13px;
+}
+.prog-cours-statut-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-termine  { background: #27ae60; }
+.dot-en-cours { background: #f39c12; }
+.dot-a-faire  { background: #C8BEB2; }
+.prog-cours-titre { flex: 1; color: #1A1612; font-weight: 500; }
+.prog-cours-badges { display: flex; gap: 4px; }
+.prog-mini-badge {
+  width: 22px; height: 22px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: #F0EDE8; transition: all .2s;
+}
+.prog-mini-badge svg { stroke: #C8BEB2; }
+.prog-mini-badge.video.active { background: rgba(74,124,126,.15); }
+.prog-mini-badge.video.active svg { stroke: #4A7C7E; }
+.prog-mini-badge.doc.active   { background: rgba(230,126,34,.15); }
+.prog-mini-badge.doc.active svg { stroke: #e67e22; }
+.prog-mini-badge.quiz.active  { background: rgba(39,174,96,.15); }
+.prog-mini-badge.quiz.active svg { stroke: #27ae60; }
+.prog-cours-statut-label {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+}
+.label-termine  { background: rgba(39,174,96,.12); color: #27ae60; }
+.label-en-cours { background: rgba(243,156,18,.12); color: #f39c12; }
+.label-a-faire  { background: #F0EDE8; color: #8B7E74; }
+
+/* Footer */
+.prog-formation-footer {
+  border-top: 1px solid #F0EDE8; padding-top: 16px;
+  display: flex; justify-content: flex-end;
+}
+.prog-continuer-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 20px; background: #1A1612; color: #FFF;
+  border: none; border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s;
+}
+.prog-continuer-btn:hover { background: #4A7C7E; transform: translateY(-1px); }

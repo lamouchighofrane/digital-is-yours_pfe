@@ -21,4 +21,9 @@ public interface ConsulterCoursFormationRepositoryPort {
      * Retourne les infos du quiz final de la formation, si il existe.
      */
     Optional<QuizFinalInfo> findQuizFinalInfo(Long formationId);
+
+    /**
+     * Vérifie si un MiniQuiz existe pour un cours donné.
+     */
+    boolean existsMiniQuizForCours(Long coursId);
 }

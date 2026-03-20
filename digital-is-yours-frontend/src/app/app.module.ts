@@ -35,6 +35,7 @@ import { CoursDetailComponent } from './components/cours-detail/cours-detail.com
 
 
 
+
 @NgModule({
   declarations: [
     AppComponent, HomeComponent,

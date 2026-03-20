@@ -746,14 +746,220 @@
 
     <!-- ═══ PROGRESSION ═══ -->
     <section *ngIf="activeSection==='progression'" class="page-content">
-      <div class="empty-state-card">
-        <svg width="40" height="40" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
-          <path stroke-width="1.4" d="M3 13l4-4 4 4 4-6 4 6"/>
-        </svg>
-        <p class="empty-title">Ma progression</p>
-        <p class="empty-sub">Votre suivi de progression sera bientôt disponible ici.</p>
+ 
+  <!-- Loading -->
+  <div *ngIf="progressionLoading" class="prog-loading-zone">
+    <div class="cours-spinner"></div>
+    <span>Chargement de votre progression...</span>
+  </div>
+ 
+  <!-- Error -->
+  <div *ngIf="!progressionLoading && progressionError" class="progression-error">
+    {{ progressionError }}
+  </div>
+ 
+  <div *ngIf="!progressionLoading && !progressionError">
+ 
+    <!-- Stats globales -->
+    <div class="prog-stats-grid">
+      <div class="prog-stat-card">
+        <div class="prog-stat-icon blue">
+          <svg width="20" height="20" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+        </div>
+        <div class="prog-stat-info">
+          <span class="prog-stat-val">{{ progressionStatsGlobales.totalFormations }}</span>
+          <span class="prog-stat-label">Formations</span>
+        </div>
       </div>
-    </section>
+      <div class="prog-stat-card">
+        <div class="prog-stat-icon green">
+          <svg width="20" height="20" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+          </svg>
+        </div>
+        <div class="prog-stat-info">
+          <span class="prog-stat-val">{{ progressionStatsGlobales.formationsTerminees }}</span>
+          <span class="prog-stat-label">Terminées</span>
+        </div>
+      </div>
+      <div class="prog-stat-card">
+        <div class="prog-stat-icon orange">
+          <svg width="20" height="20" fill="none" stroke="#e67e22" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <div class="prog-stat-info">
+          <span class="prog-stat-val">{{ progressionStatsGlobales.formationsEnCours }}</span>
+          <span class="prog-stat-label">En cours</span>
+        </div>
+      </div>
+      <div class="prog-stat-card">
+        <div class="prog-stat-icon yellow">
+          <svg width="20" height="20" fill="none" stroke="#f39c12" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+          </svg>
+        </div>
+        <div class="prog-stat-info">
+          <span class="prog-stat-val">{{ progressionStatsGlobales.scoreMoyen }}%</span>
+          <span class="prog-stat-label">Score moyen</span>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Empty -->
+    <div *ngIf="progressionFormations.length === 0" class="empty-state-card">
+      <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+        <path stroke-width="1.4" d="M3 13l4-4 4 4 4-6 4 6"/>
+      </svg>
+      <p class="empty-title">Aucune formation en cours</p>
+      <p class="empty-sub">Inscrivez-vous à une formation pour suivre votre progression.</p>
+    </div>
+ 
+    <!-- Liste formations -->
+    <div class="prog-formations-list">
+      <div *ngFor="let f of progressionFormations" class="prog-formation-card">
+ 
+        <!-- Header -->
+        <div class="prog-formation-header">
+          <div class="prog-formation-img">
+            <img *ngIf="f.image" [src]="f.image" [alt]="f.titre" onerror="this.style.display='none'">
+            <div *ngIf="!f.image" class="prog-formation-img-placeholder">
+              <svg width="24" height="24" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+                <path stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              </svg>
+            </div>
+          </div>
+          <div class="prog-formation-info">
+            <div class="prog-formation-meta">
+              <span class="prog-niveau-badge">{{ getNiveauLabel(f.niveau) }}</span>
+              <span class="prog-statut-badge" [class]="'statut-' + f.statut.toLowerCase()">
+                {{ getStatutLabel(f.statut) }}
+              </span>
+            </div>
+            <h3 class="prog-formation-titre">{{ f.titre }}</h3>
+            <p class="prog-formation-stats-text">{{ f.totalCours }} cours · {{ f.coursTermines }} terminés</p>
+          </div>
+          <!-- Cercle progression -->
+          <div class="prog-circle-container">
+            <svg viewBox="0 0 120 120" class="prog-circle-svg">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#F0EDE8" stroke-width="8"/>
+              <circle cx="60" cy="60" r="52" fill="none"
+                      [attr.stroke]="getProgressionColor(f.progression)"
+                      stroke-width="8" stroke-linecap="round"
+                      [attr.stroke-dasharray]="2 * 3.14159 * 52"
+                      [attr.stroke-dashoffset]="2 * 3.14159 * 52 * (1 - f.progression / 100)"
+                      transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="prog-circle-text">
+              <span class="prog-circle-pct">{{ f.progression | number:'1.0-0' }}%</span>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Barre progression globale -->
+        <div class="prog-bar-zone">
+          <div class="prog-bar-track">
+            <div class="prog-bar-fill"
+                 [style.width.%]="f.progression"
+                 [style.background]="getProgressionColor(f.progression)"></div>
+          </div>
+          <span class="prog-bar-label">{{ f.progression | number:'1.0-0' }}%</span>
+        </div>
+ 
+        <!-- 3 composantes -->
+        <div class="prog-composantes">
+          <div class="prog-composante">
+            <div class="prog-comp-header">
+              <svg width="13" height="13" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+                <polygon stroke-width="1.8" points="23 7 16 12 23 17 23 7"/>
+                <rect stroke-width="1.8" x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+              <span>Vidéos (×50%)</span>
+            </div>
+            <div class="prog-comp-bar-track">
+              <div class="prog-comp-bar-fill video"
+                   [style.width.%]="f.totalCours > 0 ? (f.videosVues / f.totalCours * 100) : 0"></div>
+            </div>
+            <span class="prog-comp-count">{{ f.videosVues }}/{{ f.totalCours }}</span>
+          </div>
+          <div class="prog-composante">
+            <div class="prog-comp-header">
+              <svg width="13" height="13" fill="none" stroke="#e67e22" viewBox="0 0 24 24">
+                <path stroke-width="1.8" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+              <span>Documents (×20%)</span>
+            </div>
+            <div class="prog-comp-bar-track">
+              <div class="prog-comp-bar-fill doc"
+                   [style.width.%]="f.totalCours > 0 ? (f.documentsOuverts / f.totalCours * 100) : 0"></div>
+            </div>
+            <span class="prog-comp-count">{{ f.documentsOuverts }}/{{ f.totalCours }}</span>
+          </div>
+          <div class="prog-composante">
+            <div class="prog-comp-header">
+              <svg width="13" height="13" fill="none" stroke="#9b59b6" viewBox="0 0 24 24">
+                <path stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+              </svg>
+              <span>Quiz (×30%)</span>
+            </div>
+            <div class="prog-comp-bar-track">
+              <div class="prog-comp-bar-fill quiz"
+                   [style.width.%]="f.totalCours > 0 ? (f.quizPasses / f.totalCours * 100) : 0"></div>
+            </div>
+            <span class="prog-comp-count">{{ f.quizPasses }}/{{ f.totalCours }}</span>
+          </div>
+        </div>
+ 
+        <!-- Détail cours -->
+        <div *ngIf="f.detailCours.length > 0" class="prog-cours-list">
+          <div *ngFor="let c of f.detailCours" class="prog-cours-item">
+            <div class="prog-cours-statut-dot"
+                 [class.dot-termine]="c.statut === 'TERMINE'"
+                 [class.dot-en-cours]="c.statut === 'EN_COURS'"
+                 [class.dot-a-faire]="c.statut === 'A_FAIRE'"></div>
+            <span class="prog-cours-titre">{{ c.coursTitre }}</span>
+            <div class="prog-cours-badges">
+              <span class="prog-mini-badge video" [class.active]="c.videoVue">
+                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <polygon stroke-width="2" points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </span>
+              <span class="prog-mini-badge doc" [class.active]="c.documentOuvert">
+                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </span>
+              <span class="prog-mini-badge quiz" [class.active]="c.quizPasse">
+                <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+            </div>
+            <span class="prog-cours-statut-label"
+                  [class.label-termine]="c.statut === 'TERMINE'"
+                  [class.label-en-cours]="c.statut === 'EN_COURS'"
+                  [class.label-a-faire]="c.statut === 'A_FAIRE'">
+              {{ c.statut === 'TERMINE' ? 'Terminé' : c.statut === 'EN_COURS' ? 'En cours' : 'À faire' }}
+            </span>
+          </div>
+        </div>
+ 
+        <!-- Footer -->
+        <div class="prog-formation-footer">
+          <button class="prog-continuer-btn" (click)="voirCours(f); setSection('formations')">
+            <span>{{ f.statut === 'TERMINE' ? 'Revoir' : 'Continuer' }}</span>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+ 
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- ═══ CERTIFICATS ═══ -->
     <section *ngIf="activeSection==='certificats'" class="page-content">

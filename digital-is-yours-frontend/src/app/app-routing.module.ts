@@ -14,6 +14,7 @@ import { FormationDetailComponent } from './components/shared/formation-detail/f
 import { PaiementSuccesComponent } from './components/shared/paiement-succes/paiement-succes.component';
 import { PaiementAnnuleComponent } from './components/shared/paiement-annule/paiement-annule.component';
 import { CoursDetailComponent } from './components/cours-detail/cours-detail.component';
+
 const routes: Routes = [
   { path: '', component: SplashScreenComponent },
   { path: 'home', component: HomeComponent, title: 'Digital Is Yours' },

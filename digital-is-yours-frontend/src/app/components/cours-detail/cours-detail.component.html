@@ -1,5 +1,5 @@
 <div class="cours-page" *ngIf="cours">
-  
+
   <!-- Header -->
   <header class="cours-page-header">
     <button class="cours-back-btn" (click)="retour()">
@@ -12,20 +12,31 @@
       <span class="cours-page-formation">{{ formation?.titre }}</span>
       <h1 class="cours-page-titre">{{ cours.titre }}</h1>
     </div>
+
+    <!-- Bouton Quiz (visible si cours vu OU terminé ET quiz disponible) -->
+    <button *ngIf="(coursVu || cours.estTermine) && cours.hasQuiz"
+            class="cours-quiz-btn"
+            (click)="ouvrirMiniQuiz()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+        <path stroke-width="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/>
+      </svg>
+      Passer le quiz
+    </button>
   </header>
 
   <!-- Contenu principal -->
   <div class="cours-page-body">
-    
+
     <!-- Colonne gauche : vidéo + contenu -->
     <div class="cours-page-main">
-      
+
       <!-- Vidéo YouTube -->
       <div *ngIf="cours.hasVideo && cours.videoType === 'YOUTUBE'" class="cours-video-container">
-        <iframe 
+        <iframe
           [src]="getYoutubeEmbedUrl(cours.videoUrl)"
-          frameborder="0" 
-          allow="autoplay; encrypted-media" 
+          frameborder="0"
+          allow="autoplay; encrypted-media"
           allowfullscreen
           class="cours-video-iframe">
         </iframe>
@@ -33,10 +44,10 @@
 
       <!-- Vidéo locale -->
       <div *ngIf="cours.hasVideo && cours.videoType === 'LOCAL'" class="cours-video-container">
-        <video 
-          class="cours-video-player" 
-          controls 
-          controlsList="nodownload" 
+        <video
+          class="cours-video-player"
+          controls
+          controlsList="nodownload"
           preload="metadata">
           <source [src]="getVideoUrl()" type="video/mp4">
         </video>
@@ -48,6 +59,95 @@
           <path stroke-width="1.4" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
         </svg>
         <p>Aucune vidéo disponible pour ce cours.</p>
+      </div>
+
+      <!-- ── Indicateurs des 3 étapes ── -->
+      <div class="cours-etapes">
+        <div class="cours-etape" [class.done]="videoVue || cours.estTermine">
+          <div class="cours-etape-icon">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="videoVue || cours.estTermine" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+              <path *ngIf="!videoVue && !cours.estTermine" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <circle *ngIf="!videoVue && !cours.estTermine" cx="12" cy="12" r="10" stroke-width="1.8"/>
+            </svg>
+          </div>
+          <span>Vidéo vue</span>
+        </div>
+
+        <div class="cours-etape-separator"></div>
+
+        <div class="cours-etape" [class.done]="documentOuvert || cours.estTermine">
+          <div class="cours-etape-icon">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="documentOuvert || cours.estTermine" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+              <path *ngIf="!documentOuvert && !cours.estTermine" stroke-width="1.8" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <span>Document ouvert</span>
+        </div>
+
+        <div class="cours-etape-separator"></div>
+
+        <div class="cours-etape" [class.done]="quizPasse || cours.estTermine">
+          <div class="cours-etape-icon">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="quizPasse || cours.estTermine" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+              <path *ngIf="!quizPasse && !cours.estTermine" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <span>Quiz passé</span>
+        </div>
+      </div>
+
+      <!-- Bouton Marquer comme vu (visible si vidéo pas encore vue) -->
+      <div *ngIf="!videoVue && !cours.estTermine" class="cours-marquer-vu-zone">
+        <div class="cours-marquer-vu-info">
+          <svg width="16" height="16" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+            <path stroke-width="2" d="M12 8v4M12 16h.01"/>
+          </svg>
+          <span>Après avoir regardé la vidéo, marquez ce cours comme vu pour débloquer le quiz.</span>
+        </div>
+        <button class="cours-marquer-vu-btn"
+                (click)="marquerCommeVu()"
+                [disabled]="marquerCommeVuLoading">
+          <span *ngIf="marquerCommeVuLoading" class="cours-marquer-spinner"></span>
+          <svg *ngIf="!marquerCommeVuLoading" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+          {{ marquerCommeVuLoading ? 'En cours...' : 'Marquer comme vu' }}
+        </button>
+      </div>
+
+      <!-- Confirmation cours marqué comme vu -->
+      <div *ngIf="cours.estTermine && marquerCommeVuSuccess" class="cours-vu-success">
+        <svg width="16" height="16" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+          <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+        Cours marqué comme vu ! Le quiz est maintenant disponible.
+      </div>
+
+      <!-- Bannière quiz (si cours vu OU terminé ET quiz dispo) -->
+      <div *ngIf="(coursVu || cours.estTermine) && cours.hasQuiz" class="cours-quiz-banner">
+        <div class="cours-quiz-banner-left">
+          <div class="cours-quiz-banner-icon">
+            <svg width="22" height="22" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="1.6"/>
+              <circle cx="12" cy="12" r="6"  stroke-width="1.6"/>
+              <circle cx="12" cy="12" r="2"  stroke-width="1.6"/>
+            </svg>
+          </div>
+          <div>
+            <p class="cours-quiz-banner-titre">Mini-quiz disponible !</p>
+            <p class="cours-quiz-banner-sub">Testez vos connaissances sur ce cours</p>
+          </div>
+        </div>
+        <button class="cours-quiz-banner-btn" (click)="ouvrirMiniQuiz()">
+          Commencer le quiz
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Objectifs -->
@@ -90,11 +190,11 @@
                 <span *ngIf="doc.taille"> · {{ formatTailleDoc(doc.taille) }}</span>
               </p>
             </div>
-            <button class="cours-doc-dl-btn" (click)="downloadDocument(doc)">
+            <button class="cours-doc-dl-btn" (click)="ouvrirDocument(doc)">
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                <path stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
               </svg>
-              Télécharger
+              Ouvrir
             </button>
           </div>
         </div>
@@ -106,7 +206,7 @@
     <div class="cours-page-sidebar">
       <h3 class="sidebar-title">Cours de la formation</h3>
       <div class="sidebar-cours-list">
-        <div 
+        <div
           *ngFor="let c of tousLesCours; let i = index"
           class="sidebar-cours-item"
           [class.sidebar-cours-actif]="c.id === cours.id"
@@ -126,6 +226,10 @@
             <p class="sidebar-cours-titre">{{ c.titre }}</p>
             <p *ngIf="c.dureeEstimee" class="sidebar-cours-duree">{{ formatDuree(c.dureeEstimee) }}</p>
           </div>
+          <!-- Indicateur quiz sur le cours actif -->
+          <div *ngIf="c.hasQuiz && c.estTermine && c.id === cours.id"
+               class="sidebar-quiz-dot" title="Quiz disponible">
+          </div>
         </div>
       </div>
     </div>
@@ -143,4 +247,318 @@
 <div *ngIf="error" class="cours-page-error">
   <p>{{ error }}</p>
   <button (click)="retour()">Retour</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL MINI-QUIZ
+══════════════════════════════════════════════════════════ -->
+<div *ngIf="showMiniQuizModal" class="mq-overlay" (click)="fermerMiniQuiz()">
+  <div class="mq-modal" (click)="$event.stopPropagation()">
+
+    <!-- ── CHARGEMENT ── -->
+    <div *ngIf="mqEtape === 'chargement'" class="mq-loading-screen">
+      <div class="mq-loading-orb">
+        <div class="mq-orb-ring"></div>
+        <div class="mq-orb-ring mq-orb-ring-2"></div>
+        <svg width="28" height="28" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="6"  stroke-width="1.8"/>
+          <circle cx="12" cy="12" r="2"  stroke-width="1.8"/>
+        </svg>
+      </div>
+      <p class="mq-loading-titre">Chargement du quiz...</p>
+    </div>
+
+    <!-- ── INTRO ── -->
+    <div *ngIf="mqEtape === 'intro'" class="mq-intro">
+      <button class="mq-close-btn" (click)="fermerMiniQuiz()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <div class="mq-intro-icon">
+        <div class="mq-intro-icon-ring"></div>
+        <svg width="36" height="36" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke-width="1.6"/>
+          <circle cx="12" cy="12" r="6"  stroke-width="1.6"/>
+          <circle cx="12" cy="12" r="2"  stroke-width="1.6"/>
+        </svg>
+      </div>
+
+      <h2 class="mq-intro-titre">Mini-Quiz</h2>
+      <p class="mq-intro-cours">{{ cours?.titre }}</p>
+
+      <div class="mq-intro-stats-grid">
+        <div class="mq-intro-stat">
+          <span class="mq-intro-stat-val">{{ mqQuiz?.nbQuestions || mqQuiz?.questions?.length }}</span>
+          <span class="mq-intro-stat-label">Questions</span>
+        </div>
+        <div class="mq-intro-stat">
+          <span class="mq-intro-stat-val">{{ mqQuiz?.notePassage || 70 }}%</span>
+          <span class="mq-intro-stat-label">Note passage</span>
+        </div>
+        <div class="mq-intro-stat">
+          <span class="mq-intro-stat-val">∞</span>
+          <span class="mq-intro-stat-label">Tentatives</span>
+        </div>
+      </div>
+
+      <div class="mq-intro-info">
+        <svg width="14" height="14" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+          <path stroke-width="2" d="M12 8v4M12 16h.01"/>
+        </svg>
+        Sélectionnez une réponse par question. La correction s'affiche à la fin.
+      </div>
+
+      <div class="mq-intro-actions">
+        <button class="mq-btn-start" (click)="demarrerQuiz()">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          Commencer le quiz
+        </button>
+        <button class="mq-btn-skip" (click)="fermerMiniQuiz()">
+          Passer au cours suivant →
+        </button>
+      </div>
+    </div>
+
+    <!-- ── QUESTION ── -->
+    <div *ngIf="mqEtape === 'question'" class="mq-question-screen">
+
+      <div class="mq-header">
+        <button class="mq-close-btn mq-close-btn-sm" (click)="fermerMiniQuiz()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+        <div class="mq-progress-zone">
+          <div class="mq-progress-track">
+            <div class="mq-progress-fill"
+                 [style.width]="(mqQuestionIndex / mqTotalQuestions * 100) + '%'">
+            </div>
+          </div>
+          <span class="mq-progress-label">{{ mqQuestionIndex + 1 }} / {{ mqTotalQuestions }}</span>
+        </div>
+        <div class="mq-timer">
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+            <path stroke-width="1.8" d="M12 6v6l4 2"/>
+          </svg>
+          {{ formatTemps(mqTemps) }}
+        </div>
+      </div>
+
+      <div class="mq-question-body" *ngIf="mqQuestionCourante">
+        <div class="mq-question-num">Question {{ mqQuestionIndex + 1 }}</div>
+        <h3 class="mq-question-texte">{{ mqQuestionCourante.texte }}</h3>
+
+        <div class="mq-options-list">
+          <button *ngFor="let opt of mqQuestionCourante.options"
+                  class="mq-option"
+                  [class.mq-option-selected]="mqReponseSelectionnee(mqQuestionCourante.id) === opt.id"
+                  (click)="selectionnerReponse(mqQuestionCourante.id, opt.id)">
+            <span class="mq-option-lettre">{{ opt.ordre }}</span>
+            <span class="mq-option-texte">{{ opt.texte }}</span>
+            <span class="mq-option-check" *ngIf="mqReponseSelectionnee(mqQuestionCourante.id) === opt.id">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="mq-nav">
+        <button class="mq-btn-prev" (click)="questionPrecedente()" [disabled]="mqQuestionIndex === 0">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M15 18l-6-6 6-6"/>
+          </svg>
+          Précédent
+        </button>
+
+        <div class="mq-dots">
+          <span *ngFor="let q of mqQuiz?.questions; let qi = index"
+                class="mq-dot"
+                [class.mq-dot-active]="qi === mqQuestionIndex"
+                [class.mq-dot-answered]="mqReponses[q.id] !== undefined"
+                (click)="allerAQuestion(qi)">
+          </span>
+        </div>
+
+        <button *ngIf="mqQuestionIndex < mqTotalQuestions - 1"
+                class="mq-btn-next" (click)="questionSuivante()">
+          Suivant
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+
+        <button *ngIf="mqQuestionIndex === mqTotalQuestions - 1"
+                class="mq-btn-submit"
+                (click)="soumettreQuiz()"
+                [disabled]="mqSoumission">
+          <span *ngIf="mqSoumission" class="mq-spinner"></span>
+          <svg *ngIf="!mqSoumission" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          {{ mqSoumission ? 'Correction...' : 'Terminer le quiz' }}
+        </button>
+      </div>
+
+      <div class="mq-reponses-counter">
+        <span [class.mq-counter-warn]="mqNbReponsesSelectionnees < mqTotalQuestions">
+          {{ mqNbReponsesSelectionnees }} / {{ mqTotalQuestions }} réponses sélectionnées
+        </span>
+      </div>
+    </div>
+
+    <!-- ── RÉSULTATS ── -->
+    <div *ngIf="mqEtape === 'resultat'" class="mq-resultat-screen">
+
+      <div *ngIf="mqResultat?.reussi" class="mq-confetti-zone">
+        <div *ngFor="let c of mqConfetti" class="mq-confetti-piece"
+             [style.left]="c.left"
+             [style.animation-delay]="c.delay"
+             [style.background]="c.color">
+        </div>
+      </div>
+
+      <div class="mq-score-hero">
+        <div class="mq-score-circle"
+             [class.mq-score-success]="mqResultat?.reussi"
+             [class.mq-score-fail]="!mqResultat?.reussi">
+          <svg class="mq-score-svg" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#E8E3DB" stroke-width="8"/>
+            <circle cx="60" cy="60" r="52" fill="none"
+                    [attr.stroke]="mqResultat?.reussi ? '#27ae60' : '#e74c3c'"
+                    stroke-width="8"
+                    stroke-linecap="round"
+                    stroke-dasharray="326.7"
+                    [attr.stroke-dashoffset]="getMqDashOffset()"
+                    transform="rotate(-90 60 60)"
+                    style="transition: stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)"/>
+          </svg>
+          <div class="mq-score-inner">
+            <span class="mq-score-pct">{{ mqResultat?.score | number:'1.0-0' }}%</span>
+            <span class="mq-score-lbl">{{ mqResultat?.reussi ? 'Réussi !' : 'Échoué' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mq-resultat-msg">
+        <h2 class="mq-resultat-titre"
+            [class.mq-titre-success]="mqResultat?.reussi"
+            [class.mq-titre-fail]="!mqResultat?.reussi">
+          {{ mqResultat?.reussi ? '🎉 Excellent travail !' : '💪 Continuez vos efforts !' }}
+        </h2>
+        <p class="mq-resultat-sub">
+          {{ mqResultat?.nombreBonnesReponses }} bonne{{ mqResultat?.nombreBonnesReponses > 1 ? 's' : '' }}
+          réponse sur {{ mqResultat?.nombreQuestions }} ·
+          Note de passage : {{ mqResultat?.notePassage }}%
+        </p>
+      </div>
+
+      <div class="mq-resultat-stats">
+        <div class="mq-rstat">
+          <svg width="16" height="16" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+            <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span class="mq-rstat-val" style="color:#27ae60">{{ mqResultat?.nombreBonnesReponses }}</span>
+          <span class="mq-rstat-lbl">Correctes</span>
+        </div>
+        <div class="mq-rstat">
+          <svg width="16" height="16" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+            <path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          <span class="mq-rstat-val" style="color:#e74c3c">
+            {{ mqResultat?.nombreQuestions - mqResultat?.nombreBonnesReponses }}
+          </span>
+          <span class="mq-rstat-lbl">Incorrectes</span>
+        </div>
+        <div class="mq-rstat">
+          <svg width="16" height="16" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+            <path stroke-width="1.8" d="M12 6v6l4 2"/>
+          </svg>
+          <span class="mq-rstat-val">{{ formatTemps(mqTempsTotal) }}</span>
+          <span class="mq-rstat-lbl">Temps</span>
+        </div>
+      </div>
+
+      <div class="mq-correction">
+        <h3 class="mq-correction-titre">Correction détaillée</h3>
+        <div class="mq-correction-list">
+          <div *ngFor="let rep of mqResultat?.reponses; let ri = index"
+               class="mq-correction-item"
+               [class.mq-corr-ok]="rep.estCorrecte"
+               [class.mq-corr-ko]="!rep.estCorrecte">
+
+            <div class="mq-corr-header">
+              <div class="mq-corr-icon">
+                <svg *ngIf="rep.estCorrecte" width="14" height="14" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+                  <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                <svg *ngIf="!rep.estCorrecte" width="14" height="14" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+                  <path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </div>
+              <div class="mq-corr-q">
+                <span class="mq-corr-num">Q{{ ri + 1 }}</span>
+                <p class="mq-corr-texte">{{ rep.questionTexte }}</p>
+              </div>
+            </div>
+
+            <div class="mq-corr-body">
+              <div *ngIf="rep.optionChoisieTexte" class="mq-corr-reponse"
+                   [class.mq-reponse-ok]="rep.estCorrecte"
+                   [class.mq-reponse-ko]="!rep.estCorrecte">
+                <span class="mq-corr-badge"
+                      [class.mq-badge-ok]="rep.estCorrecte"
+                      [class.mq-badge-ko]="!rep.estCorrecte">
+                  {{ rep.estCorrecte ? 'Votre réponse ✓' : 'Votre réponse ✗' }}
+                </span>
+                {{ rep.optionChoisieTexte }}
+              </div>
+              <div *ngIf="!rep.optionChoisieTexte" class="mq-corr-reponse mq-reponse-ko">
+                <span class="mq-corr-badge mq-badge-ko">Non répondu</span>
+                Aucune réponse sélectionnée
+              </div>
+              <div *ngIf="!rep.estCorrecte && rep.bonneReponseTexte" class="mq-corr-bonne">
+                <svg width="12" height="12" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+                  <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Bonne réponse : {{ rep.bonneReponseTexte }}</span>
+              </div>
+              <div *ngIf="rep.explication" class="mq-corr-explication">
+                <svg width="11" height="11" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+                  <path stroke-width="2" d="M12 8v4M12 16h.01"/>
+                </svg>
+                {{ rep.explication }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mq-resultat-actions">
+        <button class="mq-btn-retry" (click)="recommencerQuiz()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Recommencer
+        </button>
+        <button class="mq-btn-next-cours" (click)="allerCoursSuivant()">
+          Cours suivant
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
 </div>

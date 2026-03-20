@@ -27,4 +27,12 @@ public interface CoursJpaRepository extends JpaRepository<CoursEntity, Long> {
     /** Nombre de cours avec une vidéo locale dans une formation */
     @Query("SELECT COUNT(c) FROM CoursEntity c WHERE c.formation.id = :formationId AND c.videoType = 'LOCAL'")
     long countCoursWithVideoLocaleByFormation(@Param("formationId") Long formationId);
+
+    // ── US-032 : Vérification cours ↔ formation (évite le lazy loading) ────
+    /**
+     * Vérifie qu'un cours appartient à une formation donnée.
+     * Spring Data génère automatiquement la requête SQL :
+     * SELECT COUNT(*) > 0 FROM cours WHERE id = ? AND formation_id = ?
+     */
+    boolean existsByIdAndFormationId(Long id, Long formationId);
 }

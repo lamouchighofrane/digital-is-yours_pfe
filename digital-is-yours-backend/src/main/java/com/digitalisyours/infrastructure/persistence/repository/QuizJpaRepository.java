@@ -26,9 +26,14 @@ public interface QuizJpaRepository extends JpaRepository<QuizEntity, Long> {
     Optional<QuizEntity> findByCoursIdWithQuestionsAndOptions(@Param("coursId") Long coursId);
 
     boolean existsByCoursId(Long coursId);
+
+    // Vérifie si un quiz d'un type donné existe pour un cours (ex: "MiniQuiz")
+    boolean existsByCoursIdAndType(Long coursId, String type);
+
     @Modifying
     @Transactional
     void deleteByCoursId(Long coursId);
+
     // ── US-028 : Quiz Final d'une formation ──────────────────
     @Query("SELECT q FROM QuizEntity q " +
             "WHERE q.type = 'QuizFinal' " +

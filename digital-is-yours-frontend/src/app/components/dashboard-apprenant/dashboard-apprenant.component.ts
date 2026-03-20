@@ -11,6 +11,16 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 export class DashboardApprenantComponent implements OnInit, OnDestroy {
 
   activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' = 'dashboard';
+  // ── Ma Progression ──
+progressionFormations: any[]  = [];
+progressionLoading            = false;
+progressionError              = '';
+progressionStatsGlobales = {
+  totalFormations: 0,
+  formationsTerminees: 0,
+  formationsEnCours: 0,
+  scoreMoyen: 0
+};
   // ══════════════════════════════════════════════════════
 // CALENDRIER
 // ══════════════════════════════════════════════════════
@@ -122,6 +132,7 @@ documentsError = '';
     expiration:  '',
     cvv:         ''
   };
+  
 
   // ──────────────────────────────────────────────────────
 
@@ -216,12 +227,13 @@ documentsError = '';
   // NAVIGATION
   // ══════════════════════════════════════════════════════
 
- setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier') {
+setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier') {
   this.activeSection = s;
   if (s === 'formations')  this.loadFormations();
   if (s === 'profil')      this.loadProfil();
   if (s === 'dashboard')   this.loadDashboardData();
   if (s === 'calendrier')  this.loadSessions();
+  if (s === 'progression') this.loadProgressionData();
   this.closeNotifPanel();
 }
 voirCours(formation: any) {
@@ -922,10 +934,11 @@ formatTailleDoc(bytes: number): string {
   }
 
   getProgressionColor(p: number): string {
-    if (p >= 80) return '#27ae60';
-    if (p >= 50) return '#e67e22';
-    return '#4A7C7E';
-  }
+  if (p >= 100) return '#27ae60';
+  if (p >= 50)  return '#4A7C7E';
+  if (p > 0)    return '#f39c12';
+  return '#C8BEB2';
+}
 
   getNotifColor(t: string): string {
     return t === 'NOUVELLE_FORMATION' ? '#4A7C7E'
@@ -1281,4 +1294,66 @@ formatDuree(min: number): string {
   const m = min % 60;
   return h > 0 ? `${h}h${m > 0 ? m + 'min' : ''}` : `${m}min`;
 }
+loadProgressionData() {
+    if (this.progressionFormations.length > 0) return;
+    this.progressionLoading = true;
+    this.progressionError   = '';
+
+    const inscriptions = this.formations;
+    if (inscriptions.length === 0) {
+      this.progressionLoading = false;
+      return;
+    }
+
+    const requests = inscriptions.map((f: any) => {
+      const fid = f.formationId || f.id;
+      return this.http.get<any>(
+        `${this.api}/formations/${fid}/progression`,
+        { headers: this.headers() }
+      ).toPromise().catch(() => null);
+    });
+
+    Promise.all(requests).then((progressions: any[]) => {
+      this.progressionFormations = inscriptions.map((f: any, i: number) => {
+        const prog = progressions[i];
+        const pct  = prog?.progression || 0;
+        return {
+          id:               f.formationId || f.id,
+          titre:            f.titre,
+          image:            f.imageCouverture,
+          niveau:           f.niveau,
+          progression:      pct,
+          totalCours:       prog?.totalCours       || 0,
+          coursTermines:    prog?.coursTermines     || 0,
+          videosVues:       prog?.videosVues        || 0,
+          documentsOuverts: prog?.documentsOuverts  || 0,
+          quizPasses:       prog?.quizPasses        || 0,
+          statut:           pct >= 100 ? 'TERMINE' : pct > 0 ? 'EN_COURS' : 'A_FAIRE',
+          detailCours:      prog?.detailCours       || []
+        };
+      });
+
+      const terminees = this.progressionFormations.filter(f => f.statut === 'TERMINE').length;
+      const enCours   = this.progressionFormations.filter(f => f.statut === 'EN_COURS').length;
+      const scores    = this.progressionFormations.filter(f => f.progression > 0).map(f => f.progression);
+
+      this.progressionStatsGlobales = {
+        totalFormations:     inscriptions.length,
+        formationsTerminees: terminees,
+        formationsEnCours:   enCours,
+        scoreMoyen: scores.length > 0
+          ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length)
+          : 0
+      };
+
+      this.progressionLoading = false;
+      this.cdr.detectChanges();
+    });
+  }
+
+  getStatutLabel(statut: string): string {
+    if (statut === 'TERMINE')  return 'Terminée';
+    if (statut === 'EN_COURS') return 'En cours';
+    return 'À faire';
+  }
 }

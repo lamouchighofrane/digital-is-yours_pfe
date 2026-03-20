@@ -18,14 +18,22 @@ public class CoursFormation {
     private Integer ordre;
     private String  statut;
     private String  videoType;
-
-    /**
-     * URL exposée à l'apprenant :
-     * - YouTube → URL publique
-     * - LOCAL   → null  (l'URL brute n'est jamais exposée ici)
-     */
     private String  videoUrl;
-
-    /** true si une vidéo est attachée au cours (peu importe le type) */
     private boolean hasVideo;
+    private boolean hasQuiz;
+
+    /** true si les 3 conditions sont remplies (video + doc + quiz) */
+    private boolean estTermine;
+
+    /** true si la vidéo a été vue */
+    private boolean videoVue;
+
+    /** true si le document a été ouvert */
+    private boolean documentOuvert;
+
+    /** true si le mini-quiz a été passé */
+    private boolean quizPasse;
+
+    /** Statut : A_FAIRE | EN_COURS | TERMINE */
+    private String  statutProgression;
 }
