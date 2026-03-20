@@ -1,4 +1,5 @@
 package com.digitalisyours.infrastructure.web.controller;
+import com.digitalisyours.infrastructure.persistence.entity.CoursEntity;
 import com.digitalisyours.infrastructure.persistence.repository.*;
 import com.digitalisyours.infrastructure.web.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -63,20 +64,47 @@ public class ProgressionFormationController {
         // Arrondir à 1 décimale
         progression = Math.round(progression * 10.0) / 10.0;
 
-        // Détail par cours
-        List<Map<String, Object>> detailCours = progressionRepository
-                .findByEmailAndFormationId(email, formationId)
-                .stream()
-                .map(p -> {
+        // Récupérer tous les cours publiés de la formation
+        List<CoursEntity> tousLesCours = coursRepository.findCoursPubiesByFormationId(formationId);
+
+// Récupérer les progressions existantes en base
+        List<com.digitalisyours.infrastructure.persistence.entity.ProgressionCoursEntity> progressionsExistantes =
+                progressionRepository.findByEmailAndFormationId(email, formationId);
+
+// Créer une map coursId → progression pour lookup rapide
+        Map<Long, com.digitalisyours.infrastructure.persistence.entity.ProgressionCoursEntity> progressionMap =
+                progressionsExistantes.stream()
+                        .collect(Collectors.toMap(
+                                p -> p.getCours().getId(),
+                                p -> p
+                        ));
+
+// Pour CHAQUE cours (même sans entrée en BD), construire le détail
+        List<Map<String, Object>> detailCours = tousLesCours.stream()
+                .map(cours -> {
                     Map<String, Object> m = new HashMap<>();
-                    m.put("coursId",        p.getCours().getId());
-                    m.put("coursTitre",     p.getCours().getTitre());
-                    m.put("statut",         p.getStatut());
-                    m.put("videoVue",       p.isVideoVue());
-                    m.put("documentOuvert", p.isDocumentOuvert());
-                    m.put("quizPasse",      p.isQuizPasse());
-                    m.put("dateDebut",      p.getDateDebut());
-                    m.put("dateFin",        p.getDateFin());
+                    m.put("coursId",    cours.getId());
+                    m.put("coursTitre", cours.getTitre());
+
+                    com.digitalisyours.infrastructure.persistence.entity.ProgressionCoursEntity p =
+                            progressionMap.get(cours.getId());
+
+                    if (p != null) {
+                        m.put("statut",         p.getStatut());
+                        m.put("videoVue",       p.isVideoVue());
+                        m.put("documentOuvert", p.isDocumentOuvert());
+                        m.put("quizPasse",      p.isQuizPasse());
+                        m.put("dateDebut",      p.getDateDebut());
+                        m.put("dateFin",        p.getDateFin());
+                    } else {
+                        // Cours pas encore commencé → A_FAIRE
+                        m.put("statut",         "A_FAIRE");
+                        m.put("videoVue",       false);
+                        m.put("documentOuvert", false);
+                        m.put("quizPasse",      false);
+                        m.put("dateDebut",      null);
+                        m.put("dateFin",        null);
+                    }
                     return m;
                 })
                 .collect(Collectors.toList());
