@@ -23,4 +23,9 @@ public interface CertificatJpaRepository extends JpaRepository<CertificatEntity,
     @Modifying
     @Query("UPDATE CertificatEntity c SET c.urlPDF = :urlPDF WHERE c.id = :id")
     void updateUrlPDF(@Param("id") Long id, @Param("urlPDF") String urlPDF);
+
+    // ── US-050 : Marquer le certificat comme envoyé par email ──
+    @Modifying
+    @Query("UPDATE CertificatEntity c SET c.estEnvoye = :estEnvoye WHERE c.id = :id")
+    void updateEstEnvoye(@Param("id") Long id, @Param("estEnvoye") boolean estEnvoye);
 }

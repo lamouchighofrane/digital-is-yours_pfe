@@ -1663,4 +1663,45 @@ downloadCertificatFromModal() {
     this.cdr.detectChanges();
   });
 }
+ // ══════════════════════════════════════════════════
+  // US-050 — ENVOYER CERTIFICAT PAR EMAIL
+  // ══════════════════════════════════════════════════
+
+  certToast = {
+    visible: false,
+    message: '',
+    type:    'success' as 'success' | 'error'
+  };
+
+  private showCertToast(message: string, type: 'success' | 'error' = 'success') {
+    this.certToast = { visible: true, message, type };
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.certToast.visible = false;
+      this.cdr.detectChanges();
+    }, 4500);
+  }
+
+  envoyerCertificatEmail(cert: any) {
+    cert._sending = true;
+    this.cdr.detectChanges();
+
+    this.http.post<any>(
+      `${this.api}/certificats/${cert.id}/envoyer-email`,
+      {},
+      { headers: this.headers() }
+    ).subscribe({
+     next: () => { 
+  cert._sending = false; 
+  cert.estEnvoye = true;
+  this.showCertToast(`Certificat renvoyé à ${this.apprenantUser?.email} ! Vérifiez votre boîte mail. 🎓`); 
+},
+      error: err => {
+        cert._sending = false;
+        this.showCertToast(
+          err.error?.message || 'Erreur lors de l\'envoi par email.', 'error'
+        );
+      }
+    });
+  }
 }

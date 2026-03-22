@@ -21,6 +21,7 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
 
     private final QuizFinalApprenantRepositoryPort repositoryPort;
     private final CertificatUseCase               certificatUseCase;
+    private final CertificatEmailService           certificatEmailService; // ← NOUVEAU
 
     // ══════════════════════════════════════════════════════
     // RÉCUPÉRER LES INFOS DU QUIZ FINAL (sans bonnes réponses)
@@ -161,11 +162,11 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
 
         ResultatQuizFinal saved = repositoryPort.saveResultat(resultat);
 
-        // 7. Générer le certificat si réussi (non bloquant)
+        // 7. Générer le certificat + envoyer email si réussi (non bloquant)
         if (reussi) {
             try {
                 Long apprenantId = repositoryPort.findApprenantIdByEmail(soumission.getEmail());
-                certificatUseCase.genererCertificat(
+                Certificat cert = certificatUseCase.genererCertificat(
                         apprenantId,
                         soumission.getFormationId(),
                         quiz.getId(),
@@ -173,6 +174,19 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
                 );
                 log.info("Certificat généré : apprenant={} formation={}",
                         soumission.getEmail(), soumission.getFormationId());
+
+                // ── Envoi email automatique ──────────────────────────────────
+                if (cert != null) {
+                    try {
+                        certificatEmailService.envoyerCertificat(cert);
+                        log.info("Email certificat envoyé automatiquement à {}",
+                                soumission.getEmail());
+                    } catch (Exception emailEx) {
+                        log.error("Erreur envoi email certificat (non bloquant) : {}",
+                                emailEx.getMessage());
+                    }
+                }
+
             } catch (Exception e) {
                 log.error("Erreur génération certificat (non bloquant) : {}", e.getMessage());
             }

@@ -3,6 +3,7 @@ package com.digitalisyours.infrastructure.web.controller;
 import com.digitalisyours.domain.model.Certificat;
 import com.digitalisyours.domain.port.in.CertificatUseCase;
 import com.digitalisyours.domain.port.in.ProfilApprenantUseCase;
+import com.digitalisyours.application.service.CertificatEmailService;
 import com.digitalisyours.infrastructure.web.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +27,9 @@ public class CertificatController {
     private final CertificatUseCase      certificatUseCase;
     private final ProfilApprenantUseCase profilUseCase;
     private final JwtUtil                jwtUtil;
+    private final CertificatEmailService certificatEmailService;
 
-    // ── Helpers identiques à ProfilApprenantController ────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
     private String extractEmail(HttpServletRequest request) {
         try {
             String auth = request.getHeader("Authorization");
@@ -128,6 +130,32 @@ public class CertificatController {
                     .body(pdfBytes);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // POST /api/apprenant/certificats/{id}/envoyer-email  — US-050
+    // ═════════════════════════════════════════════════════════════════════════
+    @PostMapping("/{id}/envoyer-email")
+    public ResponseEntity<?> envoyerParEmail(
+            @PathVariable Long id, HttpServletRequest request) {
+        String email = extractEmail(request);
+        if (email == null) return unauthorized();
+        try {
+            Long       apprenantId = getApprenantId(email);
+            Certificat cert        = certificatUseCase.getCertificatById(id, apprenantId);
+            certificatEmailService.envoyerCertificat(cert);
+            log.info("Certificat {} envoyé par email à la demande de {}",
+                    cert.getNumeroCertificat(), email);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Certificat envoyé par email avec succès !"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
         }
     }
 

@@ -1049,25 +1049,39 @@
 </div>
 
       <!-- Infos -->
-      <div class="cert-card-body">
-        <div class="cert-card-formation">{{ cert.formationTitre }}</div>
-        <div class="cert-card-meta">
-          <span class="cert-card-date">{{ cert.dateCreation | date:'dd/MM/yyyy' }}</span>
-          <span class="cert-card-score"
-                [style.color]="cert.noteFinal >= 80 ? '#27ae60' : '#4A7C7E'">
-            {{ cert.noteFinal | number:'1.0-0' }}%
-          </span>
-        </div>
-        <div class="cert-card-id">{{ cert.numeroCertificat }}</div>
-        <div class="cert-card-actions">
-          <button class="cert-btn-download"
-                  (click)="downloadCertificat(cert)"
-                  [disabled]="cert._downloading">
-            <span *ngIf="!cert._downloading">⬇ Télécharger PDF</span>
-            <span *ngIf="cert._downloading">⏳ Génération...</span>
-          </button>
-        </div>
-      </div>
+     <div class="cert-card-body">
+  <div class="cert-card-formation">
+    {{ cert.formationTitre }}
+    <span *ngIf="cert.estEnvoye" class="cert-sent-badge">✓ Envoyé</span>
+  </div>
+  <div class="cert-card-meta">
+    <span class="cert-card-date">{{ cert.dateCreation | date:'dd/MM/yyyy' }}</span>
+    <span class="cert-card-score"
+          [style.color]="cert.noteFinal >= 80 ? '#27ae60' : '#4A7C7E'">
+      {{ cert.noteFinal | number:'1.0-0' }}%
+    </span>
+  </div>
+  <div class="cert-card-id">{{ cert.numeroCertificat }}</div>
+  <div class="cert-card-actions">
+    <button class="cert-btn-download"
+            (click)="downloadCertificat(cert)"
+            [disabled]="cert._downloading">
+      <span *ngIf="!cert._downloading">⬇ Télécharger</span>
+      <span *ngIf="cert._downloading">⏳ Génération...</span>
+    </button>
+    <button class="cert-btn-email"
+            (click)="envoyerCertificatEmail(cert)"
+            [disabled]="cert._sending"
+            title="Renvoyer le certificat par email">
+      <svg *ngIf="!cert._sending" width="14" height="14"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.8"
+              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>
+      <span>{{ cert._sending ? '⏳' : 'Renvoyer' }}</span>
+    </button>
+</div>
+</div>
     </div>
   </div>
 
@@ -2409,4 +2423,12 @@
 
   </div>
 </div>
+<!-- Toast certificat -->
+  <div *ngIf="certToast.visible"
+       class="cert-toast"
+       [class.cert-toast-success]="certToast.type === 'success'"
+       [class.cert-toast-error]="certToast.type === 'error'">
+    {{ certToast.type === 'success' ? '✅' : '❌' }} {{ certToast.message }}
+  </div>
+
 </div>
