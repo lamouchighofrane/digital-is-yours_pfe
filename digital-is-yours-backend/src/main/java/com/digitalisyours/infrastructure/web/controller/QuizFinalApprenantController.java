@@ -43,6 +43,9 @@ public class QuizFinalApprenantController {
 
             return ResponseEntity.ok(toInfosResponse(infos));
 
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("message", e.getReason()));
         } catch (SecurityException e) {
             return forbidden(e.getMessage());
         } catch (RuntimeException e) {
@@ -82,10 +85,19 @@ public class QuizFinalApprenantController {
 
             return ResponseEntity.ok(toResultatResponse(resultat));
 
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            boolean epuisees = e.getStatusCode().value() == 403 &&
+                    e.getReason() != null && e.getReason().contains("épuisé");
+            if (epuisees) {
+                return ResponseEntity.status(403).body(Map.of(
+                        "message", e.getReason(),
+                        "tentativesEpuisees", true));
+            }
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("message", e.getReason()));
         } catch (SecurityException e) {
             return forbidden(e.getMessage());
         } catch (RuntimeException e) {
-            // Tentatives épuisées → 403 avec flag spécial pour le frontend
             boolean epuisees = e.getMessage() != null && e.getMessage().contains("épuisé");
             if (epuisees) {
                 return ResponseEntity.status(403).body(Map.of(

@@ -1004,19 +1004,49 @@
     <div class="cert-card" *ngFor="let cert of certificats">
 
       <!-- Aperçu miniature -->
-      <div class="cert-card-preview">
-        <div class="cert-preview-top"></div>
-        <div class="cert-preview-body">
-          <div class="cert-preview-logo">
-            <span class="cert-logo-j">J</span><span class="cert-logo-r">R</span>
-          </div>
-          <div class="cert-preview-title">Certificat de Réussite</div>
-          <div class="cert-preview-name">{{ cert.apprenantPrenom }} {{ cert.apprenantNom }}</div>
-          <div class="cert-preview-score">{{ cert.noteFinal | number:'1.0-0' }}%</div>
-          <div class="cert-preview-numero">{{ cert.numeroCertificat }}</div>
+<div class="cert-card-preview">
+  <div class="cpv-outer-border">
+    <div class="cpv-header">
+      <div class="cpv-logo">
+        <span class="cpv-logo-jr">JR</span>
+        <div class="cpv-logo-text">
+          <span class="cpv-digital">DIGITAL</span>
+          <span class="cpv-isyours">is yours</span>
         </div>
-        <div class="cert-preview-bottom"></div>
       </div>
+      <div class="cpv-official-badge">CERTIFICAT OFFICIEL</div>
+    </div>
+    <div class="cpv-gold-bar"></div>
+    <div class="cpv-body">
+      <div class="cpv-corner cpv-tl"></div>
+      <div class="cpv-corner cpv-tr"></div>
+      <p class="cpv-title">CERTIFICAT</p>
+      <div class="cpv-reussite-badge">DE RÉUSSITE</div>
+      <p class="cpv-intro">est décerné avec distinction à</p>
+      <p class="cpv-nom">{{ cert.apprenantPrenom }} {{ cert.apprenantNom }}</p>
+      <div class="cpv-nom-line"></div>
+      <p class="cpv-formation-label">qui a complété avec succès la formation</p>
+      <p class="cpv-formation-titre">{{ cert.formationTitre }}</p>
+      <div class="cpv-note-row">
+        <div class="cpv-note-box">
+          <span class="cpv-note-val">{{ cert.noteFinal | number:'1.0-0' }}%</span>
+          <span class="cpv-note-lbl">NOTE FINALE</span>
+        </div>
+      </div>
+    </div>
+    <div class="cpv-gold-bar"></div>
+    <div class="cpv-footer">
+      <div class="cpv-footer-left">
+        <p class="cpv-footer-role">Directeur Pédagogique</p>
+        <p class="cpv-footer-org">Digital Is Yours | Académie en ligne</p>
+      </div>
+      <div class="cpv-footer-right">
+        <p class="cpv-cert-num-lbl">N° DE CERTIFICAT</p>
+        <p class="cpv-cert-num-val">{{ cert.numeroCertificat }}</p>
+      </div>
+    </div>
+  </div>
+</div>
 
       <!-- Infos -->
       <div class="cert-card-body">
