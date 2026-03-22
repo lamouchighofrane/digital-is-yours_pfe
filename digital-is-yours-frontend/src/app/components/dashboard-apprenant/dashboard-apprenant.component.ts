@@ -1796,6 +1796,26 @@ downloadCertificatFromModal() {
       window.open(this.linkedInData.linkedinUrl, '_blank', 'width=650,height=650');
     }, 700);
   }
+  ajouterAuProfilLinkedIn() {
+  if (!this.linkedInData) return;
+
+  const cert = this.linkedInCert;
+  const date = cert?.dateCreation
+    ? new Date(cert.dateCreation)
+    : new Date();
+
+  const params = new URLSearchParams({
+    startTask:        'CERTIFICATION_NAME',
+    name:             this.linkedInData.formationTitre || '',
+    organizationName: 'Digital Is Yours',
+    issueYear:        String(date.getFullYear()),
+    issueMonth:       String(date.getMonth() + 1),
+    certId:           this.linkedInData.numeroCertificat || ''
+});
+
+  const url = `https://www.linkedin.com/profile/add?${params.toString()}`;
+  window.open(url, '_blank', 'width=650,height=650');
+}
  
   copierTexteLinkedIn() {
     if (!this.linkedInData?.textePost) return;
