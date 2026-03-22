@@ -21,6 +21,10 @@ progressionStatsGlobales = {
   formationsEnCours: 0,
   scoreMoyen: 0
 };
+  // ── Variables QR Code ──
+  linkedInQrUrl: string | null = null;
+  linkedInQrLoading             = false;
+  linkedInAnimating             = false;  // ← animation envol
   // ══════════════════════════════════════════════════════
 // CALENDRIER
 // ══════════════════════════════════════════════════════
@@ -1715,14 +1719,17 @@ downloadCertificatFromModal() {
   linkedInLoading    = false;
   linkedInCopied     = false;
  
-  ouvrirModalLinkedIn(cert: any) {
-    this.linkedInCert    = cert;
-    this.linkedInData    = null;
-    this.linkedInLoading = true;
-    this.linkedInCopied  = false;
+ ouvrirModalLinkedIn(cert: any) {
+    this.linkedInCert      = cert;
+    this.linkedInData      = null;
+    this.linkedInLoading   = true;
+    this.linkedInCopied    = false;
+    this.linkedInQrUrl     = null;
+    this.linkedInQrLoading = true;
     this.showLinkedInModal = true;
     this.cdr.detectChanges();
  
+    // 1. Préparer le texte du post (appel backend)
     this.http.post<any>(
       `${this.api}/certificats/${cert.id}/partager-linkedin`,
       {},
@@ -1732,14 +1739,35 @@ downloadCertificatFromModal() {
         this.linkedInData    = data;
         this.linkedInLoading = false;
         cert.partageLinkedIn = true;
+ 
+        // 2. Charger le QR code en parallèle
+        this.loadQrCode(cert.id);
         this.cdr.detectChanges();
       },
       error: err => {
-        this.linkedInLoading = false;
+        this.linkedInLoading   = false;
+        this.linkedInQrLoading = false;
         this.showLinkedInModal = false;
         this.showCertToast(err.error?.message || 'Erreur LinkedIn.', 'error');
         this.cdr.detectChanges();
       }
+    });
+  }
+  loadQrCode(certId: number) {
+    this.linkedInQrLoading = true;
+    const token = localStorage.getItem('token');
+    fetch(`${this.api}/certificats/${certId}/qrcode`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(r => r.blob())
+    .then(blob => {
+      this.linkedInQrUrl     = URL.createObjectURL(blob);
+      this.linkedInQrLoading = false;
+      this.cdr.detectChanges();
+    })
+    .catch(() => {
+      this.linkedInQrLoading = false;
+      this.cdr.detectChanges();
     });
   }
  
@@ -1751,13 +1779,23 @@ downloadCertificatFromModal() {
   }
  
  partagerSurLinkedIn() {
-  if (!this.linkedInData?.linkedinUrl) return;
-  // Copier automatiquement le texte au moment du clic
-  if (this.linkedInData?.textePost) {
-    navigator.clipboard.writeText(this.linkedInData.textePost);
+    if (!this.linkedInData?.linkedinUrl) return;
+ 
+    // 1. Copie automatique du texte
+    if (this.linkedInData?.textePost) {
+      navigator.clipboard.writeText(this.linkedInData.textePost).catch(() => {});
+    }
+ 
+    // 2. Animation envol (600ms) PUIS ouverture LinkedIn
+    this.linkedInAnimating = true;
+    this.cdr.detectChanges();
+ 
+    setTimeout(() => {
+      this.linkedInAnimating = false;
+      this.cdr.detectChanges();
+      window.open(this.linkedInData.linkedinUrl, '_blank', 'width=650,height=650');
+    }, 700);
   }
-  window.open(this.linkedInData.linkedinUrl, '_blank', 'width=600,height=600');
-}
  
   copierTexteLinkedIn() {
     if (!this.linkedInData?.textePost) return;

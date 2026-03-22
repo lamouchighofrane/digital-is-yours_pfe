@@ -30,11 +30,7 @@ public class CertificatService implements CertificatUseCase {
 
     private final CertificatRepositoryPort certificatRepository;
     private final CertificatPdfGenerator   pdfGenerator;
-
-    // ── Use case existant dans votre projet (getProfil retourne Apprenant) ────
     private final ProfilApprenantUseCase   profilUseCase;
-
-    // ── Repositories JPA existants dans votre projet ──────────────────────────
     private final FormationJpaRepository   formationJpaRepository;
     private final QuizJpaRepository        quizJpaRepository;
 
@@ -53,7 +49,6 @@ public class CertificatService implements CertificatUseCase {
     public Certificat genererCertificat(Long apprenantId, Long formationId,
                                         Long quizId, Float noteFinal) {
 
-        // Idempotence : un seul certificat par formation
         if (certificatRepository.existsByApprenantIdAndFormationId(apprenantId, formationId)) {
             log.info("Certificat déjà existant – apprenant={} formation={}", apprenantId, formationId);
             return certificatRepository
@@ -61,33 +56,25 @@ public class CertificatService implements CertificatUseCase {
                     .orElseThrow();
         }
 
-        // ── Charger l'apprenant via ProfilApprenantUseCase ───────────────────
-        // On passe par le repository pour trouver l'email depuis l'id
-        // (ProfilApprenantUseCase.getProfil prend un email, pas un id)
-        // On utilise ApprenantJpaRepository directement pour ce lookup
         String apprenantEmail = certificatRepository
                 .findApprenantEmailById(apprenantId)
                 .orElseThrow(() -> new RuntimeException("Apprenant introuvable : " + apprenantId));
 
         Apprenant apprenant = profilUseCase.getProfil(apprenantEmail);
 
-        // ── Charger la formation ─────────────────────────────────────────────
         FormationEntity formation = formationJpaRepository.findById(formationId)
                 .orElseThrow(() -> new RuntimeException("Formation introuvable : " + formationId));
 
-        // ── Charger le quiz (optionnel) ──────────────────────────────────────
         QuizEntity quiz = (quizId != null)
                 ? quizJpaRepository.findById(quizId).orElse(null)
                 : null;
 
-        // ── Numéro : #[CODE]-[ANNÉE]-[SÉQUENCE] ─────────────────────────────
         long   seq    = certificatRepository.countByApprenantId(apprenantId) + 1;
         String raw    = formation.getTitre().replaceAll("[^A-Za-z0-9]", "");
         String code   = raw.substring(0, Math.min(3, raw.length())).toUpperCase();
         String annee  = String.valueOf(LocalDateTime.now().getYear());
         String numero = String.format("#%s-%s-%04d", code, annee, seq);
 
-        // ── Texte de contexte ────────────────────────────────────────────────
         String contextu = "Ce certificat atteste que "
                 + apprenant.getPrenom() + " " + apprenant.getNom()
                 + " a demontre les competences requises en "
@@ -95,20 +82,16 @@ public class CertificatService implements CertificatUseCase {
                 + ", ayant complete l'integralite du programme avec succes"
                 + " sur la plateforme Digital Is Yours.";
 
-        // ── Niveau formation ─────────────────────────────────────────────────
         String niveauStr = formation.getNiveau() != null
                 ? formation.getNiveau().toString()
                 : null;
 
-        // ── Note de passage depuis le quiz ───────────────────────────────────
         Float notePassage = (quiz != null && quiz.getNotePassage() != null)
                 ? quiz.getNotePassage()
                 : null;
 
-        // ── Durée formation ──────────────────────────────────────────────────
         Integer duree = formation.getDureeEstimee();
 
-        // ── Construire et sauvegarder le certificat ──────────────────────────
         Certificat certificat = Certificat.builder()
                 .titre("Certificat de Reussite - " + formation.getTitre())
                 .noteFinal(noteFinal)
@@ -130,7 +113,6 @@ public class CertificatService implements CertificatUseCase {
 
         Certificat saved = certificatRepository.save(certificat);
 
-        // ── Générer le PDF ───────────────────────────────────────────────────
         try {
             byte[] pdfBytes = pdfGenerator.generer(saved);
             Path dir = Paths.get(storagePath);
@@ -169,9 +151,29 @@ public class CertificatService implements CertificatUseCase {
         return cert;
     }
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // Téléchargement PDF — accès authentifié
+    // ══════════════════════════════════════════════════════════════════════════
+
     @Override
     public byte[] downloadCertificatPDF(Long certificatId, Long apprenantId) {
         Certificat cert = getCertificatById(certificatId, apprenantId);
+        try {
+            return pdfGenerator.generer(cert);
+        } catch (IOException e) {
+            throw new RuntimeException("Erreur generation PDF : " + e.getMessage(), e);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Téléchargement PDF — accès PUBLIC (QR Code depuis téléphone)
+    // Pas de vérification d'ownership — le certificat est public par nature
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Override
+    public byte[] downloadCertificatPDFPublic(Long certificatId) {
+        Certificat cert = certificatRepository.findById(certificatId)
+                .orElseThrow(() -> new RuntimeException("Certificat introuvable : " + certificatId));
         try {
             return pdfGenerator.generer(cert);
         } catch (IOException e) {

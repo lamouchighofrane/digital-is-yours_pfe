@@ -6,6 +6,10 @@ import com.digitalisyours.domain.port.in.ProfilApprenantUseCase;
 import com.digitalisyours.application.service.CertificatEmailService;
 import com.digitalisyours.infrastructure.persistence.repository.CertificatJpaRepository;
 import com.digitalisyours.infrastructure.web.security.JwtUtil;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayOutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
@@ -36,8 +41,11 @@ public class CertificatController {
     private final CertificatEmailService    certificatEmailService;
     private final CertificatJpaRepository   certificatJpaRepository;
 
-    @Value("${app.base-url:http://localhost:8080}")
+    @Value("${app.base-url:http://localhost:4200}")
     private String baseUrl;
+
+    // URL backend fixe pour le QR Code (scannable depuis téléphone sur le même WiFi)
+    private static final String BACKEND_URL = "http://192.168.1.16:8080";
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     private String extractEmail(HttpServletRequest request) {
@@ -118,26 +126,42 @@ public class CertificatController {
 
     // ═════════════════════════════════════════════════════════════════════════
     // GET /api/apprenant/certificats/{id}/download
+    // Accès PUBLIC — pas de token requis (QR Code depuis téléphone)
     // ═════════════════════════════════════════════════════════════════════════
     @GetMapping("/{id}/download")
     public ResponseEntity<?> downloadCertificat(
             @PathVariable Long id, HttpServletRequest request) {
-        String email = extractEmail(request);
-        if (email == null) return unauthorized();
         try {
-            Long       apprenantId = getApprenantId(email);
-            byte[]     pdfBytes    = certificatUseCase.downloadCertificatPDF(id, apprenantId);
-            Certificat cert        = certificatUseCase.getCertificatById(id, apprenantId);
-            String filename = "certificat_"
-                    + (cert.getNumeroCertificat() != null
-                    ? cert.getNumeroCertificat().replace("#","").replace("-","_")
-                    : id)
-                    + ".pdf";
+            String email = extractEmail(request);
+            byte[] pdfBytes;
+            String filename;
+            String disposition;
+
+            if (email != null) {
+                // ── Accès authentifié (depuis l'appli Angular) ────────────────
+                // attachment = téléchargement forcé (comportement normal sur PC)
+                Long apprenantId = getApprenantId(email);
+                Certificat cert  = certificatUseCase.getCertificatById(id, apprenantId);
+                pdfBytes    = certificatUseCase.downloadCertificatPDF(id, apprenantId);
+                filename    = "certificat_"
+                        + (cert.getNumeroCertificat() != null
+                        ? cert.getNumeroCertificat().replace("#","").replace("-","_")
+                        : id)
+                        + ".pdf";
+                disposition = "attachment; filename=\"" + filename + "\"";
+            } else {
+                // ── Accès public (QR Code depuis téléphone) ───────────────────
+                // inline = affichage direct dans le navigateur du téléphone
+                pdfBytes    = certificatUseCase.downloadCertificatPDFPublic(id);
+                filename    = "certificat_" + id + ".pdf";
+                disposition = "inline; filename=\"" + filename + "\"";
+            }
+
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
                     .contentType(MediaType.APPLICATION_PDF)
                     .body(pdfBytes);
+
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
@@ -181,7 +205,6 @@ public class CertificatController {
             Long       apprenantId = getApprenantId(email);
             Certificat cert        = certificatUseCase.getCertificatById(id, apprenantId);
 
-            // ── 1. Construire le texte du post LinkedIn ───────────────────────
             String dateStr = cert.getDateCreation() != null
                     ? cert.getDateCreation().format(
                     DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRENCH))
@@ -208,24 +231,20 @@ public class CertificatController {
                     cert.getNumeroCertificat()
             );
 
-            // ── 2. URL du certificat (lien de téléchargement) ─────────────────
             String certUrl = baseUrl + "/api/apprenant/certificats/" + cert.getId() + "/download";
-
-            // ── 3. Construire l'URL LinkedIn Share ───────────────────────────
             String linkedinUrl = "https://www.linkedin.com/sharing/share-offsite/?" +
                     "url=" + URLEncoder.encode(certUrl, StandardCharsets.UTF_8) +
                     "&summary=" + URLEncoder.encode(textePost, StandardCharsets.UTF_8);
 
-            // ── 4. Marquer partageLinkedIn = true en base ─────────────────────
             certificatJpaRepository.updatePartageLinkedIn(cert.getId());
 
             log.info("Certificat {} partagé sur LinkedIn par {}",
                     cert.getNumeroCertificat(), email);
 
             return ResponseEntity.ok(Map.of(
-                    "success",      true,
-                    "linkedinUrl",  linkedinUrl,
-                    "textePost",    textePost,
+                    "success",          true,
+                    "linkedinUrl",      linkedinUrl,
+                    "textePost",        textePost,
                     "numeroCertificat", cert.getNumeroCertificat(),
                     "formationTitre",   cert.getFormationTitre()
             ));
@@ -234,6 +253,40 @@ public class CertificatController {
                     "success", false,
                     "message", e.getMessage()
             ));
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // GET /api/apprenant/certificats/{id}/qrcode  — US-059 QR Code
+    // ═════════════════════════════════════════════════════════════════════════
+    @GetMapping("/{id}/qrcode")
+    public ResponseEntity<?> getQrCode(
+            @PathVariable Long id, HttpServletRequest request) {
+        String email = extractEmail(request);
+        if (email == null) return unauthorized();
+        try {
+            Long       apprenantId = getApprenantId(email);
+            Certificat cert        = certificatUseCase.getCertificatById(id, apprenantId);
+
+            // URL avec IP réelle → scannable depuis téléphone sur le même WiFi
+            String certUrl = BACKEND_URL + "/api/apprenant/certificats/" + cert.getId() + "/download";
+
+            QRCodeWriter writer    = new QRCodeWriter();
+            BitMatrix    bitMatrix = writer.encode(certUrl, BarcodeFormat.QR_CODE, 200, 200);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            MatrixToImageWriter.writeToStream(bitMatrix, "PNG", baos);
+            byte[] pngBytes = baos.toByteArray();
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_PNG)
+                    .header(HttpHeaders.CACHE_CONTROL, "max-age=3600")
+                    .body(pngBytes);
+
+        } catch (Exception e) {
+            log.error("Erreur génération QR code certificat {} : {}", id, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Erreur génération QR code : " + e.getMessage()));
         }
     }
 

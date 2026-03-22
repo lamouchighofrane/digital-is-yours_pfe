@@ -2447,7 +2447,7 @@
 <div *ngIf="showLinkedInModal" class="modal-overlay li-overlay" (click)="fermerModalLinkedIn()">
   <div class="li-modal" (click)="$event.stopPropagation()">
  
-    <!-- Header -->
+    <!-- ── Header LinkedIn ── -->
     <div class="li-header">
       <div class="li-header-left">
         <div class="li-logo-wrap">
@@ -2457,61 +2457,90 @@
         </div>
         <div>
           <h2 class="li-title">Partager sur LinkedIn</h2>
-          <p class="li-subtitle">Valorisez votre certificat auprès de votre réseau</p>
+          <p class="li-subtitle">Valorisez votre certificat auprès de votre réseau professionnel</p>
         </div>
       </div>
-      <button class="modal-close" (click)="fermerModalLinkedIn()">
+      <button class="modal-close li-close-btn" (click)="fermerModalLinkedIn()">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
  
-    <!-- Loading -->
+    <!-- ── Loading ── -->
     <div *ngIf="linkedInLoading" class="li-loading">
       <div class="li-spinner"></div>
       <p>Préparation du partage...</p>
     </div>
  
-    <!-- Contenu -->
+    <!-- ── Contenu ── -->
     <div *ngIf="!linkedInLoading && linkedInData" class="li-body">
  
       <!-- Infos certificat -->
       <div class="li-cert-info">
         <div class="li-cert-badge">🎓</div>
-        <div>
+        <div style="flex:1;min-width:0">
           <p class="li-cert-titre">{{ linkedInData.formationTitre }}</p>
           <p class="li-cert-num">{{ linkedInData.numeroCertificat }}</p>
         </div>
         <span *ngIf="linkedInCert?.partageLinkedIn" class="li-already-badge">✓ Déjà partagé</span>
       </div>
  
-      <!-- Prévisualisation du texte -->
-      <div class="li-preview-zone">
-        <div class="li-preview-header">
-          <svg width="12" height="12" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
-            <path stroke-width="2" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3" stroke-width="2"/>
-          </svg>
-          <span>Aperçu de votre publication</span>
+      <!-- ── DOUBLE COLONNE : Aperçu + QR Code ── -->
+      <div class="li-two-col">
+ 
+        <!-- Colonne gauche : Aperçu publication -->
+        <div class="li-col-preview">
+          <div class="li-preview-header">
+            <svg width="12" height="12" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3" stroke-width="2"/>
+            </svg>
+            <span>Aperçu de votre publication</span>
+          </div>
+          <div class="li-post-preview">
+            <div class="li-post-header">
+              <div class="li-post-avatar">
+                {{ (apprenantUser?.prenom || '?')[0].toUpperCase() }}{{ (apprenantUser?.nom || '')[0]?.toUpperCase() || '' }}
+              </div>
+              <div>
+                <p class="li-post-name">{{ apprenantUser?.prenom }} {{ apprenantUser?.nom }}</p>
+                <p class="li-post-role">Apprenant · Digital Is Yours</p>
+              </div>
+              <!-- Logo LinkedIn mini -->
+              <svg style="margin-left:auto;flex-shrink:0" width="16" height="16" viewBox="0 0 24 24" fill="#0077B5">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+            </div>
+            <p class="li-post-text" style="white-space:pre-line">{{ linkedInData.textePost }}</p>
+          </div>
         </div>
  
-        <!-- Fausse carte LinkedIn -->
-        <div class="li-post-preview">
-          <div class="li-post-header">
-            <div class="li-post-avatar">
-              {{ (apprenantUser?.prenom || '?')[0].toUpperCase() }}{{ (apprenantUser?.nom || '')[0]?.toUpperCase() || '' }}
+        <!-- Colonne droite : QR Code -->
+        <div class="li-col-qr">
+          <div class="li-qr-header">
+            <svg width="12" height="12" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M12 4v1m6.364 1.636l-.707.707M20 12h-1M17.657 17.657l-.707-.707M12 20v-1m-5.657-1.636l-.707.707M4 12H3m3.343-5.657l-.707-.707"/>
+            </svg>
+            <span>QR Code du certificat</span>
+          </div>
+          <div class="li-qr-box">
+            <!-- Loading QR -->
+            <div *ngIf="linkedInQrLoading" class="li-qr-loading">
+              <div class="li-spinner"></div>
             </div>
-            <div>
-              <p class="li-post-name">{{ apprenantUser?.prenom }} {{ apprenantUser?.nom }}</p>
-              <p class="li-post-role">Apprenant · Digital Is Yours</p>
+            <!-- QR Code image -->
+            <div *ngIf="!linkedInQrLoading && linkedInQrUrl" class="li-qr-wrap">
+              <img [src]="linkedInQrUrl" alt="QR Code certificat" class="li-qr-img"/>
+              <p class="li-qr-caption">Scanner pour accéder au certificat</p>
             </div>
           </div>
-          <p class="li-post-text" style="white-space:pre-line">{{ linkedInData.textePost }}</p>
         </div>
-      </div>
  
-      <!-- Bouton copier texte -->
+      </div>
+      <!-- FIN double colonne -->
+ 
+      <!-- Bouton copier -->
       <button class="li-copy-btn" (click)="copierTexteLinkedIn()">
         <svg *ngIf="!linkedInCopied" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3"/>
@@ -2519,34 +2548,49 @@
         <svg *ngIf="linkedInCopied" width="14" height="14" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
           <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
         </svg>
-        {{ linkedInCopied ? 'Texte copié ✓' : 'Copier le texte' }}
+        {{ linkedInCopied ? '✓ Texte copié dans le presse-papiers !' : 'Copier le texte du post' }}
       </button>
  
-      <!-- Instructions -->
+      <!-- Étapes -->
       <div class="li-steps">
         <p class="li-steps-title">Comment partager :</p>
         <div class="li-step">
           <span class="li-step-num">1</span>
-          <span>Cliquez sur "Partager sur LinkedIn" — LinkedIn s'ouvre dans une nouvelle fenêtre</span>
+          <span>Cliquez <strong>"Partager sur LinkedIn"</strong> — le texte est copié automatiquement et LinkedIn s'ouvre</span>
         </div>
         <div class="li-step">
           <span class="li-step-num">2</span>
-          <span>Connectez-vous à votre compte LinkedIn si nécessaire</span>
+          <span>Collez le texte (Ctrl+V) dans la fenêtre LinkedIn, ajoutez votre PDF via 📄 si souhaité</span>
         </div>
         <div class="li-step">
           <span class="li-step-num">3</span>
-          <span>Collez le texte copié dans votre publication et partagez !</span>
+          <span>Le QR Code ci-contre peut être scanné pour accéder directement au certificat</span>
         </div>
       </div>
  
       <!-- Actions -->
       <div class="li-actions">
         <button class="li-btn-cancel" (click)="fermerModalLinkedIn()">Annuler</button>
-        <button class="li-btn-share" (click)="partagerSurLinkedIn()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+ 
+        <!-- Bouton avec animation envol -->
+        <button class="li-btn-share"
+                [class.li-btn-animating]="linkedInAnimating"
+                (click)="partagerSurLinkedIn()"
+                [disabled]="linkedInAnimating">
+ 
+          <!-- Particules d'animation (visibles pendant linkedInAnimating) -->
+          <span *ngFor="let p of [1,2,3,4,5,6]"
+                class="li-particle"
+                [class.li-particle-active]="linkedInAnimating"
+                [style.--p-i]="p"></span>
+ 
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"
+               [class.li-icon-fly]="linkedInAnimating">
             <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
           </svg>
-          Partager sur LinkedIn
+          <span class="li-btn-text">
+            {{ linkedInAnimating ? 'Ouverture de LinkedIn...' : 'Partager sur LinkedIn' }}
+          </span>
         </button>
       </div>
  
