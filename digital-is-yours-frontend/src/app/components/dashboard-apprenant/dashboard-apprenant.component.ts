@@ -65,6 +65,25 @@ coursError             = '';
 coursActiveTab: 'cours' | 'progression' | 'forum' | 'ressources' = 'cours';
 quizNotePassage: number | null = null;
 quizExiste: boolean = false;
+// ── US-033 : Quiz Final ──
+showQuizFinalModal   = false;
+qfEtape: 'chargement' | 'intro' | 'question' | 'resultat' = 'chargement';
+qfData: any          = null;
+qfQuestionIndex      = 0;
+qfReponses: { [questionId: number]: number } = {};
+qfResultat: any      = null;
+qfSoumission         = false;
+qfTempsTotal         = 0;
+qfTempsRestant       = 0;
+qfConfetti: any[]    = [];
+qfConditionsAcceptees = false;
+showQfConfirm        = false;
+private qfTimerInterval: any = null;
+// ── US-048 : Certificats ──           // ← ajouter ici
+certificats: any[]     = [];
+certificatsLoading     = false;
+qfCertificat: any      = null;
+qfCertDownloading      = false;
 // ── US-029 : Cours actif + documents + vidéo ──
 coursActif: any = null;
 showCoursDetail = false;
@@ -216,8 +235,9 @@ documentsError = '';
 }
 
   ngOnDestroy() {
-    if (this.pollingInterval) clearInterval(this.pollingInterval);
-  }
+  if (this.pollingInterval) clearInterval(this.pollingInterval);
+  this.stopTimerQf();
+}
 
   private headers() {
     return new HttpHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` });
@@ -235,6 +255,7 @@ setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certifica
   if (s === 'calendrier')  this.loadSessions();
   if (s === 'progression') this.loadProgressionData();
   this.closeNotifPanel();
+  if (s === 'certificats') this.loadCertificats();
 }
 voirCours(formation: any) {
   this.selectedFormation = formation;
@@ -1356,4 +1377,290 @@ loadProgressionData() {
     if (statut === 'EN_COURS') return 'En cours';
     return 'À faire';
   }
+  // ══════════════════════════════════════════════════════
+// US-033 — QUIZ FINAL APPRENANT
+// ══════════════════════════════════════════════════════
+
+private stopTimerQf() {
+  if (this.qfTimerInterval) {
+    clearInterval(this.qfTimerInterval);
+    this.qfTimerInterval = null;
+  }
+}
+
+ouvrirQuizFinal() {
+  const fid = this.selectedFormation?.formationId || this.selectedFormation?.id;
+  this.showQuizFinalModal   = true;
+  this.qfEtape              = 'chargement';
+  this.qfData               = null;
+  this.qfQuestionIndex      = 0;
+  this.qfReponses           = {};
+  this.qfResultat           = null;
+  this.qfConditionsAcceptees = false;
+  this.showQfConfirm        = false;
+  this.stopTimerQf();
+  this.cdr.detectChanges();
+
+  this.http.get<any>(
+    `${this.api}/formations/${fid}/quiz-final`,
+    { headers: this.headers() }
+  ).subscribe({
+    next: res => {
+      if (!res.exists) {
+        this.showQuizFinalModal = false;
+        alert('Aucun quiz final disponible pour cette formation.');
+        this.cdr.detectChanges();
+        return;
+      }
+      // ← Stocker le formationId dans qfData pour s'en souvenir
+  res.formationId = this.selectedFormation?.formationId || this.selectedFormation?.id;
+  this.qfData   = res;
+  this.qfEtape  = 'intro';
+  this.cdr.detectChanges();
+    },
+    error: err => {
+      this.showQuizFinalModal = false;
+      alert(err.error?.message || 'Impossible de charger le quiz final.');
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+demarrerQuizFinal() {
+  if (!this.qfConditionsAcceptees) return;
+  this.qfEtape         = 'question';
+  this.qfQuestionIndex = 0;
+  this.qfReponses      = {};
+  this.qfTempsTotal    = (this.qfData?.dureeMinutes || 20) * 60;
+  this.qfTempsRestant  = this.qfTempsTotal;
+  this.stopTimerQf();
+  this.qfTimerInterval = setInterval(() => {
+    this.qfTempsRestant--;
+    if (this.qfTempsRestant <= 0) {
+      this.stopTimerQf();
+      this.confirmerSoumission();
+    }
+    this.cdr.detectChanges();
+  }, 1000);
+  this.cdr.detectChanges();
+}
+
+selectionnerReponseQf(questionId: number, optionId: number) {
+  // Forcer en number pour éviter les problèmes de type string/number
+  this.qfReponses[Number(questionId)] = Number(optionId);
+  this.cdr.detectChanges();
+}
+
+soumettreQuizFinal() {
+  const questions  = this.qfData?.questions || [];
+  const nonRepondu = questions.filter((q: any) => !this.qfReponses[q.id]);
+  if (nonRepondu.length > 0) {
+    this.showQfConfirm = true;
+    this.cdr.detectChanges();
+    return;
+  }
+  this.confirmerSoumission();
+}
+
+confirmerSoumission() {
+  this.showQfConfirm = false;
+  this.stopTimerQf();
+  this.qfSoumission  = true;
+  this.cdr.detectChanges();
+
+  const fid = this.qfData?.formationId 
+              || this.selectedFormation?.formationId 
+              || this.selectedFormation?.id;
+  const tempsPasse = this.qfTempsTotal - this.qfTempsRestant;
+
+  // ← CORRECTION : forcer les clés et valeurs en nombres entiers
+  const reponsesNumeriques: { [key: number]: number } = {};
+  Object.keys(this.qfReponses).forEach(k => {
+    const questionId = parseInt(k, 10);
+    const optionId   = parseInt(String(this.qfReponses[Number(k)]), 10);
+    if (!isNaN(questionId) && !isNaN(optionId)) {
+      reponsesNumeriques[questionId] = optionId;
+    }
+  });
+
+  console.log('DEBUG fid:', fid, 'reponses brutes:', this.qfReponses, 'reponses converties:', reponsesNumeriques);
+
+  this.http.post<any>(
+    `${this.api}/formations/${fid}/quiz-final/soumettre`,
+    { reponses: reponsesNumeriques, tempsPasse },
+    { headers: this.headers() }
+  ).subscribe({
+    next: res => {
+      this.qfResultat   = res;
+      this.qfSoumission = false;
+      this.qfEtape      = 'resultat';
+     if (res.reussi) {
+  this.genererConfettiQf();
+  setTimeout(() => {
+    this.http.get<any[]>(`${this.api}/certificats`, { headers: this.headers() })
+      .subscribe({
+        next: certs => {
+          const fid = this.qfData?.formationId
+                      || this.selectedFormation?.formationId
+                      || this.selectedFormation?.id;
+          this.qfCertificat = certs.find((c: any) => c.formationId === fid) || certs[0] || null;
+          this.cdr.detectChanges();
+        },
+        error: () => {}
+      });
+  }, 1500);
+}
+      this.cdr.detectChanges();
+    },
+    error: err => {
+      this.qfSoumission = false;
+      console.error('Erreur soumettre détail:', err.error);
+      alert(err.error?.message || 'Erreur lors de la soumission.');
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+retenterQuizFinal() {
+  this.qfEtape              = 'intro';
+  this.qfResultat           = null;
+  this.qfReponses           = {};
+  this.qfConditionsAcceptees = false;
+  this.qfConfetti           = [];
+  this.stopTimerQf();
+  // Recharger les infos (tentatives mises à jour)
+  this.ouvrirQuizFinal();
+}
+
+fermerQuizFinal() {
+  this.showQuizFinalModal   = false;
+  this.qfData               = null;
+  this.qfResultat           = null;
+  this.qfReponses           = {};
+  this.qfEtape              = 'chargement';
+  this.qfConditionsAcceptees = false;
+  this.showQfConfirm        = false;
+  this.qfConfetti           = [];
+  this.stopTimerQf();
+  this.cdr.detectChanges();
+}
+
+formatTempsRestantQf(): string {
+  const h = Math.floor(this.qfTempsRestant / 3600);
+  const m = Math.floor((this.qfTempsRestant % 3600) / 60);
+  const s = this.qfTempsRestant % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  if (h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return `${pad(m)}:${pad(s)}`;
+}
+
+getQfDashOffset(): number {
+  const score = this.qfResultat?.score || 0;
+  return 408.4 * (1 - score / 100);
+}
+
+genererConfettiQf() {
+  const couleurs = ['#4A7C7E','#27ae60','#f39c12','#8B3A3A','#9b59b6','#2ecc71'];
+  this.qfConfetti = Array.from({ length: 35 }, (_, i) => ({
+    id:       i,
+    left:     Math.random() * 100,
+    delay:    Math.random() * 2,
+    duration: 2 + Math.random() * 2,
+    color:    couleurs[Math.floor(Math.random() * couleurs.length)],
+    size:     6 + Math.random() * 8
+  }));
+}
+
+getQfDotColor(index: number): string {
+  if (!this.qfData?.questions) return '#E8E3DB';
+  const q = this.qfData.questions[index];
+  if (!q) return '#E8E3DB';
+  if (index === this.qfQuestionIndex) return '#4A7C7E';
+  return this.qfReponses[q.id] ? '#27ae60' : '#E8E3DB';
+}
+// ══════════════════════════════════════════════════
+// US-048 — CERTIFICATS
+// ══════════════════════════════════════════════════
+
+loadCertificats() {
+  this.certificatsLoading = true;
+  this.http.get<any[]>(`${this.api}/certificats`, { headers: this.headers() })
+    .subscribe({
+      next: data => {
+        this.certificats = data || [];
+        this.certificatsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.certificats = [];
+        this.certificatsLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+}
+
+getScoreMoyenCerts(): number {
+  if (!this.certificats.length) return 0;
+  const scores = this.certificats
+    .filter((c: any) => c.noteFinal != null)
+    .map((c: any) => c.noteFinal);
+  if (!scores.length) return 0;
+  return scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
+}
+
+downloadCertificat(cert: any) {
+  cert._downloading = true;
+  this.cdr.detectChanges();
+  const token = localStorage.getItem('token');
+  fetch(`${this.api}/certificats/${cert.id}/download`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Erreur téléchargement');
+    return res.blob();
+  })
+  .then(blob => {
+    const url  = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href  = url;
+    const num  = (cert.numeroCertificat || 'cert').replace('#', '').replace(/-/g, '_');
+    link.download = `certificat_${num}.pdf`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    cert._downloading = false;
+    this.cdr.detectChanges();
+  })
+  .catch(() => {
+    cert._downloading = false;
+    alert('Erreur lors du téléchargement.');
+    this.cdr.detectChanges();
+  });
+}
+
+downloadCertificatFromModal() {
+  if (!this.qfCertificat) return;
+  this.qfCertDownloading = true;
+  this.cdr.detectChanges();
+  const token = localStorage.getItem('token');
+  fetch(`${this.api}/certificats/${this.qfCertificat.id}/download`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(r => r.blob())
+  .then(blob => {
+    const url  = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href  = url;
+    const num  = (this.qfCertificat.numeroCertificat || 'cert').replace('#', '').replace(/-/g, '_');
+    link.download = `certificat_${num}.pdf`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    this.qfCertDownloading = false;
+    this.cdr.detectChanges();
+  })
+  .catch(() => {
+    this.qfCertDownloading = false;
+    alert('Erreur téléchargement.');
+    this.cdr.detectChanges();
+  });
+}
 }

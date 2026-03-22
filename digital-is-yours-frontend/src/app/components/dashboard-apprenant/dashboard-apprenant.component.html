@@ -714,12 +714,14 @@
           <span *ngIf="quizNotePassage !== null">· Note de passage : {{ quizNotePassage }}%</span>
         </p>
       </div>
-      <button class="appr-qf-btn" [disabled]="progressionPct < 100">
-        Passer quiz final
-        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
-        </svg>
-      </button>
+      <button class="appr-qf-btn"
+        [disabled]="progressionPct < 100 || !quizExiste"
+        (click)="ouvrirQuizFinal()">
+  {{ quizExiste ? 'Passer quiz final' : 'Pas de quiz final' }}
+  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+  </svg>
+</button>
     </div>
 
   </div>
@@ -961,16 +963,85 @@
   </div>
 </section>
 
-    <!-- ═══ CERTIFICATS ═══ -->
-    <section *ngIf="activeSection==='certificats'" class="page-content">
-      <div class="empty-state-card">
-        <svg width="40" height="40" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
-          <path stroke-width="1.4" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-        </svg>
-        <p class="empty-title">Mes certificats</p>
-        <p class="empty-sub">Vos certificats obtenus apparaîtront ici.</p>
+   <!-- ═══ CERTIFICATS ═══ -->
+<section *ngIf="activeSection==='certificats'" class="page-content">
+
+  <!-- Stats -->
+  <div class="cert-stats-row" *ngIf="certificats.length > 0">
+    <div class="cert-stat-card">
+      <div class="cert-stat-icon">🏆</div>
+      <div class="cert-stat-info">
+        <div class="cert-stat-val">{{ certificats.length }}</div>
+        <div class="cert-stat-lbl">Certificat{{ certificats.length > 1 ? 's' : '' }} obtenu{{ certificats.length > 1 ? 's' : '' }}</div>
       </div>
-    </section>
+    </div>
+    <div class="cert-stat-card">
+      <div class="cert-stat-icon">⭐</div>
+      <div class="cert-stat-info">
+        <div class="cert-stat-val">{{ getScoreMoyenCerts() | number:'1.1-1' }}%</div>
+        <div class="cert-stat-lbl">Note moyenne</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="cours-loading" *ngIf="certificatsLoading">
+    <div class="cours-spinner"></div>
+    <span>Chargement de vos certificats...</span>
+  </div>
+
+  <!-- Empty -->
+  <div class="empty-state-card" *ngIf="!certificatsLoading && certificats.length === 0">
+    <svg width="40" height="40" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+      <path stroke-width="1.4" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+    </svg>
+    <p class="empty-title">Aucun certificat pour le moment</p>
+    <p class="empty-sub">Réussissez le quiz final d'une formation pour obtenir votre certificat.</p>
+  </div>
+
+  <!-- Grille certificats -->
+  <div class="cert-grid" *ngIf="!certificatsLoading && certificats.length > 0">
+    <div class="cert-card" *ngFor="let cert of certificats">
+
+      <!-- Aperçu miniature -->
+      <div class="cert-card-preview">
+        <div class="cert-preview-top"></div>
+        <div class="cert-preview-body">
+          <div class="cert-preview-logo">
+            <span class="cert-logo-j">J</span><span class="cert-logo-r">R</span>
+          </div>
+          <div class="cert-preview-title">Certificat de Réussite</div>
+          <div class="cert-preview-name">{{ cert.apprenantPrenom }} {{ cert.apprenantNom }}</div>
+          <div class="cert-preview-score">{{ cert.noteFinal | number:'1.0-0' }}%</div>
+          <div class="cert-preview-numero">{{ cert.numeroCertificat }}</div>
+        </div>
+        <div class="cert-preview-bottom"></div>
+      </div>
+
+      <!-- Infos -->
+      <div class="cert-card-body">
+        <div class="cert-card-formation">{{ cert.formationTitre }}</div>
+        <div class="cert-card-meta">
+          <span class="cert-card-date">{{ cert.dateCreation | date:'dd/MM/yyyy' }}</span>
+          <span class="cert-card-score"
+                [style.color]="cert.noteFinal >= 80 ? '#27ae60' : '#4A7C7E'">
+            {{ cert.noteFinal | number:'1.0-0' }}%
+          </span>
+        </div>
+        <div class="cert-card-id">{{ cert.numeroCertificat }}</div>
+        <div class="cert-card-actions">
+          <button class="cert-btn-download"
+                  (click)="downloadCertificat(cert)"
+                  [disabled]="cert._downloading">
+            <span *ngIf="!cert._downloading">⬇ Télécharger PDF</span>
+            <span *ngIf="cert._downloading">⏳ Génération...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
     <!-- ═══ CALENDRIER ═══ -->
 <section *ngIf="activeSection==='calendrier'" class="page-content">
 
@@ -1995,6 +2066,317 @@
       </div>
     </div>
  
+  </div>
+</div>
+<!-- ══════════════════════════════════════════════════
+     MODAL QUIZ FINAL — US-033
+══════════════════════════════════════════════════ -->
+<div *ngIf="showQuizFinalModal" class="modal-overlay qf-overlay" (click)="fermerQuizFinal()">
+  <div class="qf-modal" (click)="$event.stopPropagation()">
+
+    <!-- ── CHARGEMENT ── -->
+    <div *ngIf="qfEtape==='chargement'" class="qf-loading">
+      <div class="qf-loader-ring"></div>
+      <div class="qf-loader-ring2"></div>
+      <p>Chargement du quiz final...</p>
+    </div>
+
+    <!-- ── INTRO ── -->
+    <div *ngIf="qfEtape==='intro'" class="qf-intro">
+      <div class="qf-intro-header">
+        <div class="qf-trophy">🏆</div>
+        <h2 class="qf-intro-titre">Quiz Final</h2>
+        <p class="qf-intro-formation">{{ selectedFormation?.titre }}</p>
+      </div>
+
+      <div class="qf-stats-grid">
+        <div class="qf-stat">
+          <span class="qf-stat-val">{{ qfData?.nbQuestions || 0 }}</span>
+          <span class="qf-stat-label">Questions</span>
+        </div>
+        <div class="qf-stat">
+          <span class="qf-stat-val">{{ qfData?.dureeMinutes || 20 }}min</span>
+          <span class="qf-stat-label">Durée</span>
+        </div>
+        <div class="qf-stat">
+          <span class="qf-stat-val">{{ qfData?.notePassage || 75 }}%</span>
+          <span class="qf-stat-label">Note de passage</span>
+        </div>
+      </div>
+
+      <!-- Conditions -->
+      <div class="qf-conditions">
+        <div class="qf-condition-item qf-condition-warn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <span>Vous disposez de <strong>{{ qfData?.tentativesRestantes }}</strong> tentative(s) restante(s)</span>
+        </div>
+        <div class="qf-condition-item">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+            <path stroke-width="2" d="M12 8v4M12 16h.01"/>
+          </svg>
+          <span>Pas de retour en arrière possible pendant le quiz</span>
+        </div>
+        <div class="qf-condition-item">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+            <path stroke-width="2" d="M12 6v6l4 2"/>
+          </svg>
+          <span>Le chronomètre démarre dès que vous cliquez sur "Démarrer"</span>
+        </div>
+      </div>
+
+      <!-- Tentatives visuelles -->
+      <div class="qf-tentatives">
+        <span class="qf-tent-label">Tentatives :</span>
+        <div class="qf-tent-dots">
+          <span *ngFor="let t of [].constructor(qfData?.nombreTentatives || 3); let i=index"
+                class="qf-tent-dot"
+                [class.qf-tent-used]="i < (qfData?.tentativesUtilisees || 0)"
+                [class.qf-tent-avail]="i >= (qfData?.tentativesUtilisees || 0)">
+          </span>
+        </div>
+      </div>
+
+      <!-- Dernier résultat -->
+      <div *ngIf="qfData?.dernierResultat" class="qf-dernier-resultat">
+        <span class="qf-dr-label">Dernière tentative :</span>
+        <span class="qf-dr-score"
+              [style.color]="qfData.dernierResultat.reussi ? '#27ae60' : '#e74c3c'">
+          {{ qfData.dernierResultat.score }}%
+          {{ qfData.dernierResultat.reussi ? '✓ Réussi' : '✗ Échoué' }}
+        </span>
+      </div>
+
+      <!-- Acceptation -->
+      <label class="qf-accept-label">
+        <input type="checkbox" [(ngModel)]="qfConditionsAcceptees">
+        <span class="qf-accept-check" [class.qf-accept-on]="qfConditionsAcceptees">
+          <svg *ngIf="qfConditionsAcceptees" width="10" height="10" fill="none" stroke="#FFF" viewBox="0 0 24 24">
+            <path stroke-width="3" d="M5 13l4 4L19 7"/>
+          </svg>
+        </span>
+        J'ai lu et j'accepte les conditions du quiz final
+      </label>
+
+      <div class="qf-intro-actions">
+        <button class="qf-btn-annuler" (click)="fermerQuizFinal()">Annuler</button>
+        <button class="qf-btn-demarrer"
+                [disabled]="!qfConditionsAcceptees || (qfData?.tentativesRestantes || 0) <= 0"
+                (click)="demarrerQuizFinal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2.5" d="M5 3l14 9-14 9V3z"/>
+          </svg>
+          Démarrer le quiz
+        </button>
+      </div>
+    </div>
+
+    <!-- ── QUESTION ── -->
+    <div *ngIf="qfEtape==='question'" class="qf-question-screen">
+
+      <!-- Header sticky avec timer -->
+      <div class="qf-q-header">
+        <div class="qf-q-progress-bar">
+          <div class="qf-q-progress-fill"
+               [style.width]="((qfQuestionIndex+1) / (qfData?.questions?.length || 1) * 100) + '%'">
+          </div>
+        </div>
+        <div class="qf-q-header-row">
+          <span class="qf-q-counter">Question {{ qfQuestionIndex + 1 }} / {{ qfData?.questions?.length }}</span>
+          <div class="qf-timer" [class.qf-timer-urgent]="qfTempsRestant < 120">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+              <path stroke-width="1.8" d="M12 6v6l4 2"/>
+            </svg>
+            {{ formatTempsRestantQf() }}
+          </div>
+        </div>
+        <!-- Navigation rapide (dots) -->
+        <div class="qf-dots-nav">
+          <span *ngFor="let q of qfData?.questions; let i=index"
+                class="qf-dot-nav"
+                [style.background]="getQfDotColor(i)"
+                (click)="qfQuestionIndex = i"
+                [title]="'Question ' + (i+1)">
+          </span>
+        </div>
+      </div>
+
+      <!-- Corps question -->
+      <div class="qf-q-body">
+        <ng-container *ngIf="qfData?.questions?.[qfQuestionIndex] as q">
+          <p class="qf-q-texte">{{ q.texte }}</p>
+          <div class="qf-options">
+            <button *ngFor="let opt of q.options; let oi=index"
+                    class="qf-option"
+                    [class.qf-option-selected]="qfReponses[q.id] === opt.id"
+                    (click)="selectionnerReponseQf(q.id, opt.id)">
+              <span class="qf-opt-lettre">{{ ['A','B','C','D'][oi] }}</span>
+              <span class="qf-opt-texte">{{ opt.texte }}</span>
+            </button>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Navigation -->
+      <div class="qf-q-footer">
+        <button class="qf-btn-prev"
+                [disabled]="qfQuestionIndex === 0"
+                (click)="qfQuestionIndex = qfQuestionIndex - 1">
+          ← Précédent
+        </button>
+        <button *ngIf="qfQuestionIndex < (qfData?.questions?.length || 1) - 1"
+                class="qf-btn-next"
+                (click)="qfQuestionIndex = qfQuestionIndex + 1">
+          Suivant →
+        </button>
+        <button *ngIf="qfQuestionIndex === (qfData?.questions?.length || 1) - 1"
+                class="qf-btn-soumettre"
+                (click)="soumettreQuizFinal()"
+                [disabled]="qfSoumission">
+          <span *ngIf="qfSoumission" class="btn-spinner"></span>
+          {{ qfSoumission ? 'Correction...' : 'Terminer et soumettre' }}
+        </button>
+      </div>
+
+      <!-- Modal confirmation soumission -->
+      <div *ngIf="showQfConfirm" class="qf-confirm-overlay" (click)="showQfConfirm=false">
+        <div class="qf-confirm-box" (click)="$event.stopPropagation()">
+          <svg width="32" height="32" fill="none" stroke="#f39c12" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+          </svg>
+          <h3>Questions sans réponse</h3>
+          <p>Certaines questions n'ont pas de réponse. Voulez-vous quand même soumettre ?</p>
+          <div class="qf-confirm-actions">
+            <button class="qf-btn-annuler" (click)="showQfConfirm=false">Continuer le quiz</button>
+            <button class="qf-btn-soumettre" (click)="confirmerSoumission()">Soumettre quand même</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RÉSULTATS ── -->
+    <div *ngIf="qfEtape==='resultat'" class="qf-resultat">
+
+      <!-- Confettis -->
+      <div *ngIf="qfResultat?.reussi" class="qf-confetti-zone">
+        <span *ngFor="let c of qfConfetti"
+              class="qf-confetti-piece"
+              [style.left]="c.left + '%'"
+              [style.background]="c.color"
+              [style.width]="c.size + 'px'"
+              [style.height]="c.size + 'px'"
+              [style.animation-delay]="c.delay + 's'"
+              [style.animation-duration]="c.duration + 's'">
+        </span>
+      </div>
+
+      <!-- Hero résultat -->
+      <div class="qf-res-hero" [class.qf-res-reussi]="qfResultat?.reussi" [class.qf-res-echoue]="!qfResultat?.reussi">
+        <div class="qf-score-circle-wrap">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="65" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="10"/>
+            <circle cx="70" cy="70" r="65" fill="none" stroke="#FFF" stroke-width="10"
+                    stroke-linecap="round"
+                    [attr.stroke-dasharray]="408.4"
+                    [attr.stroke-dashoffset]="getQfDashOffset()"
+                    transform="rotate(-90 70 70)"
+                    style="transition: stroke-dashoffset 1s ease"/>
+          </svg>
+          <div class="qf-score-text">
+            <span class="qf-score-pct">{{ qfResultat?.score || 0 }}%</span>
+            <span class="qf-score-label">{{ qfResultat?.reussi ? '🎉 Réussi' : '😔 Échoué' }}</span>
+          </div>
+        </div>
+        <p class="qf-res-message">
+          {{ qfResultat?.reussi
+            ? 'Félicitations ! Vous avez réussi le quiz final.'
+            : 'Vous n\'avez pas atteint la note de passage de ' + (qfResultat?.notePassage || 75) + '%.' }}
+        </p>
+      </div>
+
+      <!-- Stats -->
+      <div class="qf-res-stats">
+        <div class="qf-res-stat">
+          <span class="qf-rs-val" style="color:#27ae60">{{ qfResultat?.nombreBonnesReponses }}</span>
+          <span class="qf-rs-label">Correctes</span>
+        </div>
+        <div class="qf-res-stat">
+          <span class="qf-rs-val" style="color:#e74c3c">
+            {{ (qfResultat?.nombreQuestions || 0) - (qfResultat?.nombreBonnesReponses || 0) }}
+          </span>
+          <span class="qf-rs-label">Incorrectes</span>
+        </div>
+        <div class="qf-res-stat">
+          <span class="qf-rs-val" style="color:#4A7C7E">{{ formatTempsRestantQf() }}</span>
+          <span class="qf-rs-label">Temps restant</span>
+        </div>
+        <div class="qf-res-stat">
+          <span class="qf-rs-val" style="color:#9B8B6E">{{ qfResultat?.tentativesRestantes }}</span>
+          <span class="qf-rs-label">Tentative(s) restante(s)</span>
+        </div>
+      </div>
+
+      <!-- Correction détaillée -->
+      <div class="qf-correction">
+        <h3 class="qf-correction-titre">Correction détaillée</h3>
+        <div *ngFor="let r of qfResultat?.reponses; let i=index" class="qf-correction-item"
+             [class.qf-corr-ok]="r.estCorrecte" [class.qf-corr-ko]="!r.estCorrecte">
+          <div class="qf-corr-header">
+            <span class="qf-corr-num">Q{{ i+1 }}</span>
+            <p class="qf-corr-question">{{ r.questionTexte }}</p>
+            <span class="qf-corr-badge" [class.badge-ok]="r.estCorrecte" [class.badge-ko]="!r.estCorrecte">
+              {{ r.estCorrecte ? '✓' : '✗' }}
+            </span>
+          </div>
+          <div class="qf-corr-detail">
+            <p *ngIf="r.optionChoisieTexte" class="qf-corr-votre-rep">
+              <strong>Votre réponse :</strong> {{ r.optionChoisieTexte }}
+            </p>
+            <p *ngIf="!r.estCorrecte && r.bonneReponseTexte" class="qf-corr-bonne-rep">
+              <strong>Bonne réponse :</strong> {{ r.bonneReponseTexte }}
+            </p>
+            <p *ngIf="r.explication" class="qf-corr-explication">{{ r.explication }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="qf-res-actions">
+        <!-- Bannière certificat si réussi -->
+<div class="qf-cert-section" *ngIf="qfResultat?.reussi && qfCertificat">
+  <div class="qf-cert-banner">
+    <div class="qf-cert-icon">🎓</div>
+    <div class="qf-cert-text">
+      <div class="qf-cert-title">Votre certificat est prêt !</div>
+      <div class="qf-cert-sub">{{ qfCertificat.numeroCertificat }}</div>
+    </div>
+    <button class="qf-cert-btn-dl"
+            (click)="downloadCertificatFromModal()"
+            [disabled]="qfCertDownloading">
+      <span *ngIf="!qfCertDownloading">⬇ Télécharger</span>
+      <span *ngIf="qfCertDownloading">⏳...</span>
+    </button>
+  </div>
+</div>
+        <button *ngIf="(qfResultat?.tentativesRestantes || 0) > 0 && !qfResultat?.reussi"
+                class="qf-btn-retenter"
+                (click)="retenterQuizFinal()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Retenter le quiz
+        </button>
+        <button class="qf-btn-fermer" (click)="fermerQuizFinal()">
+          Fermer
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
 </div>
