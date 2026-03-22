@@ -19,10 +19,6 @@ public class CertificatRepositoryAdapter implements CertificatRepositoryPort {
     private final CertificatJpaRepository certificatJpaRepository;
     private final ApprenantJpaRepository  apprenantJpaRepository;
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // CRUD
-    // ══════════════════════════════════════════════════════════════════════════
-
     @Override
     public Certificat save(Certificat certificat) {
         return toDomain(certificatJpaRepository.save(toEntity(certificat)));
@@ -69,19 +65,13 @@ public class CertificatRepositoryAdapter implements CertificatRepositoryPort {
         certificatJpaRepository.updateUrlPDF(id, urlPDF);
     }
 
-    /**
-     * Retrouve l'email de l'apprenant via ApprenantJpaRepository.
-     * ApprenantEntity hérite de UserEntity qui contient le champ email.
-     */
     @Override
     public Optional<String> findApprenantEmailById(Long apprenantId) {
         return apprenantJpaRepository.findById(apprenantId)
-                .map(a -> a.getEmail());   // getEmail() est dans UserEntity (parent)
+                .map(a -> a.getEmail());
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // Mapping
-    // ══════════════════════════════════════════════════════════════════════════
+    // ── Mapping ──────────────────────────────────────────────────────────────
 
     private CertificatEntity toEntity(Certificat c) {
         CertificatEntity e = new CertificatEntity();
@@ -92,6 +82,7 @@ public class CertificatRepositoryAdapter implements CertificatRepositoryPort {
         e.setContextu(c.getContextu());
         e.setUrlPDF(c.getUrlPDF());
         e.setEstEnvoye(c.getEstEnvoye() != null ? c.getEstEnvoye() : false);
+        e.setPartageLinkedIn(c.getPartageLinkedIn() != null ? c.getPartageLinkedIn() : false); // ← US-059
         e.setNumeroCertificat(c.getNumeroCertificat());
         e.setApprenantId(c.getApprenantId());
         e.setApprenantEmail(c.getApprenantEmail());
@@ -115,6 +106,7 @@ public class CertificatRepositoryAdapter implements CertificatRepositoryPort {
                 .contextu(e.getContextu())
                 .urlPDF(e.getUrlPDF())
                 .estEnvoye(e.getEstEnvoye())
+                .partageLinkedIn(e.getPartageLinkedIn()) // ← US-059
                 .numeroCertificat(e.getNumeroCertificat())
                 .apprenantId(e.getApprenantId())
                 .apprenantEmail(e.getApprenantEmail())

@@ -40,6 +40,11 @@ public class CertificatEntity {
     @Column(name = "est_envoye", nullable = false)
     private Boolean estEnvoye = false;
 
+    // ── US-059 : Partage LinkedIn ──────────────────────────
+    @Column(name = "partage_linkedin", nullable = false)
+    private Boolean partageLinkedIn = false;
+    // ──────────────────────────────────────────────────────
+
     @Column(name = "numero_certificat", unique = true, nullable = false)
     private String numeroCertificat;
 

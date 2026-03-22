@@ -1704,4 +1704,76 @@ downloadCertificatFromModal() {
       }
     });
   }
+  
+  // ══════════════════════════════════════════════════
+  // US-059 — PARTAGER CERTIFICAT SUR LINKEDIN
+  // ══════════════════════════════════════════════════
+ 
+  showLinkedInModal  = false;
+  linkedInCert: any  = null;
+  linkedInData: any  = null;   // { linkedinUrl, textePost, ... }
+  linkedInLoading    = false;
+  linkedInCopied     = false;
+ 
+  ouvrirModalLinkedIn(cert: any) {
+    this.linkedInCert    = cert;
+    this.linkedInData    = null;
+    this.linkedInLoading = true;
+    this.linkedInCopied  = false;
+    this.showLinkedInModal = true;
+    this.cdr.detectChanges();
+ 
+    this.http.post<any>(
+      `${this.api}/certificats/${cert.id}/partager-linkedin`,
+      {},
+      { headers: this.headers() }
+    ).subscribe({
+      next: data => {
+        this.linkedInData    = data;
+        this.linkedInLoading = false;
+        cert.partageLinkedIn = true;
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        this.linkedInLoading = false;
+        this.showLinkedInModal = false;
+        this.showCertToast(err.error?.message || 'Erreur LinkedIn.', 'error');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+ 
+  fermerModalLinkedIn() {
+    this.showLinkedInModal = false;
+    this.linkedInCert      = null;
+    this.linkedInData      = null;
+    this.cdr.detectChanges();
+  }
+ 
+ partagerSurLinkedIn() {
+  if (!this.linkedInData?.linkedinUrl) return;
+  // Copier automatiquement le texte au moment du clic
+  if (this.linkedInData?.textePost) {
+    navigator.clipboard.writeText(this.linkedInData.textePost);
+  }
+  window.open(this.linkedInData.linkedinUrl, '_blank', 'width=600,height=600');
+}
+ 
+  copierTexteLinkedIn() {
+    if (!this.linkedInData?.textePost) return;
+    navigator.clipboard.writeText(this.linkedInData.textePost).then(() => {
+      this.linkedInCopied = true;
+      this.cdr.detectChanges();
+      setTimeout(() => { this.linkedInCopied = false; this.cdr.detectChanges(); }, 2500);
+    });
+  }
+  partagerLinkedInFromModal() {
+    if (!this.qfCertificat) return;
+    this.fermerQuizFinal();
+    setTimeout(() => {
+      const cert = this.certificats.find((c: any) => c.id === this.qfCertificat?.id)
+                   || this.qfCertificat;
+      this.ouvrirModalLinkedIn(cert);
+    }, 300);
+  }
 }

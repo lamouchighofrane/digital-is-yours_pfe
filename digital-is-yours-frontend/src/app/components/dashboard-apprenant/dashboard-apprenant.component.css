@@ -2461,4 +2461,221 @@
   from { opacity: 0; transform: translateY(16px) scale(.95); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
+/* ══════════════════════════════════════════════════
+   US-059 — BOUTON LINKEDIN + MODAL
+══════════════════════════════════════════════════ */
+ 
+/* ── Bouton LinkedIn dans la carte certificat ── */
+.cert-btn-linkedin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex: 1;
+  background: transparent;
+  color: #0077B5;
+  border: 1.5px solid #0077B5;
+  border-radius: 8px;
+  padding: 10px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.cert-btn-linkedin:hover {
+  background: #0077B5;
+  color: #FFF;
+}
+ 
+/* ── Bouton LinkedIn dans le modal quiz ── */
+.qf-cert-btn-linkedin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0077B5;
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s;
+  white-space: nowrap;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.qf-cert-btn-linkedin:hover { background: #005f91; }
+ 
+/* ── Overlay ── */
+.li-overlay { z-index: 4000; }
+ 
+/* ── Modal LinkedIn ── */
+.li-modal {
+  background: #FFF;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 32px 80px rgba(0,119,181,.2);
+  animation: modalIn .3s cubic-bezier(.16,1,.3,1);
+}
+ 
+/* ── Header ── */
+.li-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #E8E3DB;
+  background: linear-gradient(135deg, #0077B5 0%, #005f91 100%);
+  border-radius: 24px 24px 0 0;
+}
+.li-header-left { display: flex; align-items: center; gap: 14px; }
+.li-logo-wrap {
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,.2);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,.3);
+  flex-shrink: 0;
+}
+.li-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 700; color: #FFF; margin: 0 0 2px;
+}
+.li-subtitle { font-size: 12px; color: rgba(255,255,255,.75); margin: 0; }
+.li-header .modal-close {
+  border-color: rgba(255,255,255,.4);
+  background: rgba(255,255,255,.1);
+  color: #FFF;
+}
+.li-header .modal-close:hover {
+  background: rgba(255,255,255,.25);
+}
+ 
+/* ── Loading ── */
+.li-loading {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px; padding: 50px 24px; color: #6B5F52; font-size: 13px;
+}
+.li-spinner {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid #E8E3DB; border-top-color: #0077B5;
+  animation: spin .7s linear infinite;
+}
+ 
+/* ── Body ── */
+.li-body { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+ 
+/* ── Info certificat ── */
+.li-cert-info {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #f0f8ff, #e8f4f8);
+  border: 1px solid rgba(0,119,181,.2);
+  border-radius: 14px; padding: 14px 18px;
+}
+.li-cert-badge { font-size: 28px; flex-shrink: 0; }
+.li-cert-titre { font-size: 14px; font-weight: 700; color: #1A1612; margin: 0 0 3px; }
+.li-cert-num { font-size: 11px; font-weight: 700; color: #0077B5; font-family: monospace; margin: 0; }
+.li-already-badge {
+  margin-left: auto; flex-shrink: 0;
+  background: rgba(39,174,96,.1); color: #27ae60;
+  border: 1px solid rgba(39,174,96,.25);
+  font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px;
+}
+ 
+/* ── Prévisualisation ── */
+.li-preview-zone {
+  border: 1px solid #E8E3DB; border-radius: 14px; overflow: hidden;
+}
+.li-preview-header {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px;
+  background: #F5F1EB;
+  font-size: 11px; font-weight: 600; color: #6B5F52;
+  border-bottom: 1px solid #E8E3DB;
+}
+.li-post-preview {
+  background: #FFF; padding: 16px;
+}
+.li-post-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.li-post-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, #0077B5, #005f91);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #FFF; flex-shrink: 0;
+}
+.li-post-name { font-size: 13px; font-weight: 700; color: #1A1612; margin: 0 0 2px; }
+.li-post-role { font-size: 11px; color: #6B5F52; margin: 0; }
+.li-post-text {
+  font-size: 13px; color: #1A1612; line-height: 1.6; margin: 0;
+  max-height: 150px; overflow-y: auto;
+}
+.li-post-text::-webkit-scrollbar { width: 4px; }
+.li-post-text::-webkit-scrollbar-thumb { background: #E8E3DB; border-radius: 2px; }
+ 
+/* ── Bouton copier ── */
+.li-copy-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 10px 16px; border-radius: 10px;
+  border: 1.5px solid #E8E3DB; background: #FAFAF7;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px; font-weight: 600; color: #6B5F52;
+  cursor: pointer; transition: all .2s; align-self: flex-start;
+}
+.li-copy-btn:hover { border-color: #0077B5; color: #0077B5; background: #f0f8ff; }
+ 
+/* ── Étapes ── */
+.li-steps {
+  background: #FAFAF7; border: 1px solid #E8E3DB;
+  border-radius: 12px; padding: 16px;
+}
+.li-steps-title {
+  font-size: 12px; font-weight: 700; color: #1A1612;
+  margin: 0 0 10px; text-transform: uppercase; letter-spacing: .05em;
+}
+.li-step {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 12px; color: #6B5F52; margin-bottom: 8px; line-height: 1.5;
+}
+.li-step:last-child { margin-bottom: 0; }
+.li-step-num {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  background: #0077B5; color: #FFF;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+}
+ 
+/* ── Actions ── */
+.li-actions {
+  display: flex; align-items: center; gap: 12px;
+  padding-top: 4px; border-top: 1px solid #F5F1EB;
+}
+.li-btn-cancel {
+  padding: 11px 20px; border-radius: 10px;
+  border: 1.5px solid #E8E3DB; background: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 600; color: #6B5F52;
+  cursor: pointer; transition: all .2s;
+}
+.li-btn-cancel:hover { border-color: #C8BEB2; background: #F5F1EB; }
+.li-btn-share {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 20px; border-radius: 10px;
+  border: none; background: #0077B5; color: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 4px 14px rgba(0,119,181,.3);
+}
+.li-btn-share:hover {
+  background: #005f91; transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,119,181,.4);
+}
 

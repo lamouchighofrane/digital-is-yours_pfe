@@ -14,6 +14,7 @@ public class Certificat {
     private String contextu;
     private String urlPDF;
     private Boolean estEnvoye;
+    private Boolean partageLinkedIn;   // ← US-059
     private String numeroCertificat;
 
     // Apprenant
