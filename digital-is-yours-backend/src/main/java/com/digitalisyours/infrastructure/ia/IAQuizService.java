@@ -91,7 +91,7 @@ public class IAQuizService {
             int seed = new java.util.Random().nextInt(100000);
 
             // Groq tronque au-delà de ~20 questions — limiter pour éviter JSON cassé
-            int nbQEffectif = Math.min(nbQuestions, 20);
+            int nbQEffectif = Math.min(nbQuestions + 4, 20);
             if (nbQEffectif < nbQuestions) {
                 log.info("nbQuestions limité à {} (demandé: {}) pour éviter troncature Groq", nbQEffectif, nbQuestions);
             }
@@ -176,6 +176,11 @@ public class IAQuizService {
                     opt.setOrdre(lettres[i]);
                     opt.setEstCorrecte(opt.getTexte().equals(bonneReponseTexte));
                 }
+            }
+
+            // ── Limiter au nombre exact demandé ──
+            if (questions.size() > nbQuestions) {
+                questions = new ArrayList<>(questions.subList(0, nbQuestions));
             }
 
             log.info("Génération IA Groq réussie : {} questions (thèmes exclus : {})",
@@ -264,6 +269,10 @@ public class IAQuizService {
                 sb.append("- Les 3 mauvaises réponses sont clairement fausses\n");
                 sb.append("- INTERDIT de reformuler une question déjà posée — même en changeant juste les mots\n");
                 sb.append("- Exemples d'angles NOUVEAUX : définitions secondaires, exemples concrets, utilisation basique\n");
+                sb.append("- RÈGLE ANTI-DOUBLON : chaque question doit avoir un sujet UNIQUE et PRÉCIS.\n");
+                sb.append("- INTERDIT d'utiliser un titre générique sans préciser le sujet exact.\n");
+                sb.append("- Exemple INTERDIT : 'Qu'est-ce que ce cours ?'\n");
+                sb.append("- Exemple CORRECT  : 'Qu'est-ce que la méthode GTD dans le contexte de la productivité ?'\n");
             }
             case "MOYEN" -> {
                 sb.append("\n==== NIVEAU : MOYEN ====\n");
@@ -272,17 +281,30 @@ public class IAQuizService {
                 sb.append("- INTERDIT de reformuler une question déjà posée\n");
                 sb.append("- Angles NOUVEAUX obligatoires : comparaisons, 'pourquoi', 'dans quel cas', différences entre concepts\n");
                 sb.append("- Exemples : 'Quelle est la différence entre X et Y ?', 'Dans quel cas utilise-t-on X ?'\n");
+                sb.append("- RÈGLE ANTI-DOUBLON : chaque question doit mentionner un concept SPÉCIFIQUE du contenu.\n");
+                sb.append("- INTERDIT de poser deux questions sur le même concept même avec des formulations différentes.\n");
+                sb.append("- Exemple INTERDIT : 'Pourquoi X est-il important ?' ET 'Quel est le rôle de X ?' — même concept.\n");
+                sb.append("- Exemple CORRECT  : une question sur X, une autre sur Y, une autre sur Z — concepts différents.\n");
             }
             case "DIFFICILE" -> {
                 sb.append("\n==== NIVEAU : DIFFICILE ====\n");
                 sb.append("- Questions sur des NUANCES PRÉCISES, CHIFFRES EXACTS, EXCEPTIONS, CAS LIMITES\n");
                 sb.append("- Les 3 mauvaises réponses sont très proches de la bonne\n");
-                sb.append("- OBLIGATOIRE : au moins 2 questions 'Laquelle de ces affirmations est FAUSSE ?'\n");
+                sb.append("- OBLIGATOIRE : au moins 2 questions de type négatif comme :\n");
+                sb.append("  'Laquelle de ces affirmations sur [SUJET PRÉCIS] est FAUSSE ?'\n");
+                sb.append("  'Lequel de ces éléments NE fait PAS partie de [CONCEPT PRÉCIS] ?'\n");
+                sb.append("  'Lequel de ces outils NE permet PAS de [ACTION PRÉCISE] ?'\n");
+                sb.append("  → Le [SUJET PRÉCIS] doit être DIFFÉRENT pour chaque question négative.\n");
+                sb.append("- INTERDIT : deux questions négatives avec le même sujet ou la même formulation.\n");
                 sb.append("- INTERDIT de reformuler une question déjà posée\n");
                 sb.append("- Angles NOUVEAUX : combinaisons de concepts, ordres de priorité, valeurs numériques précises,\n");
                 sb.append("  scénarios d'erreur, interactions entre fonctionnalités, edge cases\n");
                 sb.append("- Exemples : 'Lequel de ces outils NE permet PAS de...', 'Dans quel ordre précis...', \n");
                 sb.append("  'Que se passe-t-il si simultanément X et Y ?'\n");
+                sb.append("- RÈGLE ANTI-DOUBLON ABSOLUE : chaque question doit avoir un sujet UNIQUE et PRÉCIS.\n");
+                sb.append("- INTERDIT d'utiliser le mot générique 'affirmation' sans préciser le sujet exact.\n");
+                sb.append("- Exemple INTERDIT : 'Laquelle de ces affirmations est FAUSSE ?'\n");
+                sb.append("- Exemple CORRECT  : 'Laquelle de ces affirmations sur la règle des 2 minutes est FAUSSE ?'\n");
             }
             default -> sb.append("Niveau de difficulté standard.\n");
         }
@@ -301,6 +323,10 @@ public class IAQuizService {
         // ── Seed pour la variété ──────────────────────────────
         sb.append("SEED #").append(seed).append(" — Explore un angle INÉDIT du contenu. ");
         sb.append("Les questions doivent être SUBSTANTIELLEMENT différentes de tout quiz précédent.\n\n");
+
+        // ── Anti-doublon statistiques ─────────────────────────
+        sb.append("INTERDIT : deux questions qui testent le même chiffre ou la même statistique.\n");
+        sb.append("Chaque donnée numérique (pourcentage, durée, nombre) ne doit apparaître que dans UNE seule question.\n\n");
 
         // ── Format de réponse ─────────────────────────────────
         sb.append("FORMAT DE RÉPONSE : tableau JSON pur, sans markdown, sans texte avant/après.\n");

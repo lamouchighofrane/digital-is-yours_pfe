@@ -43,6 +43,8 @@ public class InscriptionController {
                         m.put("progression",     i.getProgression()           != null ? i.getProgression()          : 0);
                         m.put("statutPaiement",  i.getStatutPaiement()        != null ? i.getStatutPaiement()       : "");
                         m.put("dateInscription", i.getDateInscription()       != null ? i.getDateInscription().toString() : "");
+                        m.put("statutApprenant",
+                                i.getStatutApprenant() != null ? i.getStatutApprenant() : "A_FAIRE");
                         return m;
                     })
                     .toList();

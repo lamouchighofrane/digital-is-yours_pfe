@@ -85,6 +85,8 @@ public class DocumentRepositoryAdapter implements DocumentRepositoryPort {
         documentJpaRepository.deleteById(docId);
     }
 
+
+
     @Override
     @Transactional(readOnly = true)
     public boolean isFormateurOfFormation(Long formationId, String email) {

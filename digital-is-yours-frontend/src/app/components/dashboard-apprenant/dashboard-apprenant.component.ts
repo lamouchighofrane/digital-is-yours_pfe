@@ -155,7 +155,7 @@ documentsError = '';
     expiration:  '',
     cvv:         ''
   };
-  
+
 
   // ──────────────────────────────────────────────────────
 
@@ -180,9 +180,9 @@ documentsError = '';
   private route: ActivatedRoute,   // ← ajouter
   private http: HttpClient,
   private cdr: ChangeDetectorRef,
-  private sanitizer: DomSanitizer 
-  
-  
+  private sanitizer: DomSanitizer
+
+
 ) {}
 
   // ══════════════════════════════════════════════════════
@@ -197,17 +197,17 @@ documentsError = '';
   this.loadDashboardData();
   this.loadNotifications();
   this.pollingInterval = setInterval(() => this.pollNotifCount(), 30000);
-  
+
   const tab = this.route.snapshot.queryParamMap.get('tab');
   if (tab === 'mes-formations') {
     this.setSection('formations');
   }
-  
+
   const section = this.route.snapshot.queryParamMap.get('section');
   if (section === 'calendrier') {
     this.setSection('calendrier');
   }
-  
+
   // ← NOUVEAU BLOC :
   const formationId = this.route.snapshot.queryParamMap.get('formationId');
   if (formationId) {
@@ -267,10 +267,10 @@ voirCours(formation: any) {
   this.coursActiveTab    = 'cours';
   this.cours             = [];
   this.coursError        = '';
-  
+
   console.log('formation sélectionnée:', formation); // ← DEBUG temporaire
   console.log('formationId:', formation.formationId, 'id:', formation.id);
-  
+
   this.loadCours();
   this.closeNotifPanel();
 }
@@ -530,28 +530,28 @@ retourFormations() {
   }
  loadCours() {
   if (!this.selectedFormation) return;
-  
+
   // formationId d'abord (ID de la formation), sinon id (ID inscription)
   const fid = this.selectedFormation.formationId || this.selectedFormation.id;
-  
+
   this.coursLoading = true;
   this.coursError   = '';
   this.http.get<any>(`${this.api}/formations/${fid}/cours`, { headers: this.headers() })
     .subscribe({
-      next: res => { 
+      next: res => {
         this.cours = res.cours || [];
         // ← Récupérer les infos du quiz final
         if (res.quiz) {
          this.quizNotePassage = res.quiz.notePassage ?? null;
           this.quizExiste      = res.quiz.existe || false;
         }
-        this.coursLoading = false; 
-        this.cdr.detectChanges(); 
+        this.coursLoading = false;
+        this.cdr.detectChanges();
       },
-      error: err => { 
-        this.coursError = err.error?.message || 'Impossible de charger les cours.'; 
-        this.coursLoading = false; 
-        this.cdr.detectChanges(); 
+      error: err => {
+        this.coursError = err.error?.message || 'Impossible de charger les cours.';
+        this.coursLoading = false;
+        this.cdr.detectChanges();
       }
     });
 }
@@ -579,9 +579,9 @@ continuerFormation() {
 ouvrirCours(c: any, i: number) {
   const statut = this.getCoursStatut(c, i);
   if (statut === 'verrouille') return;
-  
+
   const fid = this.selectedFormation?.formationId || this.selectedFormation?.id;
-  
+
   this.router.navigate(
     ['/apprenant/cours', fid, c.id],
     { queryParams: { titre: this.selectedFormation?.titre } }
@@ -1354,6 +1354,7 @@ loadProgressionData() {
           documentsOuverts: prog?.documentsOuverts  || 0,
           quizPasses:       prog?.quizPasses        || 0,
           statut:           pct >= 100 ? 'TERMINE' : pct > 0 ? 'EN_COURS' : 'A_FAIRE',
+          statutApprenant: f.statutApprenant || 'A_FAIRE',
           detailCours:      prog?.detailCours       || []
         };
       });
@@ -1381,6 +1382,39 @@ loadProgressionData() {
     if (statut === 'EN_COURS') return 'En cours';
     return 'À faire';
   }
+  getStatutApprenantLabel(statut: string): string {
+  const m: any = {
+    'A_FAIRE':  'À faire',
+    'EN_COURS': 'En cours',
+    'TERMINE':  'Terminé',
+    'CERTIFIE': 'Certifié 🏆'
+  };
+  return m[statut] || 'À faire';
+}
+
+getStatutApprenantColor(statut: string): string {
+  return '#FFFFFF';  // ← blanc pour tous pour meilleure lisibilité
+}
+
+getStatutApprenantBg(statut: string): string {
+  const m: any = {
+    'A_FAIRE':  'rgba(155,139,110,.85)',  // ← plus opaque
+    'EN_COURS': 'rgba(243,156,18,.85)',
+    'TERMINE':  'rgba(74,124,126,.85)',
+    'CERTIFIE': 'rgba(39,174,96,.85)'
+  };
+  return m[statut] || 'rgba(155,139,110,.85)';
+}
+
+getStatutApprenantIcon(statut: string): string {
+  const m: any = {
+    'A_FAIRE':  '○',
+    'EN_COURS': '▶',
+    'TERMINE':  '✓',
+    'CERTIFIE': '🏆'
+  };
+  return m[statut] || '○';
+}
   // ══════════════════════════════════════════════════════
 // US-033 — QUIZ FINAL APPRENANT
 // ══════════════════════════════════════════════════════
@@ -1472,8 +1506,8 @@ confirmerSoumission() {
   this.qfSoumission  = true;
   this.cdr.detectChanges();
 
-  const fid = this.qfData?.formationId 
-              || this.selectedFormation?.formationId 
+  const fid = this.qfData?.formationId
+              || this.selectedFormation?.formationId
               || this.selectedFormation?.id;
   const tempsPasse = this.qfTempsTotal - this.qfTempsRestant;
 
@@ -1695,10 +1729,10 @@ downloadCertificatFromModal() {
       {},
       { headers: this.headers() }
     ).subscribe({
-     next: () => { 
-  cert._sending = false; 
+     next: () => {
+  cert._sending = false;
   cert.estEnvoye = true;
-  this.showCertToast(`Certificat renvoyé à ${this.apprenantUser?.email} ! Vérifiez votre boîte mail. 🎓`); 
+  this.showCertToast(`Certificat renvoyé à ${this.apprenantUser?.email} ! Vérifiez votre boîte mail. 🎓`);
 },
       error: err => {
         cert._sending = false;
@@ -1708,17 +1742,17 @@ downloadCertificatFromModal() {
       }
     });
   }
-  
+
   // ══════════════════════════════════════════════════
   // US-059 — PARTAGER CERTIFICAT SUR LINKEDIN
   // ══════════════════════════════════════════════════
- 
+
   showLinkedInModal  = false;
   linkedInCert: any  = null;
   linkedInData: any  = null;   // { linkedinUrl, textePost, ... }
   linkedInLoading    = false;
   linkedInCopied     = false;
- 
+
  ouvrirModalLinkedIn(cert: any) {
     this.linkedInCert      = cert;
     this.linkedInData      = null;
@@ -1728,7 +1762,7 @@ downloadCertificatFromModal() {
     this.linkedInQrLoading = true;
     this.showLinkedInModal = true;
     this.cdr.detectChanges();
- 
+
     // 1. Préparer le texte du post (appel backend)
     this.http.post<any>(
       `${this.api}/certificats/${cert.id}/partager-linkedin`,
@@ -1739,7 +1773,7 @@ downloadCertificatFromModal() {
         this.linkedInData    = data;
         this.linkedInLoading = false;
         cert.partageLinkedIn = true;
- 
+
         // 2. Charger le QR code en parallèle
         this.loadQrCode(cert.id);
         this.cdr.detectChanges();
@@ -1770,26 +1804,26 @@ downloadCertificatFromModal() {
       this.cdr.detectChanges();
     });
   }
- 
+
   fermerModalLinkedIn() {
     this.showLinkedInModal = false;
     this.linkedInCert      = null;
     this.linkedInData      = null;
     this.cdr.detectChanges();
   }
- 
+
  partagerSurLinkedIn() {
     if (!this.linkedInData?.linkedinUrl) return;
- 
+
     // 1. Copie automatique du texte
     if (this.linkedInData?.textePost) {
       navigator.clipboard.writeText(this.linkedInData.textePost).catch(() => {});
     }
- 
+
     // 2. Animation envol (600ms) PUIS ouverture LinkedIn
     this.linkedInAnimating = true;
     this.cdr.detectChanges();
- 
+
     setTimeout(() => {
       this.linkedInAnimating = false;
       this.cdr.detectChanges();
@@ -1816,7 +1850,7 @@ downloadCertificatFromModal() {
   const url = `https://www.linkedin.com/profile/add?${params.toString()}`;
   window.open(url, '_blank', 'width=650,height=650');
 }
- 
+
   copierTexteLinkedIn() {
     if (!this.linkedInData?.textePost) return;
     navigator.clipboard.writeText(this.linkedInData.textePost).then(() => {

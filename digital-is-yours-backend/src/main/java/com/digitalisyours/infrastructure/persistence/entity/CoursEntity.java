@@ -63,6 +63,16 @@ public class CoursEntity {
 
     @Column(name = "date_modification")
     private LocalDateTime dateModification;
+    // ── AJOUT 1 : Relation Documents avec CASCADE ──
+    @OneToMany(mappedBy = "cours", cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private java.util.List<DocumentEntity> documents = new java.util.ArrayList<>();
+
+    // ── AJOUT 2 : Relation MiniQuiz avec CASCADE ──
+    @OneToOne(mappedBy = "cours", cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.LAZY)
+    private QuizEntity miniQuiz;
 
     @PrePersist
     public void prePersist() {

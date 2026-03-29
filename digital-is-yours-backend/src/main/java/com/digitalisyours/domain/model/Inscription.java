@@ -38,4 +38,7 @@ public class Inscription {
     private String referencePaiement;
     private Double montantPaye;
     private LocalDateTime datePaiement;
+    // Statut Apprenant : A_FAIRE | EN_COURS | TERMINE | CERTIFIE
+    private String statutApprenant;
+
 }

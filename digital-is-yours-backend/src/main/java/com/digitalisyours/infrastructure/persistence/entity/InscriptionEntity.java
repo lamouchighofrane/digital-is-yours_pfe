@@ -65,9 +65,15 @@ public class InscriptionEntity {
     @Column(name = "date_paiement")
     private LocalDateTime datePaiement;
 
+    // ── Statut Apprenant ──
+    @Column(name = "statut_apprenant", length = 20)
+    @Builder.Default
+    private String statutApprenant = "A_FAIRE";
+
     @PrePersist
     public void prePersist() {
         if (dateInscription == null) dateInscription = LocalDateTime.now();
         if (statutPaiement  == null) statutPaiement  = "EN_ATTENTE";
+        if (statutApprenant == null) statutApprenant = "A_FAIRE"; // ← AJOUTER ICI
     }
 }

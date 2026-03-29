@@ -85,6 +85,7 @@ public class InscriptionRepositoryAdapter implements InscriptionRepositoryPort {
                 .existsByApprenantEmailAndFormationIdAndStatutPaiement(email, formationId, statut);
     }
 
+
     // ── Mapping ───────────────────────────────────────────────────────
 
     private Inscription toDomain(InscriptionEntity e) {
@@ -100,6 +101,7 @@ public class InscriptionRepositoryAdapter implements InscriptionRepositoryPort {
                 .referencePaiement(e.getReferencePaiement())
                 .montantPaye(e.getMontantPaye())
                 .datePaiement(e.getDatePaiement())
+                .statutApprenant(e.getStatutApprenant())
                 .build();
 
         try {

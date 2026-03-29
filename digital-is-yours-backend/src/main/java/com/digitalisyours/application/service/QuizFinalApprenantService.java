@@ -3,6 +3,7 @@ import com.digitalisyours.domain.model.*;
 import com.digitalisyours.domain.port.in.CertificatUseCase;
 import com.digitalisyours.domain.port.in.QuizFinalApprenantUseCase;
 import com.digitalisyours.domain.port.out.QuizFinalApprenantRepositoryPort;
+import com.digitalisyours.infrastructure.persistence.repository.InscriptionJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
     private final QuizFinalApprenantRepositoryPort repositoryPort;
     private final CertificatUseCase               certificatUseCase;
     private final CertificatEmailService           certificatEmailService; // ← NOUVEAU
+    private final InscriptionJpaRepository inscriptionJpaRepository;
 
     // ══════════════════════════════════════════════════════
     // RÉCUPÉRER LES INFOS DU QUIZ FINAL (sans bonnes réponses)
@@ -174,6 +176,15 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
                 );
                 log.info("Certificat généré : apprenant={} formation={}",
                         soumission.getEmail(), soumission.getFormationId());
+                // ← NOUVEAU : mettre à jour le statut → CERTIFIE
+                inscriptionJpaRepository.updateStatutApprenant(
+                        apprenantId,
+                        soumission.getFormationId(),
+                        "CERTIFIE"
+                );
+                log.info("Statut apprenant mis à CERTIFIE : apprenantId={} formationId={}",
+                        apprenantId, soumission.getFormationId());
+
 
                 // ── Envoi email automatique ──────────────────────────────────
                 if (cert != null) {

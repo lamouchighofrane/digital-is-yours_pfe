@@ -1,8 +1,10 @@
 package com.digitalisyours.application.service;
 
 import com.digitalisyours.domain.model.Cours;
+import com.digitalisyours.domain.model.Document;
 import com.digitalisyours.domain.port.in.CoursFormateurUseCase;
 import com.digitalisyours.domain.port.out.CoursRepositoryPort;
+import com.digitalisyours.domain.port.out.DocumentRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -107,6 +109,9 @@ public class CoursFormateurService implements CoursFormateurUseCase {
         if ("LOCAL".equals(cours.getVideoType()) && cours.getVideoUrl() != null) {
             supprimerFichierPhysique(coursId, cours.getVideoUrl());
         }
+
+        // ★ AJOUT : Supprimer les fichiers physiques des documents
+        supprimerDossierDocuments(coursId);
 
         coursRepository.deleteById(coursId);
     }
@@ -225,6 +230,25 @@ public class CoursFormateurService implements CoursFormateurUseCase {
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             log.warn("Impossible de supprimer le fichier vidéo {}: {}", nomFichier, e.getMessage());
+        }
+    }
+    // ★ AJOUT : Supprimer tous les fichiers physiques des documents d'un cours
+    private void supprimerDossierDocuments(Long coursId) {
+        try {
+            Path docDir = Paths.get(uploadDir, "documents", coursId.toString());
+            if (Files.exists(docDir)) {
+                Files.walk(docDir)
+                        .sorted(java.util.Comparator.reverseOrder())
+                        .forEach(path -> {
+                            try { Files.deleteIfExists(path); }
+                            catch (IOException e) {
+                                log.warn("Impossible de supprimer le fichier : {}", path);
+                            }
+                        });
+                log.info("Dossier documents supprimé pour le cours {}", coursId);
+            }
+        } catch (IOException e) {
+            log.warn("Erreur suppression dossier documents cours {}: {}", coursId, e.getMessage());
         }
     }
 

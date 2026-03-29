@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,6 +28,7 @@ public class TerminerCoursController {
     private final CoursJpaRepository            coursRepository;
     private final ApprenantJpaRepository        apprenantRepository;
     private final JwtUtil                       jwtUtil;
+    private final ConsulterCoursFormationJpaRepository consulterCoursRepository;
 
     // ══════════════════════════════════════════════════════
     // 1. POST /marquer-video-vue
@@ -49,6 +51,10 @@ public class TerminerCoursController {
             p.recalculerStatut();
             progressionRepository.save(p);
             log.info("Vidéo du cours {} marquée comme vue par {}", coursId, email);
+            mettreAJourStatutApprenant(email, formationId); // ← AJOUTER ICI
+            if ("TERMINE".equals(p.getStatut())) {
+                mettreAJourInscriptionProgression(email, formationId);
+            }
         }
 
         return ResponseEntity.ok(Map.of(
@@ -80,6 +86,10 @@ public class TerminerCoursController {
             p.recalculerStatut();
             progressionRepository.save(p);
             log.info("Document du cours {} ouvert par {}", coursId, email);
+            mettreAJourStatutApprenant(email, formationId); // ← AJOUTER ICI
+            if ("TERMINE".equals(p.getStatut())) {
+                mettreAJourInscriptionProgression(email, formationId);
+            }
         }
 
         return ResponseEntity.ok(Map.of(
@@ -111,6 +121,10 @@ public class TerminerCoursController {
             p.recalculerStatut();
             progressionRepository.save(p);
             log.info("Quiz du cours {} passé par {}", coursId, email);
+            mettreAJourStatutApprenant(email, formationId); // ← AJOUTER ICI
+            if ("TERMINE".equals(p.getStatut())) {
+                mettreAJourInscriptionProgression(email, formationId);
+            }
         }
 
         return ResponseEntity.ok(Map.of(
@@ -119,6 +133,40 @@ public class TerminerCoursController {
                 "quizPasse",      p.isQuizPasse(),
                 "statut",         p.getStatut()
         ));
+    }
+
+    private void mettreAJourInscriptionProgression(String email, Long formationId) {
+        apprenantRepository.findByEmail(email).ifPresent(apprenant -> {
+
+            long coursTotal = coursRepository
+                    .countPubliesByFormationId(formationId);
+
+            List<Long> terminesIds = progressionRepository
+                    .findCoursTerminesIds(email, formationId);
+
+            inscriptionRepository.updateCoursProgression(
+                    apprenant.getId(),
+                    formationId,
+                    terminesIds.size(),
+                    (int) coursTotal
+            );
+        });
+    }
+    private void mettreAJourStatutApprenant(String email, Long formationId) {
+        try {
+            int total    = consulterCoursRepository
+                    .findCoursPubiesByFormationId(formationId).size();
+            int termines = progressionRepository.countCoursTermines(email, formationId);
+            String nouveauStatut = (total > 0 && termines >= total)
+                    ? "TERMINE" : "EN_COURS";
+            inscriptionRepository.updateStatutApprenantByEmail(
+                    email, formationId, nouveauStatut);
+            log.info("Statut apprenant mis à {} : email={} formationId={}",
+                    nouveauStatut, email, formationId);
+        } catch (Exception e) {
+            log.warn("Impossible de mettre à jour le statut apprenant : {}",
+                    e.getMessage());
+        }
     }
 
     // ══════════════════════════════════════════════════════
