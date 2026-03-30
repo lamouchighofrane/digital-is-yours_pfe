@@ -2188,7 +2188,7 @@
   background: rgba(30,20,10,.45);
   backdrop-filter: blur(3px);
   display: flex; align-items: center; justify-content: center;
-  z-index: 9000; padding: 20px; animation: mq-backdrop-in .15s ease;
+  z-index: 999999; padding: 20px; animation: mq-backdrop-in .15s ease;
 }
 @keyframes mq-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 
@@ -2539,7 +2539,7 @@
   box-shadow: 0 3px 10px rgba(79,70,229,.28);
 }
 .btn-quiz-final:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(79,70,229,.38); }
- 
+
 /* ── Section Quiz Final dans la page cours ── */
 .qf-section {
   background: #FFF;
@@ -2549,7 +2549,7 @@
   box-shadow: 0 2px 12px rgba(26,22,18,.06);
   margin-bottom: 24px;
 }
- 
+
 /* ── Hero Quiz Final ── */
 .qf-hero {
   position: relative;
@@ -2645,7 +2645,7 @@
   color: #FFF;
   font-weight: 700;
 }
- 
+
 /* ── Bouton principal générer ── */
 .qf-btn-generate {
   display: flex;
@@ -2666,7 +2666,7 @@
 }
 .qf-btn-generate:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(124,58,237,.5); }
 .qf-btn-generate:disabled { opacity: .6; cursor: not-allowed; transform: none; }
- 
+
 /* ── Contexte stats bar ── */
 .qf-context-bar {
   display: flex;
@@ -2709,10 +2709,10 @@
   justify-content: center;
   margin-bottom: 4px;
 }
- 
+
 /* ── Section quiz existant ── */
 .qf-quiz-content { padding: 24px 28px; }
- 
+
 .qf-quiz-header {
   display: flex;
   align-items: flex-start;
@@ -2770,7 +2770,7 @@
   font-weight: 600;
   color: #6B5F52;
 }
- 
+
 .qf-header-actions {
   display: flex;
   align-items: center;
@@ -2810,7 +2810,7 @@
   transition: all .2s;
 }
 .qf-btn-del:hover { background: rgba(231,76,60,.1); border-color: #e74c3c; }
- 
+
 /* ── Barre de progression du quiz ── */
 .qf-progress-strip {
   background: #FAFAF7;
@@ -2844,7 +2844,7 @@
   color: #7c3aed;
   white-space: nowrap;
 }
- 
+
 /* ── Diff tabs rapide ── */
 .qf-diff-tabs {
   display: flex;
@@ -2865,7 +2865,7 @@
 }
 .qf-diff-btn:hover { border-color: #7c3aed; color: #7c3aed; background: #f5f0ff; }
 .qf-diff-active { border-color: #7c3aed !important; background: rgba(124,58,237,.1) !important; color: #5b21b6 !important; font-weight: 700 !important; }
- 
+
 /* ── Liste questions ── */
 .qf-questions-list { display: flex; flex-direction: column; gap: 12px; }
 .qf-question-card {
@@ -2925,7 +2925,7 @@
   border: 1px solid rgba(124,58,237,.15);
   border-radius: 10px; font-size: 12px; color: #5b21b6; line-height: 1.5;
 }
- 
+
 /* ── Zone édition inline quiz final ── */
 .qf-edit-zone {
   padding: 16px;
@@ -3016,7 +3016,7 @@
   font-size: 12px; font-weight: 500;
   border: 1px solid rgba(139,58,58,.2);
 }
- 
+
 /* ── Footer info ── */
 .qf-footer-info {
   display: flex; align-items: center; gap: 12px;
@@ -3034,7 +3034,7 @@
   box-shadow: 0 4px 12px rgba(124,58,237,.28);
 }
 .qf-footer-regen:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(124,58,237,.38); }
- 
+
 /* ── Badge Quiz Final dans liste formations ── */
 .fc-qf-badge {
   display: inline-flex; align-items: center; gap: 4px;
@@ -3042,7 +3042,7 @@
   background: rgba(124,58,237,.12); color: #5b21b6;
   border: 1px solid rgba(124,58,237,.25);
 }
- 
+
 /* ── Modal génération Quiz Final ── */
 .qf-gen-backdrop {
   position: fixed; inset: 0;
@@ -3067,7 +3067,7 @@
 }
 .qf-gen-sheet::-webkit-scrollbar { width: 4px; }
 .qf-gen-sheet::-webkit-scrollbar-thumb { background: #E8E3DB; border-radius: 2px; }
- 
+
 /* Header modal */
 .qf-gen-header {
   padding: 0;
@@ -3121,7 +3121,7 @@
   border-radius: 20px; padding: 4px 12px;
   font-size: 11px; font-weight: 600; color: rgba(255,255,255,.85);
 }
- 
+
 /* Progress bar modal */
 .qf-gen-progress-wrap {
   padding: 16px 28px;
@@ -3152,7 +3152,7 @@
 }
 .qf-gen-dots-white span:nth-child(2) { animation-delay: .2s; }
 .qf-gen-dots-white span:nth-child(3) { animation-delay: .4s; }
- 
+
 /* Body modal */
 .qf-gen-body { padding: 24px 28px; }
 .qf-gen-section-title {
@@ -3161,7 +3161,7 @@
   display: flex; align-items: center; gap: 8px;
   margin-bottom: 14px;
 }
- 
+
 /* Aperçu cours analysés */
 .qf-cours-list {
   background: #FAFAF7; border: 1px solid #E8E3DB;
@@ -3185,7 +3185,7 @@
 }
 .qf-cours-title { flex: 1; font-size: 13px; color: #1A1612; font-weight: 500; }
 .qf-cours-duree { font-size: 11px; color: #9B8B6E; flex-shrink: 0; }
- 
+
 /* Paramètres */
 .qf-gen-param { margin-bottom: 20px; }
 .qf-gen-param-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -3221,7 +3221,7 @@
 .qf-gen-diff-active.qf-diff-facile   { border-color: #86efac !important; background: #f0fdf4 !important; color: #15803d !important; }
 .qf-gen-diff-active.qf-diff-moyen    { border-color: #fcd34d !important; background: #fffbeb !important; color: #d97706 !important; }
 .qf-gen-diff-active.qf-diff-difficile{ border-color: #f9a8d4 !important; background: #fdf2f8 !important; color: #be185d !important; }
- 
+
 /* Chrono */
 .qf-gen-timer-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 6px; }
 .qf-timer-preset {
@@ -3234,7 +3234,7 @@
 .qf-timer-preset-active { border-color: #4f46e5 !important; background: rgba(79,70,229,.1) !important; }
 .qf-timer-val { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: #4f46e5; line-height: 1; }
 .qf-timer-label { font-size: 10px; color: #6B5F52; font-weight: 500; }
- 
+
 /* Checkboxes */
 .qf-gen-checkbox {
   display: flex; align-items: center; gap: 10px;
@@ -3250,7 +3250,7 @@
   transition: all .15s;
 }
 .qf-gen-cb-checked { background: #7c3aed !important; border-color: #7c3aed !important; color: #FFF; }
- 
+
 /* Estimation */
 .qf-gen-estimate {
   display: flex; align-items: center; gap: 10px;
@@ -3266,7 +3266,7 @@
 .qf-gen-est-label { font-size: 11px; color: #9B8B6E; margin: 0 0 2px; }
 .qf-gen-est-val { font-size: 14px; font-weight: 700; color: #1A1612; margin: 0; }
 .qf-gen-est-val span { color: #7c3aed; }
- 
+
 /* Footer modal */
 .qf-gen-footer {
   display: flex; gap: 10px;
@@ -3292,7 +3292,7 @@
 }
 .qf-gen-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(124,58,237,.45); }
 .qf-gen-submit:disabled { opacity: .65; cursor: not-allowed; transform: none; }
- 
+
 /* ── Modal suppression question quiz final ── */
 .qf-del-modal {
   background: #FFF; border-radius: 18px;
@@ -3385,7 +3385,7 @@
   border: 1px solid rgba(139,58,58,.2); border-radius: 10px;
   font-size: 12px; color: #8B3A3A; font-weight: 500; flex-shrink: 0;
 }
- 
+
 /* ── Section Quiz Final vide (liste formation) ── */
 .qf-empty {
   display: flex; flex-direction: column; align-items: center; gap: 14px;
@@ -3393,7 +3393,7 @@
 }
 .qf-empty-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: #1A1612; margin: 0; }
 .qf-empty-sub { font-size: 13px; color: #6B5F52; margin: 0; max-width: 360px; line-height: 1.6; }
- 
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .qf-hero-content { flex-direction: column; }
