@@ -67,6 +67,18 @@
   </span>
   <span class="sb-item-label">Quiz Final IA</span>
 </button>
+<button class="sb-item" [class.sb-active]="activeSection==='forum'" (click)="setSection('forum')">
+  <span class="sb-item-icon">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="1.6" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+    </svg>
+  </span>
+  <span class="sb-item-label">Forum</span>
+  <span *ngIf="forumStats.questionsNonRepondues > 0" class="sb-count-badge"
+        style="background:#f39c12">
+    {{ forumStats.questionsNonRepondues }}
+  </span>
+</button>
     </nav>
 
     <button class="sb-logout" (click)="logout()">
@@ -88,11 +100,11 @@
           <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
           </svg>
-         <span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? selectedFormation.titre : 'Mes cours') : activeSection==='quiz-final' ? (selectedFormation ? selectedFormation.titre : 'Quiz Final IA') : 'Mon profil' }}</span>
+<span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? selectedFormation.titre : 'Mes cours') : activeSection==='quiz-final' ? (selectedFormation ? selectedFormation.titre : 'Quiz Final IA') : activeSection==='forum' ? (forumModalMode==='detail' && forumQuestionDetail ? forumQuestionDetail.titre : 'Forum') : 'Mon profil' }}</span>
         </p>
-        <h1 class="topbar-title">
-          {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? 'Gestion des cours' : 'Mes cours') : activeSection==='quiz-final' ? 'Quiz Final IA' : 'Mon profil' }}
-        </h1>
+       <h1 class="topbar-title">
+  {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? 'Gestion des cours' : 'Mes cours') : activeSection==='quiz-final' ? 'Quiz Final IA' : activeSection==='forum' ? 'Forum de discussion' : 'Mon profil' }}
+</h1>
         <p *ngIf="activeSection==='mes-formations'" class="section-subtitle">{{ formations.length }} formation(s) affectée(s)</p>
         <p *ngIf="activeSection==='cours' && selectedFormation" class="section-subtitle">{{ selectedFormation.titre }}</p>
         <p *ngIf="activeSection==='cours' && !selectedFormation" class="section-subtitle">Sélectionnez une formation pour gérer ses cours</p>
@@ -134,6 +146,10 @@
                 <div class="notif-icon" [style.background]="getNotifBg(notif.type)" [style.color]="getNotifColor(notif.type)">
                   <svg *ngIf="notif.type==='FORMATION_AFFECTEE'" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                   <svg *ngIf="notif.type==='FORMATION_RETIREE'" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M6 18L18 6M6 6l12 12"/></svg>
+                  <svg *ngIf="notif.type==='NOUVELLE_QUESTION_FORUM'" width="15" height="15"
+     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+</svg>
                   <svg *ngIf="notif.type!=='FORMATION_AFFECTEE'&&notif.type!=='FORMATION_RETIREE'" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
                 <div class="notif-content">
@@ -1052,6 +1068,437 @@
     </div>
   </div>
 </div>
+<!-- ═══ FORUM FORMATEUR ═══ -->
+<section *ngIf="activeSection==='forum'" class="page-content">
+
+  <!-- ── VUE LISTE ── -->
+  <div *ngIf="forumModalMode==='liste'">
+
+    <!-- Toolbar -->
+    <div class="ff-toolbar">
+      <div class="ff-toolbar-left">
+        <div class="ff-search-wrap">
+          <svg width="15" height="15" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" placeholder="Rechercher une question..."
+                 [(ngModel)]="forumSearch"
+                 (input)="forumSearchChanged()"
+                 class="ff-search-input">
+        </div>
+        <select class="ff-filter-sel" [(ngModel)]="forumFilterFormation"
+                (change)="loadForumQuestions(0)">
+          <option value="">Formation : Toutes</option>
+          <option *ngFor="let f of formations" [value]="f.id">{{ f.titre }}</option>
+        </select>
+        <select class="ff-filter-sel" [(ngModel)]="forumFilterStatut"
+                (change)="loadForumQuestions(0)">
+          <option value="">Statut : Tous</option>
+          <option value="NON_REPONDU">Non répondu</option>
+          <option value="REPONDU">Répondu</option>
+          <option value="RESOLU">Résolu</option>
+        </select>
+      </div>
+      <div class="ff-toolbar-right">
+        <div class="ff-stat-pill ff-pill-orange" *ngIf="forumStats.questionsNonRepondues">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+            <path stroke-width="2" d="M12 8v4M12 16h.01"/>
+          </svg>
+          {{ forumStats.questionsNonRepondues }} en attente
+        </div>
+      </div>
+    </div>
+
+    <!-- Layout 2 colonnes -->
+    <div class="ff-layout">
+
+      <!-- Liste questions -->
+      <div class="ff-main">
+
+        <!-- Loading -->
+        <div *ngIf="forumLoading" class="ff-loading">
+          <div class="ff-spinner"></div>
+          <span>Chargement...</span>
+        </div>
+
+        <!-- Erreur -->
+        <div *ngIf="!forumLoading && forumError" class="ff-error">{{ forumError }}</div>
+
+        <!-- Vide -->
+        <div *ngIf="!forumLoading && !forumError && forumQuestions.length===0" class="ff-empty">
+          <div class="ff-empty-icon">
+            <svg width="36" height="36" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+              <path stroke-width="1.4" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+          </div>
+          <p class="ff-empty-title">Aucune question pour vos formations</p>
+          <p class="ff-empty-sub">Les questions de vos apprenants apparaîtront ici.</p>
+        </div>
+
+        <!-- Questions -->
+        <div class="ff-questions-list" *ngIf="!forumLoading && forumQuestions.length>0">
+          <div *ngFor="let q of forumQuestions; let i=index"
+               class="ff-question-card"
+               [class.ff-q-non-repondu]="q.statut==='NON_REPONDU'"
+               [class.ff-q-repondu]="q.statut==='REPONDU'"
+               [class.ff-q-resolu]="q.statut==='RESOLU'"
+               [style.animation-delay]="i*0.05+'s'"
+               (click)="ouvrirQuestionDetail(q)">
+
+            <!-- Barre gauche colorée -->
+            <div class="ff-q-bar" [style.background]="getStatutForumColor(q.statut)"></div>
+
+            <!-- Avatar -->
+            <div class="ff-q-avatar"
+                 [style.background-image]="q.auteurPhoto ? 'url('+q.auteurPhoto+')' : ''"
+                 [class.ff-q-avatar-photo]="!!q.auteurPhoto">
+              <span *ngIf="!q.auteurPhoto">
+                {{ (q.auteurPrenom||'?')[0].toUpperCase() }}{{ (q.auteurNom||'')[0]?.toUpperCase()||'' }}
+              </span>
+            </div>
+
+            <!-- Contenu -->
+            <div class="ff-q-body">
+              <div class="ff-q-top">
+                <div class="ff-q-meta">
+                  <span class="ff-q-auteur">{{ q.auteurPrenom }} {{ q.auteurNom }}</span>
+                  <span class="ff-q-sep">·</span>
+                  <span class="ff-q-date">{{ getTempsAgoForum(q.dateCreation) }}</span>
+                  <span *ngIf="q.formationTitre" class="ff-q-formation-chip">
+                    📚 {{ q.formationTitre }}
+                  </span>
+                </div>
+                <span class="ff-q-statut-badge"
+                      [style.background]="getStatutForumBg(q.statut)"
+                      [style.color]="getStatutForumColor(q.statut)">
+                  {{ q.statut==='REPONDU' ? '✓ Répondu'
+                   : q.statut==='RESOLU'  ? '⭐ Résolu'
+                   : '● En attente' }}
+                </span>
+              </div>
+
+              <h3 class="ff-q-titre">{{ q.titre }}</h3>
+              <p class="ff-q-extrait">{{ q.contenu }}</p>
+
+              <div class="ff-q-tags" *ngIf="q.tags && q.tags.length>0">
+                <span *ngFor="let tag of q.tags" class="ff-tag">{{ tag }}</span>
+              </div>
+
+              <div class="ff-q-footer">
+                <div class="ff-q-stats">
+                  <span class="ff-q-stat">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-width="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    {{ q.nombreReponses }} réponse{{ q.nombreReponses!==1?'s':'' }}
+                  </span>
+                  <span class="ff-q-stat">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    {{ q.nombreVues }} vue{{ q.nombreVues!==1?'s':'' }}
+                  </span>
+                </div>
+                <button class="ff-q-voir-btn">
+                  Répondre
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div *ngIf="forumTotalPages > 1" class="ff-pagination">
+          <button class="ff-page-btn" [disabled]="forumPage===0"
+                  (click)="changerPageForum(forumPage-1)">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2.5" d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <button *ngFor="let p of [].constructor(forumTotalPages); let i=index"
+                  class="ff-page-num"
+                  [class.ff-page-active]="i===forumPage"
+                  (click)="changerPageForum(i)">{{ i+1 }}</button>
+          <button class="ff-page-btn" [disabled]="forumPage===forumTotalPages-1"
+                  (click)="changerPageForum(forumPage+1)">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="ff-sidebar">
+        <div class="ff-sb-card">
+          <h3 class="ff-sb-title">Vue d'ensemble</h3>
+          <div class="ff-sb-stat-row">
+            <div class="ff-sb-stat">
+              <span class="ff-sb-val">{{ forumTotal }}</span>
+              <span class="ff-sb-label">Questions</span>
+            </div>
+            <div class="ff-sb-stat">
+              <span class="ff-sb-val" style="color:#f39c12">
+                {{ forumStats.questionsNonRepondues || 0 }}
+              </span>
+              <span class="ff-sb-label" style="color:#f39c12">En attente</span>
+            </div>
+          </div>
+        </div>
+        <div class="ff-sb-card" *ngIf="forumStats.questionsPopulaires?.length">
+          <h3 class="ff-sb-title">Questions populaires</h3>
+          <div *ngFor="let q of forumStats.questionsPopulaires"
+               class="ff-sb-q-item" (click)="ouvrirQuestionDetail(q)">
+            <div class="ff-sb-q-dot" [style.background]="getStatutForumColor(q.statut)"></div>
+            <span class="ff-sb-q-titre">{{ q.titre }}</span>
+          </div>
+        </div>
+        <div class="ff-sb-card" *ngIf="forumStats.contributeursActifs?.length">
+          <h3 class="ff-sb-title">Apprenants actifs</h3>
+          <div *ngFor="let c of forumStats.contributeursActifs; let i=index"
+               class="ff-sb-contrib">
+            <div class="ff-sb-contrib-rank">{{ i+1 }}</div>
+            <span class="ff-sb-contrib-nom">{{ c }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- fin ff-layout -->
+  </div><!-- fin vue liste -->
+
+  <!-- ── VUE DÉTAIL ── -->
+  <div *ngIf="forumModalMode==='detail'">
+
+    <!-- Back -->
+    <div class="ff-detail-header">
+      <button class="ff-back-btn" (click)="retourListeForum()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Retour au forum
+      </button>
+    </div>
+
+    <!-- Loading detail -->
+    <div *ngIf="forumDetailLoading" class="ff-loading" style="padding:60px">
+      <div class="ff-spinner"></div>
+      <span>Chargement...</span>
+    </div>
+
+    <div *ngIf="!forumDetailLoading && forumQuestionDetail" class="ff-detail-layout">
+
+      <!-- Question -->
+      <div class="ff-detail-card">
+        <div class="ff-detail-q-header">
+          <div class="ff-detail-avatar"
+               [style.background-image]="forumQuestionDetail.auteurPhoto ? 'url('+forumQuestionDetail.auteurPhoto+')' : ''"
+               [class.ff-q-avatar-photo]="!!forumQuestionDetail.auteurPhoto">
+            <span *ngIf="!forumQuestionDetail.auteurPhoto">
+              {{ (forumQuestionDetail.auteurPrenom||'?')[0].toUpperCase() }}
+            </span>
+          </div>
+          <div class="ff-detail-auteur-info">
+            <p class="ff-detail-auteur-nom">
+              {{ forumQuestionDetail.auteurPrenom }} {{ forumQuestionDetail.auteurNom }}
+              <span class="ff-apprenant-badge">Apprenant</span>
+            </p>
+            <p class="ff-detail-auteur-date">
+              {{ getTempsAgoForum(forumQuestionDetail.dateCreation) }}
+            </p>
+          </div>
+          <span class="ff-q-statut-badge"
+                [style.background]="getStatutForumBg(forumQuestionDetail.statut)"
+                [style.color]="getStatutForumColor(forumQuestionDetail.statut)">
+            {{ getStatutForumLabel(forumQuestionDetail.statut) }}
+          </span>
+        </div>
+
+        <h2 class="ff-detail-titre">{{ forumQuestionDetail.titre }}</h2>
+
+        <div *ngIf="forumQuestionDetail.formationTitre" class="ff-detail-formation">
+          📚 {{ forumQuestionDetail.formationTitre }}
+        </div>
+
+        <div class="ff-detail-tags" *ngIf="forumQuestionDetail.tags?.length">
+          <span *ngFor="let t of forumQuestionDetail.tags" class="ff-tag">{{ t }}</span>
+        </div>
+
+        <p class="ff-detail-contenu">{{ forumQuestionDetail.contenu }}</p>
+
+        <div class="ff-detail-footer">
+          <span class="ff-q-stat">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            {{ forumQuestionDetail.nombreVues }} vues
+          </span>
+          <span class="ff-q-stat">
+            <svg width="12" height="12" viewBox="0 0 24 24"
+                 [attr.fill]="forumQuestionDetail.likeParMoi ? '#e74c3c' : 'none'"
+                 stroke="#e74c3c" stroke-width="1.8">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+            </svg>
+            {{ forumQuestionDetail.nombreLikes }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Zone réponse formateur -->
+      <div class="ff-reponse-zone">
+        <div class="ff-reponse-zone-header">
+          <div class="ff-formateur-badge-big">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="1.8" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            Votre réponse en tant que formateur
+          </div>
+        </div>
+
+        <div *ngIf="reponseSuccess" class="ff-reponse-success">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          {{ reponseSuccess }}
+        </div>
+        <div *ngIf="reponseError" class="ff-reponse-error">{{ reponseError }}</div>
+
+        <div class="ff-reponse-editor">
+          <div class="ff-formateur-av">
+            {{ getFormateurInitiales() }}
+          </div>
+          <div class="ff-editor-wrap">
+            <textarea
+              class="ff-reponse-textarea"
+              [(ngModel)]="reponseContenu"
+              placeholder="Rédigez votre réponse en tant que formateur...&#10;&#10;Soyez précis et pédagogique pour aider au maximum l'apprenant."
+              rows="6">
+            </textarea>
+            <div class="ff-editor-footer">
+              <span class="ff-char-count"
+                    [class.ff-char-warn]="reponseContenu.length > 4500">
+                {{ reponseContenu.length }}/5000
+              </span>
+              <button class="ff-submit-btn"
+                      (click)="soumettreReponse()"
+                      [disabled]="reponseLoading || !reponseContenu.trim()">
+                <span *ngIf="reponseLoading" class="btn-spinner"></span>
+                <svg *ngIf="!reponseLoading" width="14" height="14"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+                {{ reponseLoading ? 'Publication...' : 'Publier la réponse' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Réponses existantes -->
+      <div class="ff-reponses-section">
+        <h3 class="ff-reponses-titre">
+          {{ forumQuestionDetail.nombreReponses }} Réponse{{ forumQuestionDetail.nombreReponses!==1?'s':'' }}
+        </h3>
+
+        <div *ngIf="!forumQuestionDetail.reponses?.length" class="ff-no-reponse">
+          <svg width="32" height="32" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+            <path stroke-width="1.4" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+          </svg>
+          <p>Aucune réponse pour l'instant. Soyez le premier à répondre !</p>
+        </div>
+
+        <div *ngFor="let r of forumQuestionDetail.reponses; let i=index"
+             class="ff-reponse-card"
+             [class.ff-reponse-solution]="r.estSolution"
+             [class.ff-reponse-formateur]="r.auteurRole==='FORMATEUR'"
+             [class.ff-reponse-mienne]="estMaReponse(r)">
+
+          <!-- Badge solution -->
+          <div *ngIf="r.estSolution" class="ff-solution-badge">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+            Solution validée
+          </div>
+          <!-- AJOUTER : Badge "Ma réponse" -->
+  <div *ngIf="estMaReponse(r)" class="ff-ma-reponse-badge">
+    <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+    </svg>
+    Ma réponse
+  </div>
+
+          <!-- Header réponse -->
+          <div class="ff-reponse-header">
+            <div class="ff-reponse-avatar"
+                 [style.background-image]="r.auteurPhoto ? 'url('+r.auteurPhoto+')' : ''"
+                 [class.ff-q-avatar-photo]="!!r.auteurPhoto">
+              <span *ngIf="!r.auteurPhoto">{{ (r.auteurPrenom||'?')[0].toUpperCase() }}</span>
+            </div>
+            <div style="flex:1">
+              <p class="ff-reponse-nom">
+                {{ r.auteurPrenom }} {{ r.auteurNom }}
+                <span *ngIf="r.auteurRole==='FORMATEUR'" class="ff-formateur-badge-inline">
+                  ⭐ Formateur
+                </span>
+              </p>
+              <p class="ff-reponse-date">{{ getTempsAgoForum(r.dateCreation) }}</p>
+            </div>
+            <!-- Actions -->
+            <div class="ff-reponse-actions">
+              <!-- Marquer solution (formateur seulement) -->
+              <button *ngIf="!r.estSolution && forumQuestionDetail.statut!=='RESOLU'"
+                      class="ff-action-solution-btn"
+                      (click)="marquerSolution(r)"
+                      title="Marquer comme solution">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Solution
+              </button>
+              <!-- Modifier / Supprimer (auteur seulement) -->
+              <button *ngIf="estMaReponse(r) && editingReponseId !== r.id"
+                      class="ff-action-edit-btn"
+                      (click)="demarrerEditionReponse(r)"
+                      title="Modifier">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Contenu réponse (lecture) -->
+          <p *ngIf="editingReponseId !== r.id" class="ff-reponse-contenu">{{ r.contenu }}</p>
+
+          <!-- Mode édition -->
+          <div *ngIf="editingReponseId === r.id" class="ff-edit-zone">
+            <textarea class="ff-edit-textarea" [(ngModel)]="editingReponseContenu" rows="5"></textarea>
+            <div class="ff-edit-actions">
+              <button class="ff-edit-cancel-btn" (click)="annulerEditionReponse()" [disabled]="editingSaving">Annuler</button>
+              <button class="ff-edit-save-btn" (click)="sauvegarderEditionReponse(r)" [disabled]="editingSaving">
+                <span *ngIf="editingSaving" class="btn-spinner"></span>
+                <svg *ngIf="!editingSaving" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                {{ editingSaving ? 'Sauvegarde...' : 'Enregistrer' }}
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- fin ff-detail-layout -->
+  </div><!-- fin vue detail -->
+
+</section>
+<!-- FIN FORUM FORMATEUR -->
 
     <!-- ═══ MON PROFIL ═══ -->
     <section *ngIf="activeSection==='profil'" class="page-content">

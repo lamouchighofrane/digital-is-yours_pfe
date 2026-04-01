@@ -10,7 +10,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 })
 export class DashboardApprenantComponent implements OnInit, OnDestroy {
 
-  activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' = 'dashboard';
+  activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' | 'forum' = 'dashboard';
   // ── Ma Progression ──
 progressionFormations: any[]  = [];
 progressionLoading            = false;
@@ -88,6 +88,28 @@ certificats: any[]     = [];
 certificatsLoading     = false;
 qfCertificat: any      = null;
 qfCertDownloading      = false;
+// ══════════════════════════════════════════════════
+// FORUM
+// ══════════════════════════════════════════════════
+forumQuestions: any[]       = [];
+forumLoading                = false;
+forumError                  = '';
+forumSearch                 = '';
+forumFilterFormation        = '';
+forumFilterStatut           = '';
+forumPage                   = 0;
+forumTotalPages             = 0;
+forumTotal                  = 0;
+forumStats: any             = {};
+showForumModal              = false;
+forumModalMode: 'liste' | 'detail' | 'nouveau' = 'liste';
+forumQuestionDetail: any    = null;
+forumNouveauForm            = { titre: '', contenu: '', formationId: null as number|null, tags: [] as string[] };
+forumNouveauLoading         = false;
+forumNouveauError           = '';
+forumNouveauSuccess         = '';
+forumTagInput               = '';
+forumEditingQuestion: any   = null;
 // ── US-029 : Cours actif + documents + vidéo ──
 coursActif: any = null;
 showCoursDetail = false;
@@ -237,6 +259,213 @@ documentsError = '';
       });
   }
 }
+// ══════════════════════════════════════════════════
+// FORUM — MÉTHODES
+// ══════════════════════════════════════════════════
+
+loadForumQuestions(page = 0) {
+  this.forumLoading = true;
+  this.forumError   = '';
+  const params = new URLSearchParams({
+    page:        String(page),
+    size:        '8',
+    search:      this.forumSearch,
+    formationId: this.forumFilterFormation,
+    statut:      this.forumFilterStatut
+  });
+  this.http.get<any>(
+    `${this.api}/forum/questions?${params}`,
+    { headers: this.headers() }
+  ).subscribe({
+    next: d => {
+      this.forumQuestions  = d.questions  || [];
+      this.forumTotal      = d.total      || 0;
+      this.forumTotalPages = d.totalPages || 0;
+      this.forumPage       = d.currentPage || 0;
+      this.forumLoading    = false;
+      this.cdr.detectChanges();
+    },
+    error: err => {
+      this.forumError   = err.error?.message || 'Erreur chargement forum.';
+      this.forumLoading = false;
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+loadForumStats() {
+  this.http.get<any>(`${this.api}/forum/stats`, { headers: this.headers() })
+    .subscribe({
+      next: d => { this.forumStats = d; this.cdr.detectChanges(); },
+      error: () => {}
+    });
+}
+
+ouvrirQuestionDetail(q: any) {
+  this.forumModalMode = 'detail';
+  this.forumQuestionDetail = null;
+  this.http.get<any>(`${this.api}/forum/questions/${q.id}`, { headers: this.headers() })
+    .subscribe({
+      next: d => { this.forumQuestionDetail = d; this.cdr.detectChanges(); },
+      error: () => {}
+    });
+}
+
+retourListeForum() {
+  this.forumModalMode      = 'liste';
+  this.forumQuestionDetail = null;
+}
+
+ouvrirFormulaireNouveau() {
+  this.forumModalMode       = 'nouveau';
+  this.forumNouveauForm     = { titre: '', contenu: '', formationId: null, tags: [] };
+  this.forumNouveauError    = '';
+  this.forumNouveauSuccess  = '';
+  this.forumTagInput        = '';
+  this.forumEditingQuestion = null;
+}
+
+ajouterTagForum(event: KeyboardEvent) {
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault();
+    const tag = this.forumTagInput.trim().replace(/,/g, '');
+    if (tag && !this.forumNouveauForm.tags.includes(tag) && this.forumNouveauForm.tags.length < 5) {
+      this.forumNouveauForm.tags.push(tag);
+    }
+    this.forumTagInput = '';
+    this.cdr.detectChanges();
+  }
+}
+
+supprimerTagForum(tag: string) {
+  this.forumNouveauForm.tags = this.forumNouveauForm.tags.filter(t => t !== tag);
+  this.cdr.detectChanges();
+}
+
+soumettreQuestionForum() {
+  if (!this.forumNouveauForm.titre.trim() || !this.forumNouveauForm.contenu.trim()) {
+    this.forumNouveauError = 'Titre et contenu sont requis.'; return;
+  }
+  this.forumNouveauLoading = true;
+  this.forumNouveauError   = '';
+
+  const endpoint = this.forumEditingQuestion
+    ? `${this.api}/forum/questions/${this.forumEditingQuestion.id}`
+    : `${this.api}/forum/questions`;
+  const method = this.forumEditingQuestion ? 'put' : 'post';
+
+  this.http[method]<any>(endpoint, this.forumNouveauForm, { headers: this.headers() })
+    .subscribe({
+      next: () => {
+        this.forumNouveauLoading = false;
+        this.forumNouveauSuccess = this.forumEditingQuestion
+          ? 'Question modifiée !' : 'Question publiée !';
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          this.forumModalMode   = 'liste';
+          this.forumNouveauSuccess = '';
+          this.loadForumQuestions();
+          this.loadForumStats();
+          this.cdr.detectChanges();
+        }, 1500);
+      },
+      error: err => {
+        this.forumNouveauLoading = false;
+        this.forumNouveauError   = err.error?.message || 'Erreur lors de la publication.';
+        this.cdr.detectChanges();
+      }
+    });
+}
+
+editerQuestionForum(q: any, event: Event) {
+  event.stopPropagation();
+  this.forumEditingQuestion = q;
+  this.forumNouveauForm     = {
+    titre:       q.titre,
+    contenu:     q.contenu,
+    formationId: q.formationId,
+    tags:        [...(q.tags || [])]
+  };
+  this.forumModalMode    = 'nouveau';
+  this.forumNouveauError = '';
+  this.cdr.detectChanges();
+}
+
+supprimerQuestionForum(q: any, event: Event) {
+  event.stopPropagation();
+  if (!confirm(`Supprimer "${q.titre}" ?`)) return;
+  this.http.delete(`${this.api}/forum/questions/${q.id}`, { headers: this.headers() })
+    .subscribe({
+      next:  () => { this.loadForumQuestions(); this.loadForumStats(); },
+      error: () => {}
+    });
+}
+
+likerQuestionForum(q: any, event: Event) {
+  event.stopPropagation();
+  this.http.post<any>(`${this.api}/forum/questions/${q.id}/like`, {}, { headers: this.headers() })
+    .subscribe({
+      next: res => {
+        q.nombreLikes = res.nombreLikes;
+        q.likeParMoi  = res.likeParMoi;
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+}
+
+forumSearchChanged() {
+  this.forumPage = 0;
+  this.loadForumQuestions(0);
+}
+
+changerPageForum(p: number) {
+  if (p < 0 || p >= this.forumTotalPages) return;
+  this.loadForumQuestions(p);
+}
+ouvrirForumDeLaFormation() {
+  if (!this.selectedFormation) return;
+  const fid = this.selectedFormation.formationId || this.selectedFormation.id;
+  // Pré-filtrer le forum sur cette formation
+  this.forumFilterFormation = String(fid);
+  this.forumFilterStatut    = '';
+  this.forumSearch          = '';
+  this.forumPage            = 0;
+  this.forumModalMode       = 'liste';
+  // Aller à la section forum
+  this.activeSection = 'forum';
+  this.closeNotifPanel();
+  this.loadForumQuestions(0);
+  this.loadForumStats();
+  this.cdr.detectChanges();
+}
+
+getStatutForumBg(statut: string): string {
+  return statut === 'REPONDU'     ? 'rgba(39,174,96,.15)'
+       : statut === 'RESOLU'      ? 'rgba(74,124,126,.15)'
+       : 'rgba(243,156,18,.15)';
+}
+
+getStatutForumColor(statut: string): string {
+  return statut === 'REPONDU'  ? '#27ae60'
+       : statut === 'RESOLU'   ? '#4A7C7E'
+       : '#f39c12';
+}
+
+getStatutForumLabel(statut: string): string {
+  return statut === 'REPONDU'  ? 'Répondu'
+       : statut === 'RESOLU'   ? 'Résolu'
+       : 'Non répondu';
+}
+
+getTempsAgo(dateStr: string): string {
+  return this.getTimeAgo(dateStr);
+}
+
+estMonAuteur(q: any): boolean {
+  const uid = this.apprenantUser?.id;
+  return uid != null && q.auteurId === uid;
+}
 
   ngOnDestroy() {
   if (this.pollingInterval) clearInterval(this.pollingInterval);
@@ -251,7 +480,7 @@ documentsError = '';
   // NAVIGATION
   // ══════════════════════════════════════════════════════
 
-setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier') {
+setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' | 'forum') {
   this.activeSection = s;
   if (s === 'formations')  this.loadFormations();
   if (s === 'profil')      this.loadProfil();
@@ -260,6 +489,8 @@ setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certifica
   if (s === 'progression') this.loadProgressionData();
   this.closeNotifPanel();
   if (s === 'certificats') this.loadCertificats();
+  if (s === 'forum') { this.loadForumQuestions(); this.loadForumStats(); }
+
 }
 voirCours(formation: any) {
   this.selectedFormation = formation;
