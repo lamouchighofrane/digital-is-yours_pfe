@@ -1,0 +1,286 @@
+<!-- Toast -->
+<div *ngIf="toast" class="ca-toast" [class.ca-toast-error]="toast.type==='error'">
+  <svg *ngIf="toast.type==='success'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+  </svg>
+  <svg *ngIf="toast.type==='error'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+  </svg>
+  {{ toast.msg }}
+</div>
+
+<div class="ca-page">
+
+  <!-- ══ HEADER ══ -->
+  <div class="ca-header">
+    <div>
+      <h1 class="ca-title">
+        <span class="ca-title-icon">🎓</span>
+        Liste des Certificats Délivrés
+      </h1>
+      <p class="ca-subtitle">
+        Consultez, filtrez et gérez l'ensemble des certificats émis par la plateforme
+      </p>
+    </div>
+    <button class="ca-btn-export" (click)="exportCSV()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+      </svg>
+      Exporter CSV
+    </button>
+  </div>
+
+  <!-- ══ KPI ══ -->
+  <div class="ca-kpi-row">
+    <div class="ca-kpi">
+      <div class="ca-kpi-icon" style="background:rgba(74,124,126,.12)">
+        <svg width="20" height="20" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <path stroke-width="1.7" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <div class="ca-kpi-info">
+        <span class="ca-kpi-val" style="color:#4A7C7E">{{ stats.totalCeMois }}</span>
+        <span class="ca-kpi-label">Total ce mois</span>
+      </div>
+    </div>
+    <div class="ca-kpi">
+      <div class="ca-kpi-icon" style="background:rgba(39,174,96,.12)">
+        <svg width="20" height="20" fill="none" stroke="#27ae60" viewBox="0 0 24 24">
+          <path stroke-width="1.7" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      </div>
+      <div class="ca-kpi-info">
+        <span class="ca-kpi-val" style="color:#27ae60">{{ stats.formationsActives }}</span>
+        <span class="ca-kpi-label">Formations actives</span>
+      </div>
+    </div>
+    <div class="ca-kpi">
+      <div class="ca-kpi-icon" style="background:rgba(243,156,18,.12)">
+        <svg width="20" height="20" fill="none" stroke="#f39c12" viewBox="0 0 24 24">
+          <path stroke-width="1.7" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+        </svg>
+      </div>
+      <div class="ca-kpi-info">
+        <span class="ca-kpi-val" style="color:#f39c12">{{ stats.tauxReussite | number:'1.1-1' }}%</span>
+        <span class="ca-kpi-label">Taux de réussite</span>
+      </div>
+    </div>
+    <div class="ca-kpi">
+      <div class="ca-kpi-icon" style="background:rgba(139,58,58,.1)">
+        <svg width="20" height="20" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+          <path stroke-width="1.7" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      <div class="ca-kpi-info">
+        <span class="ca-kpi-val" style="color:#8B3A3A">{{ stats.total }}</span>
+        <span class="ca-kpi-label">Total délivrés</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FILTRES ══ -->
+  <div class="ca-filters-card">
+    <div class="ca-filters-row">
+      <!-- Filtre Formation -->
+      <div class="ca-filter-group">
+        <label class="ca-filter-label">Formation</label>
+        <input type="text" class="ca-filter-input"
+               placeholder="Rechercher une formation..."
+               [(ngModel)]="filterFormation"
+               (input)="onFilterChange()">
+      </div>
+
+      <!-- Filtre Apprenant -->
+      <div class="ca-filter-group">
+        <label class="ca-filter-label">Apprenant</label>
+        <input type="text" class="ca-filter-input"
+               placeholder="Nom ou prénom..."
+               [(ngModel)]="filterApprenant"
+               (input)="onFilterChange()">
+      </div>
+
+      <!-- Filtre Période -->
+      <div class="ca-filter-group">
+        <label class="ca-filter-label">Période — Du</label>
+        <input type="date" class="ca-filter-input"
+               [(ngModel)]="filterDateDebut"
+               (change)="onFilterChange()">
+      </div>
+
+      <div class="ca-filter-group">
+        <label class="ca-filter-label">Au</label>
+        <input type="date" class="ca-filter-input"
+               [(ngModel)]="filterDateFin"
+               (change)="onFilterChange()">
+      </div>
+
+      <!-- Recherche N° -->
+      <div class="ca-filter-group ca-filter-search">
+        <label class="ca-filter-label">N° Certificat</label>
+        <div class="ca-search-wrap">
+          <svg width="14" height="14" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" class="ca-search-input"
+                 placeholder="Ex: #MDC-2026..."
+                 [(ngModel)]="search"
+                 (input)="onSearch()">
+        </div>
+      </div>
+    </div>
+
+    <div class="ca-filters-actions">
+      <button class="ca-btn-reset" (click)="resetFiltres()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Réinitialiser
+      </button>
+      <span class="ca-result-count">
+        {{ total }} résultat{{ total !== 1 ? 's' : '' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- ══ TABLEAU ══ -->
+  <div class="ca-table-card">
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="ca-loading">
+      <div class="ca-spinner"></div>
+      <span>Chargement des certificats...</span>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!isLoading && certificats.length === 0" class="ca-empty">
+      <div class="ca-empty-ring">
+        <svg width="36" height="36" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+          <path stroke-width="1.4" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <p class="ca-empty-title">Aucun certificat trouvé</p>
+      <p class="ca-empty-sub">Essayez de modifier vos filtres ou votre recherche.</p>
+    </div>
+
+    <!-- Table -->
+    <table *ngIf="!isLoading && certificats.length > 0" class="ca-table">
+      <thead>
+        <tr>
+          <th>Apprenant</th>
+          <th>Formation</th>
+          <th>Note</th>
+          <th>Date de délivrance</th>
+          <th>N° Certificat</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let cert of certificats; let i = index"
+            class="ca-row"
+            [style.animation-delay]="i * 0.04 + 's'">
+
+          <!-- Apprenant -->
+          <td>
+            <div class="ca-appr-cell">
+              <div class="ca-appr-av">{{ getInitiales(cert) }}</div>
+              <div class="ca-appr-info">
+                <p class="ca-appr-nom">{{ cert.apprenantPrenom }} {{ cert.apprenantNom }}</p>
+                <p class="ca-appr-email">{{ cert.apprenantEmail }}</p>
+              </div>
+            </div>
+          </td>
+
+          <!-- Formation -->
+          <td>
+            <div class="ca-formation-cell">
+              <p class="ca-formation-titre">{{ cert.formationTitre }}</p>
+              <span *ngIf="cert.formationNiveau" class="ca-niveau-badge">
+                {{ getNiveauLabel(cert.formationNiveau) }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Note -->
+          <td>
+            <div class="ca-note-cell">
+              <span class="ca-note-badge"
+                    [style.background]="getScoreBg(cert.noteFinal)"
+                    [style.color]="getScoreColor(cert.noteFinal)">
+                {{ cert.noteFinal | number:'1.0-0' }}%
+              </span>
+              <span class="ca-mention">{{ getMention(cert.noteFinal) }}</span>
+            </div>
+          </td>
+
+          <!-- Date -->
+          <td>
+            <span class="ca-date">{{ formatDate(cert.dateCreation) }}</span>
+          </td>
+
+          <!-- N° Certificat -->
+          <td>
+            <div class="ca-num-cell">
+              <span class="ca-num-badge">{{ cert.numeroCertificat }}</span>
+              <span *ngIf="cert.estEnvoye" class="ca-sent-badge" title="Email envoyé">✓ Envoyé</span>
+              <span *ngIf="cert.partageLinkedIn" class="ca-linkedin-badge" title="Partagé LinkedIn">in</span>
+            </div>
+          </td>
+
+          <!-- Actions -->
+          <td>
+            <div class="ca-actions">
+              <!-- Télécharger PDF -->
+              <button class="ca-act" (click)="downloadPdf(cert)" title="Télécharger PDF">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+              </button>
+
+              <!-- Envoyer par email -->
+              <button class="ca-act ca-act-email"
+                      (click)="envoyerEmail(cert)"
+                      [disabled]="sendingId === cert.id"
+                      [title]="cert.estEnvoye ? 'Renvoyer par email' : 'Envoyer par email'">
+                <svg *ngIf="sendingId !== cert.id" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <div *ngIf="sendingId === cert.id" class="ca-mini-spinner"></div>
+              </button>
+
+              <!-- Copier lien -->
+              <button class="ca-act ca-act-link" (click)="copierLien(cert)" title="Copier le lien public">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div *ngIf="!isLoading && totalPages > 1" class="ca-pagination">
+      <button class="ca-page-btn" [disabled]="page === 0" (click)="goToPage(page - 1)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2.5" d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <button *ngFor="let p of pages"
+              class="ca-page-num"
+              [class.ca-page-active]="p === page"
+              (click)="goToPage(p)">
+        {{ p + 1 }}
+      </button>
+      <button class="ca-page-btn" [disabled]="page === totalPages - 1" (click)="goToPage(page + 1)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+      <span class="ca-page-info">
+        Page {{ page + 1 }} / {{ totalPages }} · {{ total }} résultat{{ total !== 1 ? 's' : '' }}
+      </span>
+    </div>
+
+  </div>
+</div>

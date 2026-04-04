@@ -19,8 +19,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"reponses","likes"})
-@ToString(exclude = {"reponses","likes"})
+@EqualsAndHashCode(exclude = {"reponses", "likes", "vues"})
+@ToString(exclude = {"reponses", "likes", "vues"})
 public class QuestionForumEntity {
 
     @Id
@@ -50,7 +50,7 @@ public class QuestionForumEntity {
     private int nombreVues = 0;
 
     @Column(name = "tags", length = 500)
-    private String tags; // JSON array stocké en string
+    private String tags;
 
     @Column(name = "date_creation", nullable = false)
     private LocalDateTime dateCreation;
@@ -65,6 +65,12 @@ public class QuestionForumEntity {
             orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ForumLikeEntity> likes = new ArrayList<>();
+
+    /** Relation vers les vues — une entrée par utilisateur unique */
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ForumVueEntity> vues = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

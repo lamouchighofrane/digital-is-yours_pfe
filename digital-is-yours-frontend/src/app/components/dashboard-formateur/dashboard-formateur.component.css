@@ -3876,23 +3876,3 @@
   .ff-toolbar { flex-direction: column; }
   .ff-toolbar-left { flex-direction: column; width: 100%; }
 }
-/* Ma réponse — style formateur */
-.ff-reponse-mienne {
-  border-color: rgba(139,58,58,.35) !important;
-  border-left: 4px solid #8B3A3A !important;
-  background: linear-gradient(135deg, rgba(139,58,58,.04), #FFF) !important;
-}
-
-.ff-ma-reponse-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(139,58,58,.1);
-  color: #8B3A3A;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 20px;
-  margin-bottom: 10px;
-  border: 1px solid rgba(139,58,58,.2);
-}

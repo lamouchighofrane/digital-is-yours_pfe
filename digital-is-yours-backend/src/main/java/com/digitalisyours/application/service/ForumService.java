@@ -46,12 +46,17 @@ public class ForumService implements ForumUseCase {
     @Transactional
     public QuestionForum getQuestionById(Long id, String emailConnecte) {
         Long userId = getUserId(emailConnecte);
+
         QuestionForum q = forumRepository.findById(id, userId)
                 .orElseThrow(() -> new RuntimeException("Question introuvable : " + id));
 
-        // ← MODIFICATION : n'incrémenter que si ce n'est PAS l'auteur
-        if (!q.getAuteurId().equals(userId)) {
-            forumRepository.incrementerVues(id);
+        // Enregistrer la vue uniquement si :
+        // 1. L'utilisateur est connecté (userId != null)
+        // 2. Ce n'est PAS l'auteur de la question
+        // 3. C'est la première fois que cet utilisateur consulte cette question
+        //    (géré dans enregistrerVueSiNouvelle via la contrainte UNIQUE de forum_vues)
+        if (userId != null && !userId.equals(q.getAuteurId())) {
+            forumRepository.enregistrerVueSiNouvelle(id, userId);
         }
 
         return q;
@@ -112,7 +117,6 @@ public class ForumService implements ForumUseCase {
                         e.getMessage());
             }
         }
-        // ─────────────────────────────────────────────────────────────────
 
         return saved;
     }

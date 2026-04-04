@@ -90,6 +90,7 @@
               <path stroke-width="1.6" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
             </svg>
           </span>
+
           <span class="sb-item-label">Catégories</span>
         </button>
         <button class="sb-item" [class.sb-active]="activeSection==='formations'" (click)="setSection('formations')">
@@ -108,7 +109,20 @@
           </span>
           <span class="sb-item-label">Compétences</span>
         </button>
+
       </div>
+       <div class="sb-group">
+  <span class="sb-group-label">Certifications</span>
+  <button class="sb-item" [class.sb-active]="activeSection==='certificats'"
+          (click)="setSection('certificats')">
+    <span class="sb-item-icon">
+      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.6" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+    </span>
+    <span class="sb-item-label">Certificats</span>
+  </button>
+</div>
 
     </nav>
 
@@ -138,6 +152,7 @@
             <ng-container *ngIf="activeSection==='categories'">Catégories</ng-container>
             <ng-container *ngIf="activeSection==='formations'">Formations</ng-container>
             <ng-container *ngIf="activeSection==='competences'">Compétences</ng-container>
+            <ng-container *ngIf="activeSection==='certificats'">Certificats</ng-container>
           </span>
         </p>
         <h1 class="topbar-title">
@@ -148,6 +163,7 @@
           <ng-container *ngIf="activeSection==='categories'">Catégories</ng-container>
           <ng-container *ngIf="activeSection==='formations'">Formations</ng-container>
           <ng-container *ngIf="activeSection==='competences'">Compétences</ng-container>
+          <ng-container *ngIf="activeSection==='certificats'">Certificats délivrés</ng-container>
         </h1>
       </div>
       <div class="topbar-right">
@@ -321,6 +337,10 @@
     <section *ngIf="activeSection==='competences'" class="page-content">
       <app-competences></app-competences>
     </section>
+    <!-- CERTIFICATS -->
+<section *ngIf="activeSection==='certificats'" class="page-content">
+  <app-certificats-admin></app-certificats-admin>
+</section>
 
   </main>
 </div>

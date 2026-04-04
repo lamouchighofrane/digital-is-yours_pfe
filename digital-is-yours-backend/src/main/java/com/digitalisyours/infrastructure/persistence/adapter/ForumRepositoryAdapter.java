@@ -28,6 +28,7 @@ public class ForumRepositoryAdapter implements ForumRepositoryPort {
 
     private final QuestionForumJpaRepository questionRepo;
     private final ForumLikeJpaRepository     likeRepo;
+    private final ForumVueJpaRepository      vueRepo;
     private final UserJpaRepository          userRepo;
     private final FormationJpaRepository     formationRepo;
 
@@ -130,6 +131,38 @@ public class ForumRepositoryAdapter implements ForumRepositoryPort {
     @Transactional
     public void incrementerVues(Long questionId) {
         questionRepo.incrementerVues(questionId);
+    }
+
+    /**
+     * Enregistre une vue uniquement si cet utilisateur n'a jamais vu
+     * cette question. Retourne true si la vue a été enregistrée (nouvelle vue),
+     * false si l'utilisateur avait déjà vu la question.
+     */
+    @Override
+    @Transactional
+    public boolean enregistrerVueSiNouvelle(Long questionId, Long userId) {
+        if (userId == null) return false;
+
+        // Vérifier si l'utilisateur a déjà vu cette question
+        if (vueRepo.existsByUserIdAndQuestionId(userId, questionId)) {
+            return false; // déjà vu, on n'incrémente pas
+        }
+
+        // Enregistrer la vue
+        UserEntity user = userRepo.findById(userId).orElse(null);
+        QuestionForumEntity question = questionRepo.findById(questionId).orElse(null);
+
+        if (user == null || question == null) return false;
+
+        ForumVueEntity vue = ForumVueEntity.builder()
+                .user(user)
+                .question(question)
+                .build();
+        vueRepo.save(vue);
+
+        // Incrémenter le compteur
+        questionRepo.incrementerVues(questionId);
+        return true;
     }
 
     // ── LIKES ────────────────────────────────────────────────────────────

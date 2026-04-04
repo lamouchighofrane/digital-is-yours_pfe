@@ -31,6 +31,7 @@ import { FormationDetailComponent } from './components/shared/formation-detail/f
 import { PaiementSuccesComponent } from './components/shared/paiement-succes/paiement-succes.component';
 import { PaiementAnnuleComponent } from './components/shared/paiement-annule/paiement-annule.component';
 import { CoursDetailComponent } from './components/cours-detail/cours-detail.component';
+import { CertificatsAdminComponent } from './components/admin/certificats/certificats-admin.component';
 
 
 
@@ -44,7 +45,7 @@ import { CoursDetailComponent } from './components/cours-detail/cours-detail.com
     CtaComponent, RegisterComponent, LoginComponent,
     ForgotPasswordComponent,SplashScreenComponent,VerifyEmailComponent,AdminLoginComponent,
     AdminDashboardComponent,CategoriesComponent, FormationsComponent,CompetencesComponent,DashboardFormateurComponent,DashboardApprenantComponent,FormationDetailComponent,PaiementSuccesComponent,
-    PaiementAnnuleComponent,CoursDetailComponent,
+    PaiementAnnuleComponent,CoursDetailComponent,CertificatsAdminComponent,
   ],
   imports: [
     BrowserModule, AppRoutingModule,

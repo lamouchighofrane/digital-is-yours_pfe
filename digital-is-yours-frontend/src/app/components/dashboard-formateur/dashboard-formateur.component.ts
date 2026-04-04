@@ -995,7 +995,7 @@ editingSaving               = false;
   }
 
   getNotifColor(t: string) { return t === 'FORMATION_AFFECTEE' ? '#4A7C7E' : t === 'FORMATION_RETIREE' ? '#8B3A3A' : t === 'NOUVELLE_QUESTION_FORUM' ? '#f39c12' : '#9B8B6E'; }
-  getNotifBg(t: string) { return t === 'FORMATION_AFFECTEE' ? 'rgba(74,124,126,.12)' : t === 'FORMATION_RETIREE' ? 'rgba(139,58,58,.10)' : t === 'NOUVELLE_QUESTION_FORUM' ? 'rgba(243,156,18,.10)' : 'rgba(155,139,110,.10)'; }
+  getNotifBg(t: string) { return t === 'FORMATION_AFFECTEE' ? 'rgba(74,124,126,.12)' : t === 'FORMATION_RETIREE' ? 'rgba(139,58,58,.10)'  : t === 'NOUVELLE_QUESTION_FORUM' ? 'rgba(243,156,18,.10)': 'rgba(155,139,110,.10)'; }
 
   getTimeAgo(dateStr: string): string {
     if (!dateStr) return '';

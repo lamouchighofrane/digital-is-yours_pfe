@@ -16,6 +16,10 @@ public interface ForumRepositoryPort {
     boolean existsById(Long id);
     boolean isAuteur(Long questionId, Long userId);
     void incrementerVues(Long questionId);
+
+    /** Enregistre une vue si l'utilisateur n'a pas encore vu cette question */
+    boolean enregistrerVueSiNouvelle(Long questionId, Long userId);
+
     void toggleLike(Long questionId, Long userId);
     boolean aLike(Long questionId, Long userId);
     long countLikes(Long questionId);

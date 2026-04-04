@@ -3322,24 +3322,3 @@
   margin-top: 4px;
 }
 .aftr-btn:hover { background: #3a6264; transform: translateY(-1px); }
-/* Ma question — badge repositionné */
-.forum-q-mienne {
-  border-color: rgba(74,124,126,.4) !important;
-  background: linear-gradient(135deg, rgba(74,124,126,.04), #FFF) !important;
-}
-
-/* Badge "Ma question" — positionné en bas à droite, pas en haut */
-.forum-q-mienne .forum-q-top::after {
-  content: '👤 Ma question';
-  display: inline-flex;
-  align-items: center;
-  font-size: 10px;
-  font-weight: 700;
-  color: #4A7C7E;
-  background: rgba(74,124,126,.1);
-  padding: 3px 9px;
-  border-radius: 20px;
-  border: 1px solid rgba(74,124,126,.2);
-  margin-left: 6px;
-  flex-shrink: 0;
-}
