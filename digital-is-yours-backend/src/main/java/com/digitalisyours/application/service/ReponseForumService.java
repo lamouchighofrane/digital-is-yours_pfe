@@ -10,8 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -24,8 +27,7 @@ public class ReponseForumService implements ReponseForumUseCase {
     private final NotificationJpaRepository  notifRepo;
 
     // ─────────────────────────────────────────────────────────────────────
-    // Répondre à une question (formateur seulement)
-    // Notification : l'apprenant auteur de la question reçoit une notif
+    // Répondre à une question (formateur) — INCHANGÉ
     // ─────────────────────────────────────────────────────────────────────
     @Override
     @Transactional
@@ -41,7 +43,6 @@ public class ReponseForumService implements ReponseForumUseCase {
         QuestionForumEntity question = questionRepo.findById(questionId)
                 .orElseThrow(() -> new RuntimeException("Question introuvable"));
 
-        // Créer la réponse
         ReponsesForum reponse = ReponsesForum.builder()
                 .contenu(contenu.trim())
                 .auteurId(formateur.getId())
@@ -55,14 +56,10 @@ public class ReponseForumService implements ReponseForumUseCase {
             reponseRepository.updateStatutQuestion(questionId, "REPONDU");
         }
 
-        // ── Notification à l'apprenant auteur de la question ──────────────
-        // ── Notification à l'apprenant auteur de la question ──────────────
-// Refetch pour garantir que l'entité est bien chargée
+        // Notification à l'apprenant auteur de la question
         try {
             UserEntity auteurQuestion = userRepo.findById(question.getAuteur().getId())
                     .orElse(null);
-
-            // NE PAS envoyer si c'est le formateur lui-même qui est auteur
             if (auteurQuestion != null && !auteurQuestion.getId().equals(formateur.getId())) {
                 String nomFormateur = formateur.getPrenom() + " " + formateur.getNom();
                 String nomFormation = question.getFormation() != null
@@ -81,35 +78,79 @@ public class ReponseForumService implements ReponseForumUseCase {
         } catch (Exception e) {
             log.warn("Erreur notification réponse : {}", e.getMessage());
         }
+
         log.info("Réponse ajoutée à la question #{} par {}", questionId, email);
         return saved;
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Modifier une réponse (formateur — uniquement SA réponse)
+    // NOUVEAU : Répondre avec fichier joint
     // ─────────────────────────────────────────────────────────────────────
     @Override
     @Transactional
-    public ReponsesForum modifierReponse(Long reponseId, String email, String contenu) {
-        UserEntity user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+    public ReponsesForum repondreAvecFichier(Long questionId, String email,
+                                             String contenu, MultipartFile fichier,
+                                             String uploadDir) {
+        // 1. Créer la réponse texte normalement
+        ReponsesForum saved = repondre(questionId, email, contenu);
 
-        if (!reponseRepository.isAuteur(reponseId, user.getId()))
-            throw new SecurityException("Vous ne pouvez modifier que vos propres réponses.");
+        // 2. Si un fichier est fourni, le sauvegarder
+        if (fichier != null && !fichier.isEmpty()) {
+            try {
+                // Valider le type
+                String contentType = fichier.getContentType() != null
+                        ? fichier.getContentType() : "";
+                List<String> allowed = List.of(
+                        "application/pdf",
+                        "image/jpeg", "image/png", "image/gif", "image/webp"
+                );
+                if (!allowed.contains(contentType)) {
+                    log.warn("Type de fichier non supporté : {}", contentType);
+                    return saved; // on retourne quand même la réponse
+                }
 
-        if (contenu == null || contenu.isBlank())
-            throw new RuntimeException("Le contenu est obligatoire.");
+                // Limiter à 10 Mo
+                if (fichier.getSize() > 10L * 1024 * 1024) {
+                    log.warn("Fichier trop volumineux : {} octets", fichier.getSize());
+                    return saved;
+                }
 
-        ReponsesForum existing = reponseRepository.findById(reponseId)
-                .orElseThrow(() -> new RuntimeException("Réponse introuvable."));
+                // Déterminer l'extension
+                String origName = fichier.getOriginalFilename() != null
+                        ? fichier.getOriginalFilename() : "fichier";
+                String ext = "";
+                if (origName.contains(".")) {
+                    ext = origName.substring(origName.lastIndexOf("."));
+                }
 
-        existing.setContenu(contenu.trim());
-        return reponseRepository.save(existing);
+                // Créer le répertoire et sauvegarder
+                String uuid     = UUID.randomUUID().toString();
+                String filename = uuid + ext;
+                Path   dir      = Paths.get(uploadDir, "forum", String.valueOf(saved.getId()));
+                Files.createDirectories(dir);
+                Files.write(dir.resolve(filename), fichier.getBytes());
+
+                // Enregistrer en base
+                reponseRepository.saveDocument(
+                        saved.getId(),
+                        origName,
+                        filename,
+                        contentType,
+                        fichier.getSize()
+                );
+
+                log.info("Fichier joint à la réponse #{} : {}", saved.getId(), origName);
+
+            } catch (IOException e) {
+                log.warn("Impossible de sauvegarder le fichier : {}", e.getMessage());
+            }
+        }
+
+        return reponseRepository.findById(saved.getId()).orElse(saved);
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Marquer une réponse comme solution
-    // Seul le formateur peut marquer une solution
+    // Marquer une réponse comme solution — INCHANGÉ
     // ─────────────────────────────────────────────────────────────────────
     @Override
     @Transactional
@@ -137,11 +178,66 @@ public class ReponseForumService implements ReponseForumUseCase {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // Lister les réponses d'une question
+    // Lister les réponses — INCHANGÉ
     // ─────────────────────────────────────────────────────────────────────
     @Override
     public List<ReponsesForum> getReponses(Long questionId, String email) {
         return reponseRepository.findByQuestionId(questionId);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // NOUVEAU : Like sur réponse
+    // ─────────────────────────────────────────────────────────────────────
+    @Override
+    @Transactional
+    public Map<String, Object> toggleLikeReponse(Long reponseId, String email) {
+        UserEntity user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        reponseRepository.toggleLikeReponse(reponseId, user.getId());
+
+        long    nbLikes  = reponseRepository.countLikesReponse(reponseId);
+        boolean likeParMoi = reponseRepository.aLikeReponse(reponseId, user.getId());
+
+        return Map.of(
+                "nombreLikes", nbLikes,
+                "likeParMoi",  likeParMoi
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // NOUVEAU : Réactions emoji
+    // ─────────────────────────────────────────────────────────────────────
+    @Override
+    @Transactional
+    public Map<String, Object> toggleReaction(Long reponseId, String email, String emoji) {
+        UserEntity user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        reponseRepository.toggleReaction(reponseId, user.getId(), emoji);
+
+        Map<String, Long> counts      = reponseRepository.getReactionCounts(reponseId);
+        List<String>      mesReactions = reponseRepository.getMesReactions(reponseId, user.getId());
+
+        return Map.of(
+                "counts",      counts,
+                "mesReactions", mesReactions
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // NOUVEAU : Is typing
+    // ─────────────────────────────────────────────────────────────────────
+    @Override
+    public void setTyping(Long questionId, String email) {
+        UserEntity user = userRepo.findByEmail(email).orElse(null);
+        if (user == null) return;
+        reponseRepository.setTyping(questionId, user.getId());
+    }
+
+    @Override
+    public boolean isTyping(Long questionId) {
+        return reponseRepository.isTyping(questionId);
     }
 
     // ── Helper notification ───────────────────────────────────────────────

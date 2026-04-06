@@ -155,6 +155,9 @@ reponseSuccess              = '';
 editingReponseId: number | null = null;
 editingReponseContenu       = '';
 editingSaving               = false;
+// ── Forum : fichier joint ──────────────────────────────────
+reponseFile: File | null = null;
+reponseFileSelected = false;
 
   // ══════════════════════════════════════════════════════════
   // QUIZ FINAL
@@ -219,14 +222,23 @@ editingSaving               = false;
   ) {}
 
   ngOnInit() {
-    const token = localStorage.getItem('formateur_token');
-    if (!token) { this.router.navigate(['/login']); return; }
-    this.formateurUser = JSON.parse(localStorage.getItem('formateur_user') || '{}');
-    this.initForms();
-    this.loadDashboardData();
-    this.loadNotifications();
-    this.pollingInterval = setInterval(() => this.pollNotifCount(), 30000);
-  }
+  const token = localStorage.getItem('formateur_token');
+  if (!token) { this.router.navigate(['/login']); return; }
+  this.formateurUser = JSON.parse(localStorage.getItem('formateur_user') || '{}');
+  this.initForms();
+  this.loadDashboardData();
+
+  // ← AJOUTER ICI
+  document.addEventListener('click', () => {
+    try {
+      const ctx = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+      ctx.resume().then(() => ctx.close());
+    } catch(e) {}
+  }, { once: true });
+
+  this.loadNotifications();
+  this.pollingInterval = setInterval(() => this.pollNotifCount(), 30000);
+}
 
   ngOnDestroy() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);
@@ -963,16 +975,38 @@ editingSaving               = false;
       });
   }
 
-  pollNotifCount() {
-    this.http.get<any>(`${this.api}/notifications/count`, { headers: this.headers() })
-      .subscribe({
-        next: d => {
-          const n = d.count || 0;
-          if (n > this.notifNonLues) this.loadNotifications();
-          else { this.notifNonLues = n; this.cdr.detectChanges(); }
-        }, error: () => {}
-      });
-  }
+ pollNotifCount() {
+  this.http.get<any>(`${this.api}/notifications/count`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        const n = d.count || 0;
+        if (n > this.notifNonLues) {
+          this.playNotifSound();   // ← son
+          this.notifNonLues = n;   // ← mettre à jour pour éviter boucle
+          this.loadNotifications();
+        } else {
+          this.notifNonLues = n;
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => {}
+    });
+}
+  playNotifSound() {
+  try {
+    const ctx = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch(e) {}
+}
 
   toggleNotifPanel(event: Event) {
     event.stopPropagation(); this.showNotifPanel = !this.showNotifPanel;
@@ -1527,31 +1561,75 @@ retourListeForum() {
 }
 
 soumettreReponse() {
-  if (!this.reponseContenu.trim() || !this.forumQuestionDetail) return;
+  if (!this.forumQuestionDetail || !this.reponseContenu.trim()) return;
   this.reponseLoading = true;
-  this.reponseError   = '';
 
-  this.http.post<any>(
-    `http://localhost:8080/api/formateur/forum/questions/${this.forumQuestionDetail.id}/reponses`,
-    { contenu: this.reponseContenu },
-    { headers: this.headers() }
-  ).subscribe({
-    next: res => {
-      this.reponseLoading  = false;
-      this.reponseContenu  = '';
-      this.reponseSuccess  = 'Réponse publiée avec succès !';
-      // Recharger la question
-      this.ouvrirQuestionDetail(this.forumQuestionDetail);
-      this.loadForumQuestions(this.forumPage);
-      setTimeout(() => { this.reponseSuccess = ''; this.cdr.detectChanges(); }, 3000);
-      this.cdr.detectChanges();
-    },
-    error: err => {
-      this.reponseLoading = false;
-      this.reponseError   = err.error?.message || 'Erreur lors de la publication.';
-      this.cdr.detectChanges();
-    }
-  });
+  if (this.reponseFile) {
+    const token = localStorage.getItem('formateur_token');
+    const fd = new FormData();
+    fd.append('contenu', this.reponseContenu.trim());
+    fd.append('fichier', this.reponseFile);
+
+    fetch(`http://localhost:8080/api/formateur/forum/questions/${this.forumQuestionDetail.id}/reponses/avec-fichier`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd
+    })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          this.reponseContenu = '';
+          this.reponseFile = null;
+          this.reponseFileSelected = false;
+          const id = this.forumQuestionDetail!.id;
+
+          // ← CORRECTION : utiliser l'endpoint FORMATEUR
+          this.http.get<any>(
+            `http://localhost:8080/api/formateur/forum/questions/${id}`,
+            { headers: this.headers() }
+          ).subscribe({
+            next: d => {
+              this.forumQuestionDetail = d;
+              this.forumModalMode = 'detail';
+              this.cdr.detectChanges();
+            },
+            error: () => {}
+          });
+        }
+        this.reponseLoading = false;
+        this.cdr.detectChanges();
+      })
+      .catch(() => { this.reponseLoading = false; });
+
+  } else {
+    this.http.post<any>(
+      `http://localhost:8080/api/formateur/forum/questions/${this.forumQuestionDetail.id}/reponses`,
+      { contenu: this.reponseContenu.trim() },
+      { headers: this.headers() }
+    ).subscribe({
+      next: res => {
+        if (res.success) {
+          this.reponseContenu = '';
+          const id = this.forumQuestionDetail!.id;
+
+          // ← CORRECTION : utiliser l'endpoint FORMATEUR
+          this.http.get<any>(
+            `http://localhost:8080/api/formateur/forum/questions/${id}`,
+            { headers: this.headers() }
+          ).subscribe({
+            next: d => {
+              this.forumQuestionDetail = d;
+              this.forumModalMode = 'detail';
+              this.cdr.detectChanges();
+            },
+            error: () => {}
+          });
+        }
+        this.reponseLoading = false;
+      },
+      error: () => { this.reponseLoading = false; }
+    });
+  }
 }
 
 demarrerEditionReponse(r: any) {
@@ -1643,7 +1721,82 @@ getStatutForumLabel(statut: string): string {
 getTempsAgoForum(dateStr: string): string {
   return this.getTimeAgo(dateStr);
 }
+// ── Typing indicator ───────────────────────────────────────
+onReponseTyping() {
+  if (!this.forumQuestionDetail) return;
+  this.http.post(
+    `http://localhost:8080/api/formateur/forum/questions/${this.forumQuestionDetail.id}/typing`,
+    {},
+    { headers: this.headers() }
+  ).subscribe({ next: () => {}, error: () => {} });
+}
 
+// ── Fichier joint ──────────────────────────────────────────
+onReponseFileSelected(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowed.includes(file.type)) {
+    this.showToast('Format non supporté. Utilisez PDF ou image.', 'error');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    this.showToast('Fichier trop volumineux (max 10 Mo).', 'error');
+    return;
+  }
+  this.reponseFile = file;
+  this.reponseFileSelected = true;
+  this.cdr.detectChanges();
+}
+
+removeReponseFile() {
+  this.reponseFile = null;
+  this.reponseFileSelected = false;
+  this.cdr.detectChanges();
+}
+
+formatReponseFileSize(bytes?: number): string {
+  if (!bytes) return '';
+  return bytes < 1024 * 1024
+    ? `${(bytes / 1024).toFixed(0)} Ko`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+}
+
+// ── Téléchargement document joint ─────────────────────────
+downloadReponseDoc(reponseId: number, doc: any) {
+  const token = localStorage.getItem('formateur_token');
+  fetch(
+    `http://localhost:8080/api/formateur/forum/reponses/${reponseId}/documents/${doc.url}/download`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+    .then(r => r.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.nomFichier;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(() => this.showToast('Erreur lors du téléchargement.', 'error'));
+}
+
+// ── Réactions emoji ────────────────────────────────────────
+reagirReponse(r: any, emoji: string, event: Event) {
+  event.stopPropagation();
+  this.http.post<any>(
+    `http://localhost:8080/api/formateur/forum/reponses/${r.id}/reaction`,
+    { emoji },
+    { headers: this.headers() }
+  ).subscribe({
+    next: res => {
+      r.reactionCounts = res.counts;
+      r.mesReactions = res.mesReactions;
+      this.cdr.detectChanges();
+    },
+    error: () => {}
+  });
+}
   logout() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);
     localStorage.clear();

@@ -3322,3 +3322,170 @@
   margin-top: 4px;
 }
 .aftr-btn:hover { background: #3a6264; transform: translateY(-1px); }
+/* ── Bannière brouillon ──────────────────────────────────── */
+.forum-draft-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #fff8e8, #FFF);
+  border: 1.5px solid #f39c12;
+  animation: alertIn .3s ease;
+}
+.forum-draft-info { flex: 1; display: flex; flex-direction: column; }
+.forum-draft-title { font-size: 13px; font-weight: 600; color: #1A1612; }
+.forum-draft-time { font-size: 11px; color: #9B8B6E; }
+.forum-draft-actions { display: flex; gap: 8px; }
+.forum-draft-resume {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #f39c12;
+  color: #FFF;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.forum-draft-discard {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #E8E3DB;
+  background: #FFF;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9B8B6E;
+  cursor: pointer;
+}
+
+/* ── Pied de carte réponse (like + réactions) ────────────── */
+.forum-reponse-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #F5F1EB;
+}
+.forum-like-rep-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(231,76,60,.2);
+  background: rgba(231,76,60,.05);
+  color: #e74c3c;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.forum-like-rep-active {
+  background: rgba(231,76,60,.12) !important;
+  border-color: #e74c3c !important;
+}
+
+/* ── Réactions emoji (teal pour apprenant) ───────────────── */
+.fr-emoji-btns { display: flex; gap: 6px; }
+.fr-emoji-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 16px;
+  border: 1.5px solid #E8E3DB;
+  background: #FFF;
+  cursor: pointer;
+  transition: all .18s;
+}
+.fr-emoji-btn:hover {
+  border-color: #4A7C7E;
+  background: #f0f7f7;
+  transform: scale(1.08);
+}
+.fr-emoji-active {
+  border-color: #4A7C7E !important;
+  background: rgba(74,124,126,.1) !important;
+}
+.fr-emoji-count { font-size: 12px; font-weight: 700; color: #1A1612; }
+
+/* ── Documents joints (identique formateur) ──────────────── */
+.ff-reponse-docs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ff-doc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  background: #F5F1EB;
+  border: 1px solid #E8E3DB;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1A1612;
+  transition: all .15s;
+  text-decoration: none;
+}
+.ff-doc-chip:hover { background: #4A7C7E; color: #FFF; border-color: #4A7C7E; }
+.ff-doc-chip-name {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Typing indicator ────────────────────────────────────── */
+.ff-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  background: rgba(139,58,58,.06);
+  border: 1px solid rgba(139,58,58,.12);
+  animation: fadeIn .3s ease;
+}
+.ff-typing-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B3A3A, #a84848);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFF;
+}
+.ff-typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: #FFF;
+  border-radius: 20px;
+  border: 1px solid #E8E3DB;
+}
+.ff-typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8B3A3A;
+  animation: typingDot 1.2s ease-in-out infinite;
+}
+.ff-typing-dot:nth-child(2) { animation-delay: .2s; }
+.ff-typing-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes typingDot {
+  0%, 60%, 100% { transform: translateY(0); opacity: .4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+.ff-typing-label {
+  font-size: 12px;
+  color: #8B3A3A;
+  font-weight: 600;
+  font-style: italic;
+}

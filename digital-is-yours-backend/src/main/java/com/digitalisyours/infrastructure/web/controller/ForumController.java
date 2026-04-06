@@ -2,6 +2,7 @@ package com.digitalisyours.infrastructure.web.controller;
 
 import com.digitalisyours.domain.model.QuestionForum;
 import com.digitalisyours.domain.port.in.ForumUseCase;
+import com.digitalisyours.domain.port.in.ReponseForumUseCase;
 import com.digitalisyours.infrastructure.web.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -22,12 +23,14 @@ import java.util.Map;
 @Slf4j
 public class ForumController {
 
-    private final ForumUseCase forumUseCase;
-    private final JwtUtil      jwtUtil;
+    private final ForumUseCase        forumUseCase;
+    private final ReponseForumUseCase reponseUseCase;   // ← NOUVEAU : injecter ReponseForumUseCase
+    private final JwtUtil             jwtUtil;
 
-    // ══════════════════════════════════════════════════
-    // GET /api/apprenant/forum/questions
-    // ══════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════
+    // QUESTIONS (inchangé)
+    // ════════════════════════════════════════════════════════════════
+
     @GetMapping("/questions")
     public ResponseEntity<?> getQuestions(
             @RequestParam(defaultValue = "")  String search,
@@ -54,14 +57,10 @@ public class ForumController {
                     "currentPage", result.getNumber()
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
-    // ══════════════════════════════════════════════════
-    // GET /api/apprenant/forum/questions/{id}
-    // ══════════════════════════════════════════════════
     @GetMapping("/questions/{id}")
     public ResponseEntity<?> getQuestion(
             @PathVariable Long id,
@@ -78,9 +77,6 @@ public class ForumController {
         }
     }
 
-    // ══════════════════════════════════════════════════
-    // POST /api/apprenant/forum/questions
-    // ══════════════════════════════════════════════════
     @PostMapping("/questions")
     public ResponseEntity<?> poserQuestion(
             @RequestBody Map<String, Object> payload,
@@ -108,9 +104,6 @@ public class ForumController {
         }
     }
 
-    // ══════════════════════════════════════════════════
-    // PUT /api/apprenant/forum/questions/{id}
-    // ══════════════════════════════════════════════════
     @PutMapping("/questions/{id}")
     public ResponseEntity<?> modifierQuestion(
             @PathVariable Long id,
@@ -121,9 +114,10 @@ public class ForumController {
         if (email == null) return unauthorized();
 
         try {
-            String       titre     = (String) payload.get("titre");
-            String       contenu   = (String) payload.get("contenu");
-            List<String> tags      = (List<String>) payload.get("tags");
+            String       titre   = (String) payload.get("titre");
+            String       contenu = (String) payload.get("contenu");
+            @SuppressWarnings("unchecked")
+            List<String> tags    = (List<String>) payload.get("tags");
 
             QuestionForum q = forumUseCase.modifierQuestion(id, email, titre, contenu, tags);
             return ResponseEntity.ok(Map.of("success", true, "question", q));
@@ -134,9 +128,6 @@ public class ForumController {
         }
     }
 
-    // ══════════════════════════════════════════════════
-    // DELETE /api/apprenant/forum/questions/{id}
-    // ══════════════════════════════════════════════════
     @DeleteMapping("/questions/{id}")
     public ResponseEntity<?> supprimerQuestion(
             @PathVariable Long id,
@@ -155,9 +146,6 @@ public class ForumController {
         }
     }
 
-    // ══════════════════════════════════════════════════
-    // POST /api/apprenant/forum/questions/{id}/like
-    // ══════════════════════════════════════════════════
     @PostMapping("/questions/{id}/like")
     public ResponseEntity<?> likerQuestion(
             @PathVariable Long id,
@@ -177,26 +165,81 @@ public class ForumController {
         }
     }
 
-    // ══════════════════════════════════════════════════
-    // GET /api/apprenant/forum/stats
-    // ══════════════════════════════════════════════════
     @GetMapping("/stats")
     public ResponseEntity<?> getStats(HttpServletRequest request) {
         String email = extractEmail(request);
         if (email == null) return unauthorized();
         try {
             return ResponseEntity.ok(Map.of(
-                    "mesQuestions",         forumUseCase.countMesQuestions(email),
+                    "mesQuestions",          forumUseCase.countMesQuestions(email),
                     "mesQuestionsEnAttente", forumUseCase.countMesQuestionsEnAttente(email),
-                    "questionsPopulaires",  forumUseCase.getQuestionsPopulaires(),
-                    "contributeursActifs",  forumUseCase.getContributeursActifs()
+                    "questionsPopulaires",   forumUseCase.getQuestionsPopulaires(),
+                    "contributeursActifs",   forumUseCase.getContributeursActifs()
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
-    // ── HELPERS ───────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════
+    // NOUVEAU : LIKE SUR RÉPONSE (apprenant)
+    // ════════════════════════════════════════════════════════════════
+
+    @PostMapping("/reponses/{reponseId}/like")
+    public ResponseEntity<?> likerReponse(
+            @PathVariable Long reponseId,
+            HttpServletRequest request) {
+
+        String email = extractEmail(request);
+        if (email == null) return unauthorized();
+
+        try {
+            Map<String, Object> result = reponseUseCase.toggleLikeReponse(reponseId, email);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // NOUVEAU : RÉACTIONS EMOJI (apprenant)
+    // ════════════════════════════════════════════════════════════════
+
+    @PostMapping("/reponses/{reponseId}/reaction")
+    public ResponseEntity<?> reagir(
+            @PathVariable Long reponseId,
+            @RequestBody  Map<String, String> body,
+            HttpServletRequest request) {
+
+        String email = extractEmail(request);
+        if (email == null) return unauthorized();
+
+        try {
+            String emoji = body.get("emoji");
+            if (emoji == null || emoji.isBlank()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "L'emoji est requis."));
+            }
+            Map<String, Object> result = reponseUseCase.toggleReaction(reponseId, email, emoji);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // NOUVEAU : IS TYPING — lecture côté apprenant
+    // ════════════════════════════════════════════════════════════════
+
+    @GetMapping("/questions/{questionId}/typing")
+    public ResponseEntity<?> getTyping(@PathVariable Long questionId) {
+        boolean typing = reponseUseCase.isTyping(questionId);
+        return ResponseEntity.ok(Map.of("isTyping", typing));
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // HELPERS
+    // ════════════════════════════════════════════════════════════════
 
     private String extractEmail(HttpServletRequest request) {
         try {

@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -24,4 +26,15 @@ public class ReponsesForum {
     private boolean likeParMoi;
     private LocalDateTime dateCreation;
     private Long questionId;
+
+    // ── NOUVEAU : documents joints ────────────────────────────────
+    // Chaque map contient : {id, nomFichier, url, typeFichier, taille}
+    private List<Map<String, Object>> documents;
+
+    // ── NOUVEAU : réactions emoji ─────────────────────────────────
+    // Ex: {"👍": 3, "❤️": 1, "🙏": 2}
+    private Map<String, Long> reactionCounts;
+
+    // Emojis sur lesquels l'utilisateur connecté a réagi
+    private List<String> mesReactions;
 }

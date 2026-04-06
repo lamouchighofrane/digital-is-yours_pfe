@@ -1139,6 +1139,19 @@
   <!-- Vue LISTE -->
   <div *ngIf="forumModalMode==='liste'">
 
+  <!-- Bannière brouillon -->
+  <div *ngIf="showDraftBanner && forumModalMode==='liste'" class="forum-draft-banner">
+    ✏️
+    <div class="forum-draft-info">
+      <span class="forum-draft-title">Vous avez un brouillon non envoyé</span>
+      <span class="forum-draft-time">{{ getDraftTimeAgo() }}</span>
+    </div>
+    <div class="forum-draft-actions">
+      <button class="forum-draft-resume" (click)="reprendreBrouillon()">Reprendre →</button>
+      <button class="forum-draft-discard" (click)="supprimerBrouillon()">Ignorer</button>
+    </div>
+  </div>
+
     <!-- Toolbar -->
     <div class="forum-toolbar">
       <div class="forum-toolbar-left">
@@ -1476,6 +1489,16 @@
         <h3 class="forum-reponses-titre">
           {{ forumQuestionDetail.nombreReponses }} Réponse{{ forumQuestionDetail.nombreReponses!==1?'s':'' }}
         </h3>
+        <!-- Typing indicator -->
+<div *ngIf="formateur_is_typing" class="ff-typing-indicator">
+  <div class="ff-typing-avatar">F</div>
+  <div class="ff-typing-bubble">
+    <span class="ff-typing-dot"></span>
+    <span class="ff-typing-dot"></span>
+    <span class="ff-typing-dot"></span>
+  </div>
+  <span class="ff-typing-label">Le formateur rédige une réponse...</span>
+</div>
 
         <div *ngIf="!forumQuestionDetail.reponses?.length" class="forum-no-reponse">
           <svg width="32" height="32" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
@@ -1515,7 +1538,39 @@
             </div>
           </div>
 
-          <p class="forum-reponse-contenu">{{ r.contenu }}</p>
+<p class="forum-reponse-contenu">{{ r.contenu }}</p>
+
+<!-- Documents joints -->
+<div *ngIf="r.documents && r.documents.length > 0" class="ff-reponse-docs">
+  <a *ngFor="let doc of r.documents"
+     class="ff-doc-chip"
+     (click)="downloadReponseDocApprenant(r.id, doc)">
+    {{ doc.typeFichier?.includes('pdf') ? '📄' : '🖼️' }}
+    <span class="ff-doc-chip-name">{{ doc.nomFichier }}</span>
+  </a>
+</div>
+
+<!-- Pied de carte : réactions + like -->
+<div class="forum-reponse-footer">
+  <div class="fr-emoji-btns">
+    <button
+      *ngFor="let emoji of ['👍', '❤️', '🙏']"
+      class="fr-emoji-btn"
+      [class.fr-emoji-active]="r.mesReactions?.includes(emoji)"
+      (click)="reagirReponse(r, emoji, $event)">
+      {{ emoji }}
+      <span class="fr-emoji-count"
+            *ngIf="(r.reactionCounts?.[emoji] || 0) > 0">
+        {{ r.reactionCounts[emoji] }}
+      </span>
+    </button>
+  </div>
+  <button class="forum-like-rep-btn"
+          [class.forum-like-rep-active]="r.likeParMoi"
+          (click)="likerReponse(r)">
+    ❤ {{ r.nombreLikes || 0 }}
+  </button>
+</div>
         </div>
       </div>
 

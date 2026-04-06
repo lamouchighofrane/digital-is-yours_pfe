@@ -1349,55 +1349,70 @@
         </div>
       </div>
 
-      <!-- Zone réponse formateur -->
-      <div class="ff-reponse-zone">
-        <div class="ff-reponse-zone-header">
-          <div class="ff-formateur-badge-big">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="1.8" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            Votre réponse en tant que formateur
-          </div>
-        </div>
+     <!-- Zone réponse formateur ENRICHIE -->
+<div class="ff-reponse-zone">
+  <div class="ff-reponse-zone-header">
+    <div class="ff-formateur-badge-big">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.8" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+      Votre réponse en tant que formateur
+    </div>
+  </div>
 
-        <div *ngIf="reponseSuccess" class="ff-reponse-success">
+  <div class="ff-reponse-editor">
+    <div class="ff-formateur-av">{{ getFormateurInitiales() }}</div>
+    <div class="ff-editor-wrap">
+      <textarea class="ff-reponse-textarea"
+                [(ngModel)]="reponseContenu"
+                placeholder="Rédigez votre réponse..."
+                rows="5"
+                (input)="onReponseTyping()">
+      </textarea>
+
+      <!-- Fichier joint sélectionné -->
+      <div *ngIf="reponseFileSelected" class="ff-file-preview">
+        <div class="ff-file-icon">📎</div>
+        <div class="ff-file-info">
+          <span class="ff-file-name">{{ reponseFile?.name }}</span>
+          <span class="ff-file-size">{{ formatReponseFileSize(reponseFile?.size) }}</span>
+        </div>
+        <button class="ff-file-remove" (click)="removeReponseFile()">×</button>
+      </div>
+
+      <div class="ff-editor-toolbar">
+        <!-- Bouton joindre fichier -->
+        <label class="ff-attach-btn" title="Joindre un fichier (PDF, image)">
+          <input #reponseFileInput type="file"
+                 accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                 style="display:none"
+                 (change)="onReponseFileSelected($event)">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <path stroke-width="1.8" d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
           </svg>
-          {{ reponseSuccess }}
-        </div>
-        <div *ngIf="reponseError" class="ff-reponse-error">{{ reponseError }}</div>
+          Joindre
+        </label>
 
-        <div class="ff-reponse-editor">
-          <div class="ff-formateur-av">
-            {{ getFormateurInitiales() }}
-          </div>
-          <div class="ff-editor-wrap">
-            <textarea
-              class="ff-reponse-textarea"
-              [(ngModel)]="reponseContenu"
-              placeholder="Rédigez votre réponse en tant que formateur...&#10;&#10;Soyez précis et pédagogique pour aider au maximum l'apprenant."
-              rows="6">
-            </textarea>
-            <div class="ff-editor-footer">
-              <span class="ff-char-count"
-                    [class.ff-char-warn]="reponseContenu.length > 4500">
-                {{ reponseContenu.length }}/5000
-              </span>
-              <button class="ff-submit-btn"
-                      (click)="soumettreReponse()"
-                      [disabled]="reponseLoading || !reponseContenu.trim()">
-                <span *ngIf="reponseLoading" class="btn-spinner"></span>
-                <svg *ngIf="!reponseLoading" width="14" height="14"
-                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                </svg>
-                {{ reponseLoading ? 'Publication...' : 'Publier la réponse' }}
-              </button>
-            </div>
-          </div>
+        <div class="ff-editor-right">
+          <span class="ff-char-count"
+                [class.ff-char-warn]="reponseContenu.length > 4500">
+            {{ reponseContenu.length }}/5000
+          </span>
+          <button class="ff-submit-btn"
+                  (click)="soumettreReponse()"
+                  [disabled]="reponseLoading || !reponseContenu.trim()">
+            <span *ngIf="reponseLoading" class="btn-spinner"></span>
+            <svg *ngIf="!reponseLoading" width="14" height="14"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            {{ reponseLoading ? 'Publication...' : 'Publier' }}
+          </button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
       <!-- Réponses existantes -->
       <div class="ff-reponses-section">
@@ -1468,6 +1483,35 @@
 
           <!-- Contenu réponse (lecture) -->
           <p *ngIf="editingReponseId !== r.id" class="ff-reponse-contenu">{{ r.contenu }}</p>
+          <div *ngIf="r.documents && r.documents.length > 0" class="ff-reponse-docs">
+  <a *ngFor="let doc of r.documents"
+     class="ff-doc-chip"
+     (click)="downloadReponseDoc(r.id, doc)">
+    <span class="ff-doc-chip-icon">
+      {{ doc.typeFichier?.includes('pdf') ? '📄' : '🖼️' }}
+    </span>
+    <span class="ff-doc-chip-name">{{ doc.nomFichier }}</span>
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+    </svg>
+  </a>
+</div>
+<!-- Réactions emoji sur les réponses -->
+<div class="forum-reponse-reactions">
+  <!-- Boutons réaction -->
+  <div class="fr-emoji-btns">
+    <button *ngFor="let emoji of ['👍', '❤️', '🙏']"
+            class="fr-emoji-btn"
+            [class.fr-emoji-active]="r.mesReactions?.includes(emoji)"
+            (click)="reagirReponse(r, emoji, $event)">
+      {{ emoji }}
+      <span *ngIf="(r.reactionCounts?.[emoji] || 0) > 0"
+            class="fr-emoji-count">
+        {{ r.reactionCounts[emoji] }}
+      </span>
+    </button>
+  </div>
+</div>
 
           <!-- Mode édition -->
           <div *ngIf="editingReponseId === r.id" class="ff-edit-zone">

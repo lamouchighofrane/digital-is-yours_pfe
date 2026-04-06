@@ -31,6 +31,8 @@ public class ForumRepositoryAdapter implements ForumRepositoryPort {
     private final ForumVueJpaRepository      vueRepo;
     private final UserJpaRepository          userRepo;
     private final FormationJpaRepository     formationRepo;
+    private final ReponseDocumentJpaRepository  docRepo;
+    private final ReponseReactionJpaRepository  reactionRepo;
 
     @PersistenceContext
     private EntityManager em;
@@ -278,6 +280,41 @@ public class ForumRepositoryAdapter implements ForumRepositoryPort {
                 ? new ArrayList<>()
                 : e.getReponses().stream().map(r -> {
             UserEntity ra = r.getAuteur();
+
+            // ── Likes sur la réponse ──────────────────────────────
+            long    nbLikes  = likeRepo.countByReponseId(r.getId());
+            boolean aLikeRep = userId != null &&
+                    likeRepo.existsByUserIdAndReponseId(userId, r.getId());
+
+            // ── Documents joints ──────────────────────────────────
+            List<Map<String, Object>> docs = docRepo.findByReponseId(r.getId())
+                    .stream()
+                    .map(d -> {
+                        Map<String, Object> m = new LinkedHashMap<>();
+                        m.put("id",          d.getId());
+                        m.put("nomFichier",  d.getNomFichier());
+                        m.put("url",         d.getUrl());
+                        m.put("typeFichier", d.getTypeFichier());
+                        m.put("taille",      d.getTaille());
+                        return m;
+                    })
+                    .collect(Collectors.toList());
+
+            // ── Réactions emoji ───────────────────────────────────
+            Map<String, Long> reactionCounts = new LinkedHashMap<>();
+            reactionCounts.put("👍", 0L);
+            reactionCounts.put("❤️", 0L);
+            reactionCounts.put("🙏", 0L);
+            reactionRepo.countByReponseIdGroupByEmoji(r.getId())
+                    .forEach(row -> reactionCounts.put((String) row[0], (Long) row[1]));
+
+            List<String> mesReactions = userId == null
+                    ? new ArrayList<>()
+                    : reactionRepo.findByReponseId(r.getId()).stream()
+                    .filter(rx -> rx.getUser().getId().equals(userId))
+                    .map(ReponseReactionEntity::getEmoji)
+                    .collect(Collectors.toList());
+
             return ReponsesForum.builder()
                     .id(r.getId())
                     .contenu(r.getContenu())
@@ -288,9 +325,13 @@ public class ForumRepositoryAdapter implements ForumRepositoryPort {
                     .auteurRole(ra != null && ra.getRole() != null
                             ? ra.getRole().name() : "APPRENANT")
                     .estSolution(r.isEstSolution())
-                    .nombreLikes(r.getLikes() != null ? r.getLikes().size() : 0)
+                    .nombreLikes((int) nbLikes)
+                    .likeParMoi(aLikeRep)
                     .dateCreation(r.getDateCreation())
                     .questionId(e.getId())
+                    .documents(docs)
+                    .reactionCounts(reactionCounts)
+                    .mesReactions(mesReactions)
                     .build();
         }).collect(Collectors.toList());
 

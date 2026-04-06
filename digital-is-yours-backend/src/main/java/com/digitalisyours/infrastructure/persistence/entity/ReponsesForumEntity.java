@@ -17,8 +17,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = "likes")
-@ToString(exclude = "likes")
+@EqualsAndHashCode(exclude = {"likes", "documents", "reactions"})
+@ToString(exclude = {"likes", "documents", "reactions"})
 public class ReponsesForumEntity {
 
     @Id
@@ -47,6 +47,18 @@ public class ReponsesForumEntity {
             orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ForumLikeEntity> likes = new ArrayList<>();
+
+    // ── NOUVEAU : documents joints ─────────────────────────────────
+    @OneToMany(mappedBy = "reponse", cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ReponseDocumentEntity> documents = new ArrayList<>();
+
+    // ── NOUVEAU : réactions emoji ──────────────────────────────────
+    @OneToMany(mappedBy = "reponse", cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ReponseReactionEntity> reactions = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

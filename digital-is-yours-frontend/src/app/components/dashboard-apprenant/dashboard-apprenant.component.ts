@@ -110,6 +110,15 @@ forumNouveauError           = '';
 forumNouveauSuccess         = '';
 forumTagInput               = '';
 forumEditingQuestion: any   = null;
+// ── Forum : typing + polling + draft ──────────────────────
+formateur_is_typing = false;
+showDraftBanner = false;
+forumDraftTimestamp = '';
+private draftInterval: any = null;
+private detailPollInterval: any = null;
+private typingPollInterval: any = null;
+private lastReponseCount = 0;
+private readonly forumDraftKey = 'forum_draft_apprenant';
 // ── US-029 : Cours actif + documents + vidéo ──
 coursActif: any = null;
 showCoursDetail = false;
@@ -217,6 +226,13 @@ documentsError = '';
   this.apprenantUser = JSON.parse(localStorage.getItem('user') || '{}');
   this.patchFormsFromUser(this.apprenantUser);
   this.loadDashboardData();
+  this.checkForumDraft();
+  document.addEventListener('click', () => {
+  try {
+    const ctx = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+    ctx.resume().then(() => ctx.close());
+  } catch(e) {}
+}, { once: true });
   this.loadNotifications();
   this.pollingInterval = setInterval(() => this.pollNotifCount(), 30000);
 
@@ -306,12 +322,22 @@ ouvrirQuestionDetail(q: any) {
   this.forumQuestionDetail = null;
   this.http.get<any>(`${this.api}/forum/questions/${q.id}`, { headers: this.headers() })
     .subscribe({
-      next: d => { this.forumQuestionDetail = d; this.cdr.detectChanges(); },
+      next: d => { this.forumQuestionDetail = d;
+        this.stopDetailPoll();
+this.lastReponseCount = q.nombreReponses || 0;
+this.startTypingPoll(q.id);
+this.detailPollInterval = setInterval(() => {
+  if (this.forumModalMode === 'detail' && this.forumQuestionDetail) {
+    this.pollForumDetail(this.forumQuestionDetail.id);
+  }
+}, 10000);
+         this.cdr.detectChanges(); },
       error: () => {}
     });
 }
 
 retourListeForum() {
+  this.stopDetailPoll();
   this.forumModalMode      = 'liste';
   this.forumQuestionDetail = null;
 }
@@ -323,6 +349,7 @@ ouvrirFormulaireNouveau() {
   this.forumNouveauSuccess  = '';
   this.forumTagInput        = '';
   this.forumEditingQuestion = null;
+  this.startDraftAutosave();
 }
 
 ajouterTagForum(event: KeyboardEvent) {
@@ -360,6 +387,7 @@ soumettreQuestionForum() {
         this.forumNouveauLoading = false;
         this.forumNouveauSuccess = this.forumEditingQuestion
           ? 'Question modifiée !' : 'Question publiée !';
+          this.clearDraftAfterSubmit();
         this.cdr.detectChanges();
         setTimeout(() => {
           this.forumModalMode   = 'liste';
@@ -469,6 +497,8 @@ estMonAuteur(q: any): boolean {
 
   ngOnDestroy() {
   if (this.pollingInterval) clearInterval(this.pollingInterval);
+  if (this.draftInterval) clearInterval(this.draftInterval);
+this.stopDetailPoll();
   this.stopTimerQf();
 }
 
@@ -1088,17 +1118,23 @@ formatTailleDoc(bytes: number): string {
       });
   }
 
-  pollNotifCount() {
-    this.http.get<any>(`${this.api}/notifications/count`, { headers: this.headers() })
-      .subscribe({
-        next: d => {
-          const n = d.count || 0;
-          if (n > this.notifNonLues) this.loadNotifications();
-          else { this.notifNonLues = n; this.cdr.detectChanges(); }
-        },
-        error: () => {}
-      });
-  }
+pollNotifCount() {
+  this.http.get<any>(`${this.api}/notifications/count`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        const n = d.count || 0;
+        if (n > this.notifNonLues) {
+          this.playNotifSound();
+          this.notifNonLues = n;       // ← AJOUTER cette ligne
+          this.loadNotifications();
+        } else {
+          this.notifNonLues = n;
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => {}
+    });
+}
 
   toggleNotifPanel(event: Event) {
     event.stopPropagation();
@@ -2099,4 +2135,167 @@ downloadCertificatFromModal() {
       this.ouvrirModalLinkedIn(cert);
     }, 300);
   }
+  // ── Brouillon ──────────────────────────────────────────────
+checkForumDraft() {
+  const d = localStorage.getItem(this.forumDraftKey);
+  if (d) {
+    const p = JSON.parse(d);
+    if (p.titre || p.contenu) {
+      this.showDraftBanner = true;
+      this.forumDraftTimestamp = p.savedAt || '';
+      this.cdr.detectChanges();
+    }
+  }
+}
+
+startDraftAutosave() {
+  if (this.draftInterval) clearInterval(this.draftInterval);
+  this.draftInterval = setInterval(() => {
+    if (this.forumModalMode === 'nouveau') this.saveDraft();
+  }, 30000);
+}
+
+saveDraft() {
+  localStorage.setItem(this.forumDraftKey, JSON.stringify({
+    ...this.forumNouveauForm,
+    savedAt: new Date().toISOString()
+  }));
+}
+
+reprendreBrouillon() {
+  const d = localStorage.getItem(this.forumDraftKey);
+  if (!d) return;
+  const p = JSON.parse(d);
+  this.showDraftBanner = false;
+  this.forumModalMode = 'nouveau';
+  this.forumNouveauError = '';
+  this.forumNouveauSuccess = '';
+  this.forumTagInput = '';
+  setTimeout(() => {
+    this.forumNouveauForm = {
+      titre: p.titre || '',
+      contenu: p.contenu || '',
+      formationId: p.formationId || null,
+      tags: p.tags || []
+    };
+    this.cdr.detectChanges();
+  }, 50);
+}
+
+supprimerBrouillon() {
+  localStorage.removeItem(this.forumDraftKey);
+  this.showDraftBanner = false;
+  this.cdr.detectChanges();
+}
+
+clearDraftAfterSubmit() {
+  localStorage.removeItem(this.forumDraftKey);
+  this.showDraftBanner = false;
+  if (this.draftInterval) clearInterval(this.draftInterval);
+}
+
+getDraftTimeAgo(): string {
+  const d = localStorage.getItem(this.forumDraftKey);
+  if (!d) return '';
+  const p = JSON.parse(d);
+  return p.savedAt ? `Sauvegardé ${this.getTimeAgo(p.savedAt)}` : '';
+}
+
+// ── Polling typing + nouvelles réponses ────────────────────
+startTypingPoll(questionId: number) {
+  if (this.typingPollInterval) clearInterval(this.typingPollInterval);
+  this.typingPollInterval = setInterval(() => {
+    this.http.get<any>(
+      `http://localhost:8080/api/apprenant/forum/questions/${questionId}/typing`,
+      { headers: this.headers() }
+    ).subscribe({
+      next: d => { this.formateur_is_typing = d.isTyping; this.cdr.detectChanges(); },
+      error: () => {}
+    });
+  }, 3000);
+}
+
+stopDetailPoll() {
+  if (this.detailPollInterval) { clearInterval(this.detailPollInterval); this.detailPollInterval = null; }
+  if (this.typingPollInterval) { clearInterval(this.typingPollInterval); this.typingPollInterval = null; }
+  this.formateur_is_typing = false;
+}
+
+pollForumDetail(questionId: number) {
+  this.http.get<any>(
+    `http://localhost:8080/api/apprenant/forum/questions/${questionId}`,
+    { headers: this.headers() }
+  ).subscribe({
+    next: d => {
+      const n = d.nombreReponses || 0;
+      if (n > this.lastReponseCount) {
+        this.playNotifSound();
+        this.forumQuestionDetail = d;
+        this.lastReponseCount = n;
+        this.cdr.detectChanges();
+      }
+    },
+    error: () => {}
+  });
+}
+
+// ── Son de notification ────────────────────────────────────
+playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {}
+}
+
+// ── Like + réactions sur réponse ──────────────────────────
+likerReponse(r: any) {
+  this.http.post<any>(
+    `http://localhost:8080/api/apprenant/forum/reponses/${r.id}/like`,
+    {},
+    { headers: this.headers() }
+  ).subscribe({
+    next: res => { r.nombreLikes = res.nombreLikes; r.likeParMoi = res.likeParMoi; this.cdr.detectChanges(); },
+    error: () => {}
+  });
+}
+
+reagirReponse(r: any, emoji: string, event: Event) {
+  event.stopPropagation();
+  this.http.post<any>(
+    `http://localhost:8080/api/apprenant/forum/reponses/${r.id}/reaction`,
+    { emoji },
+    { headers: this.headers() }
+  ).subscribe({
+    next: res => { r.reactionCounts = res.counts; r.mesReactions = res.mesReactions; this.cdr.detectChanges(); },
+    error: () => {}
+  });
+}
+
+// ── Télécharger un doc joint (apprenant) ──────────────────
+downloadReponseDocApprenant(reponseId: number, doc: any) {
+  const token = localStorage.getItem('token');
+  fetch(
+    `http://localhost:8080/api/formateur/forum/reponses/${reponseId}/documents/${doc.url}/download`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+    .then(r => r.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.nomFichier;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(() => {});
+}
 }
