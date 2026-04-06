@@ -1138,6 +1138,18 @@
 
   <!-- Vue LISTE -->
   <div *ngIf="forumModalMode==='liste'">
+    <!-- Bannière nouvelle réponse -->
+<div *ngIf="nouvelleReponseBanniere && forumModalMode==='liste'"
+     class="forum-nouvelle-reponse-banner"
+     (click)="allerALaQuestion()">
+  <div class="fnr-icon">✅</div>
+  <div class="fnr-content">
+    <span class="fnr-titre">Nouvelle réponse du formateur !</span>
+    <span class="fnr-question">{{ nouvelleReponseBanniere.questionTitre }}</span>
+  </div>
+  <button class="fnr-voir-btn">Voir la réponse →</button>
+  <button class="fnr-close" (click)="$event.stopPropagation(); fermerBanniereNouvelleReponse()">×</button>
+</div>
 
   <!-- Bannière brouillon -->
   <div *ngIf="showDraftBanner && forumModalMode==='liste'" class="forum-draft-banner">

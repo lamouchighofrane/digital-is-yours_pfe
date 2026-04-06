@@ -119,6 +119,10 @@ private detailPollInterval: any = null;
 private typingPollInterval: any = null;
 private lastReponseCount = 0;
 private readonly forumDraftKey = 'forum_draft_apprenant';
+// ── Bannière nouvelle réponse ──────────────────────
+nouvelleReponseBanniere: { questionId: number; questionTitre: string } | null = null;
+private mesQuestionsSnapshot: { id: number; nombreReponses: number }[] = [];
+private nouvelleReponseInterval: any = null;
 // ── US-029 : Cours actif + documents + vidéo ──
 coursActif: any = null;
 showCoursDetail = false;
@@ -279,7 +283,7 @@ documentsError = '';
 // FORUM — MÉTHODES
 // ══════════════════════════════════════════════════
 
-loadForumQuestions(page = 0) {
+loadForumQuestions(page = 0, callback?: () => void) {
   this.forumLoading = true;
   this.forumError   = '';
   const params = new URLSearchParams({
@@ -299,6 +303,13 @@ loadForumQuestions(page = 0) {
       this.forumTotalPages = d.totalPages || 0;
       this.forumPage       = d.currentPage || 0;
       this.forumLoading    = false;
+
+      // ← AJOUTER : initialiser le snapshot pour la surveillance
+      this.initialiserSnapshotQuestions(this.forumQuestions);
+
+      // ← AJOUTER : exécuter le callback si fourni
+      if (callback) callback();
+
       this.cdr.detectChanges();
     },
     error: err => {
@@ -498,7 +509,8 @@ estMonAuteur(q: any): boolean {
   ngOnDestroy() {
   if (this.pollingInterval) clearInterval(this.pollingInterval);
   if (this.draftInterval) clearInterval(this.draftInterval);
-this.stopDetailPoll();
+  if (this.nouvelleReponseInterval) clearInterval(this.nouvelleReponseInterval); // ← AJOUTER
+  this.stopDetailPoll();
   this.stopTimerQf();
 }
 
@@ -519,7 +531,7 @@ setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certifica
   if (s === 'progression') this.loadProgressionData();
   this.closeNotifPanel();
   if (s === 'certificats') this.loadCertificats();
-  if (s === 'forum') { this.loadForumQuestions(); this.loadForumStats(); }
+  if (s === 'forum') { this.loadForumQuestions(); this.loadForumStats(); this.startSurveillanceNouvellesReponses(); }
 
 }
 voirCours(formation: any) {
@@ -2297,5 +2309,102 @@ downloadReponseDocApprenant(reponseId: number, doc: any) {
       window.URL.revokeObjectURL(url);
     })
     .catch(() => {});
+}
+// Démarrer la surveillance des nouvelles réponses
+startSurveillanceNouvellesReponses() {
+  if (this.nouvelleReponseInterval) clearInterval(this.nouvelleReponseInterval);
+  this.nouvelleReponseInterval = setInterval(() => {
+    this.verifierNouvellesReponses();
+  }, 15000); // toutes les 15 secondes
+}
+
+// Vérifier si une question a reçu une nouvelle réponse
+verifierNouvellesReponses() {
+  if (this.forumModalMode !== 'liste') return; // seulement sur la liste
+  if (this.mesQuestionsSnapshot.length === 0) return;
+
+  this.http.get<any>(`${this.api}/forum/questions`, {
+    headers: this.headers(),
+    params: { page: '0', size: '50' }
+  }).subscribe({
+    next: data => {
+      const questions: any[] = data.questions || [];
+
+      // Comparer avec le snapshot précédent
+      for (const q of questions) {
+        const ancien = this.mesQuestionsSnapshot.find(s => s.id === q.id);
+        if (ancien && q.nombreReponses > ancien.nombreReponses) {
+          // Nouvelle réponse détectée !
+          this.nouvelleReponseBanniere = {
+            questionId: q.id,
+            questionTitre: q.titre
+          };
+          this.playNotifSound();
+          this.cdr.detectChanges();
+          break;
+        }
+      }
+
+      // Mettre à jour le snapshot
+      this.mesQuestionsSnapshot = questions.map((q: any) => ({
+        id: q.id,
+        nombreReponses: q.nombreReponses
+      }));
+    },
+    error: () => {}
+  });
+}
+
+// Initialiser le snapshot au chargement du forum
+initialiserSnapshotQuestions(questions: any[]) {
+  this.mesQuestionsSnapshot = questions.map(q => ({
+    id: q.id,
+    nombreReponses: q.nombreReponses
+  }));
+}
+
+// Cliquer sur la bannière → aller à la question
+allerALaQuestion() {
+  if (!this.nouvelleReponseBanniere) return;
+  const q = this.forumQuestions.find(
+    fq => fq.id === this.nouvelleReponseBanniere!.questionId
+  );
+
+  const scrollToLastReponse = () => {
+    setTimeout(() => {
+      // Scroller jusqu'à la dernière réponse
+      const reponses = document.querySelectorAll('.forum-reponse-card');
+      if (reponses.length > 0) {
+        const derniere = reponses[reponses.length - 1];
+        derniere.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // Fallback : scroller vers la section réponses
+        const el = document.querySelector('.forum-reponses-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 700);
+  };
+
+  if (q) {
+    this.nouvelleReponseBanniere = null;
+    this.ouvrirQuestionDetail(q);
+    scrollToLastReponse();
+  } else {
+    this.loadForumQuestions(0, () => {
+      const q2 = this.forumQuestions.find(
+        fq => fq.id === this.nouvelleReponseBanniere!.questionId
+      );
+      if (q2) {
+        this.nouvelleReponseBanniere = null;
+        this.ouvrirQuestionDetail(q2);
+        scrollToLastReponse();
+      }
+    });
+  }
+}
+
+fermerBanniereNouvelleReponse() {
+  this.nouvelleReponseBanniere = null;
+  this.cdr.detectChanges();
 }
 }

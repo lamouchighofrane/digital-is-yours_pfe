@@ -3489,3 +3489,68 @@
   font-weight: 600;
   font-style: italic;
 }
+/* ── Bannière nouvelle réponse ───────────────────── */
+.forum-nouvelle-reponse-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #e8f8f0, #fff);
+  border: 1.5px solid #27ae60;
+  cursor: pointer;
+  animation: slideDown .4s ease;
+  transition: transform .15s;
+}
+.forum-nouvelle-reponse-banner:hover { transform: translateY(-1px); }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fnr-icon { font-size: 22px; flex-shrink: 0; }
+.fnr-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.fnr-titre {
+  font-size: 13px;
+  font-weight: 700;
+  color: #27ae60;
+}
+.fnr-question {
+  font-size: 12px;
+  color: #1A1612;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+.fnr-voir-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #27ae60;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.fnr-close {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(39,174,96,.12);
+  color: #27ae60;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
