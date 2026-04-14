@@ -1,4 +1,5 @@
 package com.digitalisyours.domain.model;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,4 +27,11 @@ public class SoumissionQuizFinal {
 
     /** Temps passé en secondes */
     private Integer tempsPasse;
+
+    /**
+     * Rapport de fraude généré par le service Angular.
+     * Peut être null si l'apprenant n'a commis aucune infraction
+     * ou si le frontend n'envoie pas de rapport.
+     */
+    private RapportFraude rapportFraude;
 }

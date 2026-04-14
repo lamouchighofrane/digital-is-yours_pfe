@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { QuizAntiFraudeService, EtatFraude, NiveauFraude } from '../../services/quiz-anti-fraude.service';
 
 @Component({
   selector: 'app-dashboard-apprenant',
@@ -83,6 +84,12 @@ qfConfetti: any[]    = [];
 qfConditionsAcceptees = false;
 showQfConfirm        = false;
 private qfTimerInterval: any = null;
+// ── Anti-fraude ──
+qfEtatFraude: EtatFraude | null = null;
+qfNiveauFraude: NiveauFraude   = 'vert';
+qfShowModaleRouge               = false;
+private qfFraudeSubscription: any = null;
+
 // ── US-048 : Certificats ──           // ← ajouter ici
 certificats: any[]     = [];
 certificatsLoading     = false;
@@ -123,6 +130,9 @@ private readonly forumDraftKey = 'forum_draft_apprenant';
 nouvelleReponseBanniere: { questionId: number; questionTitre: string } | null = null;
 private mesQuestionsSnapshot: { id: number; nombreReponses: number }[] = [];
 private nouvelleReponseInterval: any = null;
+// ── Risque abandon ──
+risqueAnalyses: any[] = [];
+risqueLoading = false;
 // ── US-029 : Cours actif + documents + vidéo ──
 coursActif: any = null;
 showCoursDetail = false;
@@ -215,7 +225,8 @@ documentsError = '';
   private route: ActivatedRoute,   // ← ajouter
   private http: HttpClient,
   private cdr: ChangeDetectorRef,
-  private sanitizer: DomSanitizer
+  private sanitizer: DomSanitizer,
+  public antiFraude: QuizAntiFraudeService   // ← AJOUTER (public pour accès template)
 
 
 ) {}
@@ -507,6 +518,10 @@ estMonAuteur(q: any): boolean {
 }
 
   ngOnDestroy() {
+    this.antiFraude.arreter();
+  if (this.qfFraudeSubscription) {
+    this.qfFraudeSubscription.unsubscribe();
+  }
   if (this.pollingInterval) clearInterval(this.pollingInterval);
   if (this.draftInterval) clearInterval(this.draftInterval);
   if (this.nouvelleReponseInterval) clearInterval(this.nouvelleReponseInterval); // ← AJOUTER
@@ -524,7 +539,7 @@ estMonAuteur(q: any): boolean {
 
 setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' | 'forum') {
   this.activeSection = s;
-  if (s === 'formations')  this.loadFormations();
+   if (s === 'formations')  { this.loadFormations(); this.loadRisqueAnalyses(); }
   if (s === 'profil')      this.loadProfil();
   if (s === 'dashboard')   this.loadDashboardData();
   if (s === 'calendrier')  this.loadSessions();
@@ -566,6 +581,7 @@ retourFormations() {
   loadDashboardData() {
     this.loadFormations();
     this.loadRecommandations();
+     this.loadRisqueAnalyses();
     this.http.get<any>(`${this.api}/stats`, { headers: this.headers() })
       .subscribe({ next: d => { this.stats = d; this.cdr.detectChanges(); }, error: () => {} });
   }
@@ -1743,13 +1759,19 @@ ouvrirQuizFinal() {
   });
 }
 
-demarrerQuizFinal() {
+demarrerQuizFinal(): void {
   if (!this.qfConditionsAcceptees) return;
+
   this.qfEtape         = 'question';
   this.qfQuestionIndex = 0;
   this.qfReponses      = {};
   this.qfTempsTotal    = (this.qfData?.dureeMinutes || 20) * 60;
   this.qfTempsRestant  = this.qfTempsTotal;
+  this.qfEtatFraude    = null;
+  this.qfNiveauFraude  = 'vert';
+  this.qfShowModaleRouge = false;
+
+  // Démarrer le chronomètre
   this.stopTimerQf();
   this.qfTimerInterval = setInterval(() => {
     this.qfTempsRestant--;
@@ -1759,11 +1781,27 @@ demarrerQuizFinal() {
     }
     this.cdr.detectChanges();
   }, 1000);
+
+  // Démarrer le plein écran et la surveillance
+  const modal = document.querySelector('.qf-modal') as HTMLElement;
+  if (modal) this.antiFraude.demanderPleinEcran(modal);
+  this.antiFraude.demarrer();
+
+  // S'abonner aux événements fraude
+  this.qfFraudeSubscription = this.antiFraude.etat$.subscribe((etat: EtatFraude) => {
+    this.qfEtatFraude    = etat;
+    this.qfNiveauFraude  = etat.niveau;
+    if (etat.niveau === 'rouge') {
+      this.qfShowModaleRouge = true;
+    }
+    this.cdr.detectChanges();
+  });
+
   this.cdr.detectChanges();
 }
 
-selectionnerReponseQf(questionId: number, optionId: number) {
-  // Forcer en number pour éviter les problèmes de type string/number
+
+selectionnerReponseQf(questionId: number, optionId: number): void {
   this.qfReponses[Number(questionId)] = Number(optionId);
   this.cdr.detectChanges();
 }
@@ -1779,18 +1817,29 @@ soumettreQuizFinal() {
   this.confirmerSoumission();
 }
 
-confirmerSoumission() {
+confirmerSoumission(): void {
   this.showQfConfirm = false;
   this.stopTimerQf();
-  this.qfSoumission  = true;
+
+  // ← CORRECTION : getRapport() EN PREMIER avant arreter()
+  const rapportFraude = this.antiFraude.getRapport();
+  console.log('Rapport fraude envoyé :', JSON.stringify(rapportFraude));
+
+  // Ensuite seulement on arrête
+  this.antiFraude.arreter();
+  if (this.qfFraudeSubscription) {
+    this.qfFraudeSubscription.unsubscribe();
+    this.qfFraudeSubscription = null;
+  }
+
+  this.qfSoumission = true;
   this.cdr.detectChanges();
 
   const fid = this.qfData?.formationId
-              || this.selectedFormation?.formationId
-              || this.selectedFormation?.id;
+    || this.selectedFormation?.formationId
+    || this.selectedFormation?.id;
   const tempsPasse = this.qfTempsTotal - this.qfTempsRestant;
 
-  // ← CORRECTION : forcer les clés et valeurs en nombres entiers
   const reponsesNumeriques: { [key: number]: number } = {};
   Object.keys(this.qfReponses).forEach(k => {
     const questionId = parseInt(k, 10);
@@ -1800,33 +1849,36 @@ confirmerSoumission() {
     }
   });
 
-  console.log('DEBUG fid:', fid, 'reponses brutes:', this.qfReponses, 'reponses converties:', reponsesNumeriques);
-
   this.http.post<any>(
     `${this.api}/formations/${fid}/quiz-final/soumettre`,
-    { reponses: reponsesNumeriques, tempsPasse },
+    {
+      reponses:      reponsesNumeriques,
+      tempsPasse,
+      rapportFraude: rapportFraude
+    },
     { headers: this.headers() }
   ).subscribe({
     next: res => {
       this.qfResultat   = res;
       this.qfSoumission = false;
       this.qfEtape      = 'resultat';
-     if (res.reussi) {
-  this.genererConfettiQf();
-  setTimeout(() => {
-    this.http.get<any[]>(`${this.api}/certificats`, { headers: this.headers() })
-      .subscribe({
-        next: certs => {
-          const fid = this.qfData?.formationId
-                      || this.selectedFormation?.formationId
-                      || this.selectedFormation?.id;
-          this.qfCertificat = certs.find((c: any) => c.formationId === fid) || certs[0] || null;
-          this.cdr.detectChanges();
-        },
-        error: () => {}
-      });
-  }, 1500);
-}
+      if (res.reussi) {
+        this.genererConfettiQf();
+        setTimeout(() => {
+          this.http.get<any[]>(`${this.api}/certificats`, { headers: this.headers() })
+            .subscribe({
+              next: certs => {
+                const fid2 = this.qfData?.formationId
+                  || this.selectedFormation?.formationId
+                  || this.selectedFormation?.id;
+                this.qfCertificat = certs.find((c: any) =>
+                  c.formationId === fid2) || certs[0] || null;
+                this.cdr.detectChanges();
+              },
+              error: () => {}
+            });
+        }, 1500);
+      }
       this.cdr.detectChanges();
     },
     error: err => {
@@ -1849,15 +1901,25 @@ retenterQuizFinal() {
   this.ouvrirQuizFinal();
 }
 
-fermerQuizFinal() {
-  this.showQuizFinalModal   = false;
-  this.qfData               = null;
-  this.qfResultat           = null;
-  this.qfReponses           = {};
-  this.qfEtape              = 'chargement';
-  this.qfConditionsAcceptees = false;
-  this.showQfConfirm        = false;
-  this.qfConfetti           = [];
+fermerQuizFinal(): void {
+  // Nettoyage anti-fraude
+  this.antiFraude.arreter();
+  if (this.qfFraudeSubscription) {
+    this.qfFraudeSubscription.unsubscribe();
+    this.qfFraudeSubscription = null;
+  }
+
+  this.showQuizFinalModal    = false;
+  this.qfData                = null;
+  this.qfResultat            = null;
+  this.qfReponses            = {};
+  this.qfEtape               = 'chargement';
+  this.qfConditionsAcceptees  = false;
+  this.showQfConfirm         = false;
+  this.qfConfetti            = [];
+  this.qfEtatFraude          = null;
+  this.qfNiveauFraude        = 'vert';
+  this.qfShowModaleRouge     = false;
   this.stopTimerQf();
   this.cdr.detectChanges();
 }
@@ -1894,6 +1956,10 @@ getQfDotColor(index: number): string {
   if (!q) return '#E8E3DB';
   if (index === this.qfQuestionIndex) return '#4A7C7E';
   return this.qfReponses[q.id] ? '#27ae60' : '#E8E3DB';
+}
+fermerModaleRouge(): void {
+  this.qfShowModaleRouge = false;
+  this.cdr.detectChanges();
 }
 // ══════════════════════════════════════════════════
 // US-048 — CERTIFICATS
@@ -2407,4 +2473,51 @@ fermerBanniereNouvelleReponse() {
   this.nouvelleReponseBanniere = null;
   this.cdr.detectChanges();
 }
+loadRisqueAnalyses() {
+  this.risqueLoading = true;
+  this.http.get<any[]>(`${this.api}/risque`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        this.risqueAnalyses = d || [];
+        this.risqueLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.risqueAnalyses = [];
+        this.risqueLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+}
+
+getRisqueCouleur(niveau: string): string {
+  return niveau === 'ELEVE' ? '#e74c3c'
+       : niveau === 'MOYEN' ? '#f39c12'
+       : '#27ae60';
+}
+
+getRisqueBg(niveau: string): string {
+  return niveau === 'ELEVE' ? 'rgba(231,76,60,.12)'
+       : niveau === 'MOYEN' ? 'rgba(243,156,18,.12)'
+       : 'rgba(39,174,96,.12)';
+}
+
+getRisqueEmoji(niveau: string): string {
+  return niveau === 'ELEVE' ? '🚨' : niveau === 'MOYEN' ? '⚠️' : '✅';
+}
+
+getRisquePourFormation(formationId: number): any {
+  return this.risqueAnalyses.find(r => r.formationId === formationId) || null;
+}
+// ── Compter formations à surveiller (MOYEN + ÉLEVÉ)
+get formationsASurveiller(): number {
+  // Compte les formations MOYEN ou ÉLEVÉ uniquement
+  return this.risqueAnalyses.filter(
+    r => r.niveauRisque === 'MOYEN' || r.niveauRisque === 'ELEVE'
+  ).length;
+}
+get risqueElevesCount(): number {
+  return this.risqueAnalyses.filter(r => r.niveauRisque !== 'FAIBLE').length;
+}
+
 }

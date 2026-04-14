@@ -32,6 +32,7 @@ import { PaiementSuccesComponent } from './components/shared/paiement-succes/pai
 import { PaiementAnnuleComponent } from './components/shared/paiement-annule/paiement-annule.component';
 import { CoursDetailComponent } from './components/cours-detail/cours-detail.component';
 import { CertificatsAdminComponent } from './components/admin/certificats/certificats-admin.component';
+import { ForumAdminComponent } from './components/admin/forum/forum-admin.component';
 
 
 
@@ -45,7 +46,7 @@ import { CertificatsAdminComponent } from './components/admin/certificats/certif
     CtaComponent, RegisterComponent, LoginComponent,
     ForgotPasswordComponent,SplashScreenComponent,VerifyEmailComponent,AdminLoginComponent,
     AdminDashboardComponent,CategoriesComponent, FormationsComponent,CompetencesComponent,DashboardFormateurComponent,DashboardApprenantComponent,FormationDetailComponent,PaiementSuccesComponent,
-    PaiementAnnuleComponent,CoursDetailComponent,CertificatsAdminComponent,
+    PaiementAnnuleComponent,CoursDetailComponent,CertificatsAdminComponent,ForumAdminComponent,
   ],
   imports: [
     BrowserModule, AppRoutingModule,

@@ -95,7 +95,7 @@ public class QuizFinalApprenantRepositoryAdapter implements QuizFinalApprenantRe
     }
 
     // ══════════════════════════════════════════════════════
-    // Sauvegarder résultat
+    // Sauvegarder résultat — CORRIGÉ avec les champs anti-fraude
     // ══════════════════════════════════════════════════════
 
     @Override
@@ -106,7 +106,12 @@ public class QuizFinalApprenantRepositoryAdapter implements QuizFinalApprenantRe
                 .apprenantEmail(resultat.getApprenantEmail())
                 .quizId(resultat.getQuizId())
                 .formationId(resultat.getFormationId())
+                // ── Score ──────────────────────────────────────────
+                .scoreBrut(resultat.getScoreBrut())
+                .penaliteAppliquee(resultat.getPenaliteAppliquee() != null
+                        ? resultat.getPenaliteAppliquee() : 0)
                 .score(resultat.getScore())
+                // ── Infos quiz ─────────────────────────────────────
                 .nombreBonnesReponses(resultat.getNombreBonnesReponses())
                 .nombreQuestions(resultat.getNombreQuestions())
                 .tempsPasse(resultat.getTempsPasse())
@@ -114,6 +119,11 @@ public class QuizFinalApprenantRepositoryAdapter implements QuizFinalApprenantRe
                 .notePassage(resultat.getNotePassage())
                 .tentativeNumero(resultat.getTentativeNumero())
                 .datePassage(resultat.getDatePassage())
+                // ── Anti-fraude ────────────────────────────────────
+                .nbInfractions(resultat.getNbInfractions() != null
+                        ? resultat.getNbInfractions() : 0)
+                .suspectFraude(Boolean.TRUE.equals(resultat.getSuspectFraude()))
+                .detailInfractions(resultat.getDetailInfractions())
                 .build();
 
         ResultatQuizFinalEntity saved = resultatRepository.save(entity);

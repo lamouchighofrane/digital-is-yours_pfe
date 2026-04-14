@@ -112,27 +112,11 @@ export class CertificatsAdminComponent implements OnInit {
     return Array.from({ length: this.totalPages }, (_, i) => i);
   }
 
-  // ── Envoi email ───────────────────────────────────────────
-  envoyerEmail(cert: any) {
-    if (this.sendingId === cert.id) return;
-    this.sendingId = cert.id;
-    this.cdr.detectChanges();
-
-    this.http.post<any>(`${this.api}/${cert.id}/envoyer-email`, {}, { headers: this.headers() })
-      .subscribe({
-        next: r => {
-          this.sendingId = null;
-          cert.estEnvoye = true;
-          this.showToast(r.message || 'Email envoyé avec succès !');
-          this.cdr.detectChanges();
-        },
-        error: e => {
-          this.sendingId = null;
-          this.showToast(e.error?.message || 'Erreur lors de l\'envoi.', 'error');
-          this.cdr.detectChanges();
-        }
-      });
-  }
+ voirCertificat(cert: any) {
+  // Utiliser l'endpoint public (pas de vérification ownership)
+  const url = `http://localhost:8080/api/apprenant/certificats/${cert.id}/download`;
+  window.open(url, '_blank');
+}
 
   // ── Export CSV ────────────────────────────────────────────
   exportCSV() {

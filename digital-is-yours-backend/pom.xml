@@ -19,6 +19,9 @@
 
     <properties>
         <java.version>21</java.version>
+        <!-- ← AJOUTÉ : forcer UTF-8 pour éviter MalformedInputException -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <dependencies>
@@ -85,14 +88,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Apache PDFBox : extraction texte PDF pour quiz IA -->
+        <!-- Apache PDFBox -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>3.0.2</version>
         </dependency>
 
-        <!-- Apache POI : extraction texte Word .doc et .docx pour quiz IA -->
+        <!-- Apache POI -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
@@ -104,7 +107,7 @@
             <version>5.3.0</version>
         </dependency>
 
-        <!-- QR Code — US-059 -->
+        <!-- QR Code -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
@@ -143,6 +146,14 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <!-- ← AJOUTÉ : forcer UTF-8 dans maven-resources-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
         </plugins>

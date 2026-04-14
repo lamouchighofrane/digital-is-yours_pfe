@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,4 +69,17 @@ public interface ProgressionCoursJpaRepository extends JpaRepository<Progression
             "AND p.statut = 'TERMINE'")
     int countCoursTermines(@Param("email") String email,
                            @Param("formationId") Long formationId);
+
+    /**
+     * Retourne la date la plus récente d'activité (date_fin ou date_debut)
+     * pour un apprenant sur une formation donnée.
+     * Utilisé pour calculer les jours d'inactivité réels.
+     */
+    @Query("SELECT MAX(CASE WHEN p.dateFin IS NOT NULL THEN p.dateFin ELSE p.dateDebut END) " +
+            "FROM ProgressionCoursEntity p " +
+            "WHERE p.apprenant.id = :apprenantId " +
+            "AND p.formation.id = :formationId")
+    LocalDateTime findDerniereActiviteParFormation(
+            @Param("apprenantId") Long apprenantId,
+            @Param("formationId") Long formationId);
 }

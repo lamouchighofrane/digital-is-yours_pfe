@@ -1,4 +1,5 @@
 package com.digitalisyours.infrastructure.web.controller;
+
 import com.digitalisyours.domain.model.*;
 import com.digitalisyours.domain.port.in.QuizFinalApprenantUseCase;
 import com.digitalisyours.infrastructure.web.security.JwtUtil;
@@ -21,9 +22,9 @@ public class QuizFinalApprenantController {
     private final QuizFinalApprenantUseCase quizFinalApprenantUseCase;
     private final JwtUtil jwtUtil;
 
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     // GET — Récupérer le quiz final (sans les bonnes réponses)
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     @GetMapping
     public ResponseEntity<?> getInfosQuizFinal(
@@ -53,9 +54,9 @@ public class QuizFinalApprenantController {
         }
     }
 
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     // POST — Soumettre les réponses et obtenir la correction
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     @PostMapping("/soumettre")
     public ResponseEntity<?> soumettre(
@@ -71,17 +72,22 @@ public class QuizFinalApprenantController {
             int tempsPasse = payload.get("tempsPasse") != null
                     ? Integer.parseInt(payload.get("tempsPasse").toString()) : 0;
 
+            // ── Parser le rapport de fraude ───────────────────────
+            RapportFraude rapportFraude = parseRapportFraude(payload);
+
             SoumissionQuizFinal soumission = SoumissionQuizFinal.builder()
                     .email(email)
                     .formationId(formationId)
                     .reponses(reponses)
                     .tempsPasse(tempsPasse)
+                    .rapportFraude(rapportFraude)
                     .build();
 
             ResultatQuizFinal resultat = quizFinalApprenantUseCase.soumettre(soumission);
 
-            log.info("QuizFinal soumis : apprenant={} formation={} score={}% reussi={}",
-                    email, formationId, resultat.getScore(), resultat.getReussi());
+            log.info("QuizFinal soumis : apprenant={} formation={} scoreFinal={}% reussi={} infractions={}",
+                    email, formationId, resultat.getScore(), resultat.getReussi(),
+                    resultat.getNbInfractions());
 
             return ResponseEntity.ok(toResultatResponse(resultat));
 
@@ -108,9 +114,9 @@ public class QuizFinalApprenantController {
         }
     }
 
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     // SÉRIALISATION — InfosQuizFinalApprenant → Map JSON
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     private Map<String, Object> toInfosResponse(InfosQuizFinalApprenant infos) {
         Map<String, Object> map = new LinkedHashMap<>();
@@ -124,7 +130,6 @@ public class QuizFinalApprenantController {
         map.put("nbQuestions",         infos.getNbQuestions());
         map.put("peutPasser",          infos.isPeutPasser());
 
-        // Quiz avec questions (estCorrecte déjà masqué par le service)
         if (infos.getQuiz() != null && infos.getQuiz().getQuestions() != null) {
             List<Map<String, Object>> questions = infos.getQuiz().getQuestions().stream()
                     .map(this::toQuestionResponse)
@@ -132,16 +137,15 @@ public class QuizFinalApprenantController {
             map.put("questions", questions);
         }
 
-        // Dernier résultat éventuel
         if (infos.getDernierResultat() != null) {
             InfosQuizFinalApprenant.DernierResultat dr = infos.getDernierResultat();
             Map<String, Object> dernierResultat = new LinkedHashMap<>();
-            dernierResultat.put("score",                dr.getScore());
+            dernierResultat.put("score",               dr.getScore());
             dernierResultat.put("reussi",               dr.getReussi());
-            dernierResultat.put("nombreBonnesReponses",  dr.getNombreBonnesReponses());
-            dernierResultat.put("nombreQuestions",       dr.getNombreQuestions());
-            dernierResultat.put("datePassage",           dr.getDatePassage());
-            dernierResultat.put("tentativeNumero",       dr.getTentativeNumero());
+            dernierResultat.put("nombreBonnesReponses", dr.getNombreBonnesReponses());
+            dernierResultat.put("nombreQuestions",      dr.getNombreQuestions());
+            dernierResultat.put("datePassage",          dr.getDatePassage());
+            dernierResultat.put("tentativeNumero",      dr.getTentativeNumero());
             map.put("dernierResultat", dernierResultat);
         }
 
@@ -153,7 +157,6 @@ public class QuizFinalApprenantController {
         qm.put("id",    q.getId());
         qm.put("texte", q.getTexte());
         qm.put("ordre", q.getOrdre());
-        // explication NON exposée avant soumission
 
         if (q.getOptions() != null) {
             List<Map<String, Object>> options = q.getOptions().stream()
@@ -162,7 +165,6 @@ public class QuizFinalApprenantController {
                         om.put("id",    opt.getId());
                         om.put("texte", opt.getTexte());
                         om.put("ordre", opt.getOrdre());
-                        // estCorrecte NON exposé avant soumission (déjà null via service)
                         return om;
                     })
                     .collect(Collectors.toList());
@@ -171,13 +173,15 @@ public class QuizFinalApprenantController {
         return qm;
     }
 
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     // SÉRIALISATION — ResultatQuizFinal → Map JSON
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     private Map<String, Object> toResultatResponse(ResultatQuizFinal resultat) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("score",                resultat.getScore());
+        map.put("scoreBrut",            resultat.getScoreBrut());
+        map.put("penaliteAppliquee",    resultat.getPenaliteAppliquee());
         map.put("nombreBonnesReponses", resultat.getNombreBonnesReponses());
         map.put("nombreQuestions",      resultat.getNombreQuestions());
         map.put("reussi",               resultat.getReussi());
@@ -186,18 +190,20 @@ public class QuizFinalApprenantController {
         map.put("tentativeNumero",      resultat.getTentativeNumero());
         map.put("tentativesRestantes",  resultat.getTentativesRestantes());
         map.put("datePassage",          resultat.getDatePassage());
+        map.put("nbInfractions",        resultat.getNbInfractions());
+        map.put("suspectFraude",        resultat.getSuspectFraude());
 
         if (resultat.getReponses() != null) {
             List<Map<String, Object>> reponses = resultat.getReponses().stream()
                     .map(r -> {
                         Map<String, Object> rm = new LinkedHashMap<>();
-                        rm.put("questionId",        r.getQuestionId());
-                        rm.put("questionTexte",     r.getQuestionTexte());
-                        rm.put("optionChoisieId",   r.getOptionChoisieId());
-                        rm.put("optionChoisieTexte",r.getOptionChoisieTexte());
-                        rm.put("estCorrecte",       r.getEstCorrecte());
-                        rm.put("explication",       r.getExplication());
-                        rm.put("bonneReponseTexte", r.getBonneReponseTexte());
+                        rm.put("questionId",         r.getQuestionId());
+                        rm.put("questionTexte",      r.getQuestionTexte());
+                        rm.put("optionChoisieId",    r.getOptionChoisieId());
+                        rm.put("optionChoisieTexte", r.getOptionChoisieTexte());
+                        rm.put("estCorrecte",        r.getEstCorrecte());
+                        rm.put("explication",        r.getExplication());
+                        rm.put("bonneReponseTexte",  r.getBonneReponseTexte());
                         return rm;
                     })
                     .collect(Collectors.toList());
@@ -207,9 +213,9 @@ public class QuizFinalApprenantController {
         return map;
     }
 
-    // ══════════════════════════════════════════════════════
-    // HELPERS
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
+    // HELPERS — Parsing
+    // ══════════════════════════════════════════════════════════════
 
     @SuppressWarnings("unchecked")
     private Map<Long, Long> parseReponses(Map<String, Object> payload) {
@@ -223,6 +229,72 @@ public class QuizFinalApprenantController {
             });
         }
         return result;
+    }
+
+    /**
+     * Parse le rapport de fraude depuis le payload JSON.
+     * Structure attendue :
+     * {
+     *   "rapportFraude": {
+     *     "nombreInfractions": 2,
+     *     "infractions": [
+     *       { "type": "onglet_quitte", "message": "...", "horodatage": "..." }
+     *     ]
+     *   }
+     * }
+     */
+    @SuppressWarnings("unchecked")
+    private RapportFraude parseRapportFraude(Map<String, Object> payload) {
+        Object raw = payload.get("rapportFraude");
+        if (raw == null) {
+            log.warn("rapportFraude absent du payload");
+            return null;
+        }
+
+        log.info("rapportFraude reçu : {}", raw);
+
+        try {
+            Map<String, Object> rfMap = (Map<String, Object>) raw;
+
+            // ── Lire nombreInfractions de façon robuste ──────────────
+            int nombreInfractions = 0;
+            Object nbRaw = rfMap.get("nombreInfractions");
+            if (nbRaw != null) {
+                nombreInfractions = ((Number) nbRaw).intValue();
+            }
+
+            log.info("nombreInfractions parsé : {}", nombreInfractions);
+
+            // ── Lire la liste des infractions ────────────────────────
+            List<RapportFraude.Infraction> infractions = new ArrayList<>();
+            Object infRaw = rfMap.get("infractions");
+
+            if (infRaw instanceof List<?> infList) {
+                for (Object item : infList) {
+                    if (item instanceof Map<?, ?> infMap) {
+                        infractions.add(RapportFraude.Infraction.builder()
+                                .type(infMap.get("type") != null
+                                        ? infMap.get("type").toString() : "")
+                                .message(infMap.get("message") != null
+                                        ? infMap.get("message").toString() : "")
+                                .horodatage(infMap.get("horodatage") != null
+                                        ? infMap.get("horodatage").toString() : "")
+                                .build());
+                    }
+                }
+            }
+
+            log.info("infractions parsées : {}", infractions.size());
+
+            return RapportFraude.builder()
+                    .nombreInfractions(nombreInfractions)
+                    .infractions(infractions)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Erreur parsing rapportFraude : {}", e.getMessage(), e);
+            return null;
+        }
     }
 
     private String extractEmail(HttpServletRequest request) {

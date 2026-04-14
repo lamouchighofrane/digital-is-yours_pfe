@@ -327,6 +327,54 @@
 
     <!-- ── QUESTION ── -->
     <div *ngIf="mqEtape === 'question'" class="mq-question-screen">
+      <!-- Barre anti-fraude -->
+<div class="qaf-status-bar"
+     [class.qaf-status-vert]="mqNiveauFraude === 'vert'"
+     [class.qaf-status-orange]="mqNiveauFraude === 'orange'"
+     [class.qaf-status-rouge]="mqNiveauFraude === 'rouge'">
+  <div class="qaf-dot"
+       [class.qaf-dot-vert]="mqNiveauFraude === 'vert'"
+       [class.qaf-dot-orange]="mqNiveauFraude === 'orange'"
+       [class.qaf-dot-rouge]="mqNiveauFraude === 'rouge'">
+  </div>
+  <span class="qaf-status-text">
+    <ng-container *ngIf="mqNiveauFraude === 'vert'">Session sécurisée</ng-container>
+    <ng-container *ngIf="mqNiveauFraude !== 'vert'">
+      {{ mqEtatFraude?.derniereInfraction?.message }}
+    </ng-container>
+  </span>
+  <span *ngIf="mqEtatFraude && mqEtatFraude.nbInfractions > 0"
+        class="qaf-compteur"
+        [class.qaf-compteur-orange]="mqNiveauFraude === 'orange'"
+        [class.qaf-compteur-rouge]="mqNiveauFraude === 'rouge'">
+    {{ mqEtatFraude.nbInfractions }} infraction{{ mqEtatFraude.nbInfractions > 1 ? 's' : '' }}
+  </span>
+  <svg *ngIf="mqNiveauFraude === 'vert'" width="12" height="12"
+       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+  <svg *ngIf="mqNiveauFraude !== 'vert'" width="12" height="12"
+       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-width="2"
+          d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+  </svg>
+</div>
+
+<!-- Bannière orange -->
+<div *ngIf="mqNiveauFraude === 'orange'" class="qaf-banniere-orange">
+  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+    <path stroke-width="2" d="M12 8v4M12 16h.01"/>
+  </svg>
+  <div class="qaf-banniere-content">
+    <strong>Attention</strong>
+    <span>{{ mqEtatFraude?.derniereInfraction?.message }}</span>
+    <span class="qaf-banniere-note">
+      Cette session est surveillée. Votre résultat peut être ajusté.
+    </span>
+  </div>
+</div>
 
       <div class="mq-header">
         <button class="mq-close-btn mq-close-btn-sm" (click)="fermerMiniQuiz()">
@@ -407,6 +455,48 @@
           {{ mqSoumission ? 'Correction...' : 'Terminer le quiz' }}
         </button>
       </div>
+      <!-- Modale rouge anti-fraude -->
+<div *ngIf="mqShowModaleRouge" class="qaf-modale-overlay" (click)="$event.stopPropagation()">
+  <div class="qaf-modale-rouge">
+    <div class="qaf-modale-header">
+      <div class="qaf-modale-icon">
+        <svg width="28" height="28" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+          <path stroke-width="1.8"
+                d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="qaf-modale-titre">Activités enregistrées</h3>
+        <p class="qaf-modale-sous-titre">
+          Les actions suivantes ont été détectées pendant votre session
+        </p>
+      </div>
+    </div>
+    <div class="qaf-modale-liste">
+      <div *ngFor="let inf of mqEtatFraude?.infractions; let i = index"
+           class="qaf-modale-item">
+        <div class="qaf-modale-item-num">{{ i + 1 }}</div>
+        <div class="qaf-modale-item-content">
+          <span class="qaf-modale-item-heure">{{ inf.horodatage | date:'HH:mm:ss' }}</span>
+          <span class="qaf-modale-item-msg">{{ inf.message }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="qaf-modale-consequence">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      Ces actions ont été transmises au formateur. Votre score fera l'objet d'un examen.
+    </div>
+    <button class="qaf-modale-btn" (click)="fermerModaleRouge()">
+      Je comprends et je continue
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+  </div>
+</div>
 
       <div class="mq-reponses-counter">
         <span [class.mq-counter-warn]="mqNbReponsesSelectionnees < mqTotalQuestions">
@@ -460,6 +550,35 @@
           Note de passage : {{ mqResultat?.notePassage }}%
         </p>
       </div>
+      <!-- Bloc malus anti-fraude -->
+<div *ngIf="mqResultat?.nbInfractions > 0" class="qaf-resultat-avertissement">
+  <div class="qaf-res-avert-header">
+    <svg width="16" height="16" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+      <path stroke-width="2"
+            d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+    </svg>
+    <strong>Ajustement de score appliqué</strong>
+  </div>
+  <div class="qaf-res-avert-detail">
+    <div class="qaf-res-avert-ligne">
+      <span>Score obtenu</span>
+      <span class="qaf-score-brut">{{ mqResultat?.scoreBrut | number:'1.0-0' }}%</span>
+    </div>
+    <div class="qaf-res-avert-ligne">
+      <span>Pénalité ({{ mqResultat?.nbInfractions }}
+        infraction{{ mqResultat?.nbInfractions > 1 ? 's' : '' }})</span>
+      <span class="qaf-score-malus">− {{ mqResultat?.penaliteAppliquee }} pts</span>
+    </div>
+    <div class="qaf-res-avert-ligne qaf-res-avert-final">
+      <span>Score final</span>
+      <span class="qaf-score-final">{{ mqResultat?.score | number:'1.0-0' }}%</span>
+    </div>
+  </div>
+  <p class="qaf-res-avert-note">
+    Votre score final inclut un ajustement lié aux activités détectées pendant la session.
+  </p>
+</div>
 
       <div class="mq-resultat-stats">
         <div class="mq-rstat">

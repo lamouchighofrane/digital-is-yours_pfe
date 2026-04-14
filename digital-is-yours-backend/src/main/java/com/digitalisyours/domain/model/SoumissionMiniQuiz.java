@@ -12,7 +12,8 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SoumissionMiniQuiz {
-    /** email de l'apprenant extrait du JWT */
+
+    /** Email de l'apprenant extrait du JWT */
     private String email;
 
     /** ID de la formation (pour vérifier inscription) */
@@ -29,4 +30,10 @@ public class SoumissionMiniQuiz {
 
     /** Temps passé en secondes */
     private Integer tempsPasse;
+
+    /**
+     * Rapport de fraude généré par le service Angular.
+     * Peut être null si aucune infraction ou si non envoyé.
+     */
+    private RapportFraude rapportFraude;
 }

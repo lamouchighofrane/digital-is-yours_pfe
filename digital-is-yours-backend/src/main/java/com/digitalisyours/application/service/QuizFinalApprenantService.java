@@ -1,9 +1,11 @@
 package com.digitalisyours.application.service;
+
 import com.digitalisyours.domain.model.*;
 import com.digitalisyours.domain.port.in.CertificatUseCase;
 import com.digitalisyours.domain.port.in.QuizFinalApprenantUseCase;
 import com.digitalisyours.domain.port.out.QuizFinalApprenantRepositoryPort;
 import com.digitalisyours.infrastructure.persistence.repository.InscriptionJpaRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,39 +24,36 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
 
     private final QuizFinalApprenantRepositoryPort repositoryPort;
     private final CertificatUseCase               certificatUseCase;
-    private final CertificatEmailService           certificatEmailService; // ← NOUVEAU
-    private final InscriptionJpaRepository inscriptionJpaRepository;
+    private final CertificatEmailService           certificatEmailService;
+    private final InscriptionJpaRepository         inscriptionJpaRepository;
 
-    // ══════════════════════════════════════════════════════
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // ══════════════════════════════════════════════════════════════
     // RÉCUPÉRER LES INFOS DU QUIZ FINAL (sans bonnes réponses)
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     @Override
     public InfosQuizFinalApprenant getInfosQuizFinal(String email, Long formationId) {
 
-        // 1. Vérifier inscription + paiement
         if (!repositoryPort.estInscritEtPaye(email, formationId)) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Vous n'êtes pas inscrit à cette formation ou le paiement est en attente.");
         }
 
-        // 2. Récupérer le quiz final (avec estCorrecte — usage interne)
         Quiz quiz = repositoryPort.findQuizFinalByFormationId(formationId).orElse(null);
 
         if (quiz == null) {
             return InfosQuizFinalApprenant.builder().existe(false).build();
         }
 
-        // 3. Calculer tentatives
         long tentativesUtilisees = repositoryPort.countTentatives(email, quiz.getId());
         int  maxTentatives       = quiz.getNombreTentatives() != null ? quiz.getNombreTentatives() : 3;
         long tentativesRestantes = Math.max(0, maxTentatives - tentativesUtilisees);
 
-        // 4. Masquer estCorrecte dans les options avant d'envoyer au frontend
         masquerBonnesReponses(quiz);
 
-        // 5. Dernier résultat éventuel
         InfosQuizFinalApprenant.DernierResultat dernierResultat =
                 repositoryPort.findDernierResultat(email, quiz.getId()).orElse(null);
 
@@ -73,9 +72,9 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
                 .build();
     }
 
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     // SOUMETTRE ET CORRIGER
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     @Override
     public ResultatQuizFinal soumettre(SoumissionQuizFinal soumission) {
@@ -85,7 +84,7 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé.");
         }
 
-        // 2. Récupérer le quiz AVEC estCorrecte (usage interne uniquement)
+        // 2. Récupérer le quiz avec estCorrecte (usage interne uniquement)
         Quiz quiz = repositoryPort.findQuizFinalByFormationId(soumission.getFormationId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -133,24 +132,58 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
             }
         }
 
-        // 5. Calculer le score
-        float score = totalQuestions > 0
+        // 5. Calculer le score BRUT
+        float scoreBrut = totalQuestions > 0
                 ? Math.round((float) bonnesReponses / totalQuestions * 100.0f) : 0f;
+
+        // ── 6. APPLIQUER LE MALUS ANTI-FRAUDE ────────────────────
+        RapportFraude rapportFraude  = soumission.getRapportFraude();
+        int malus                    = 0;
+        int nbInfractions            = 0;
+        boolean suspectFraude        = false;
+        String detailInfractionsJson = null;
+
+        if (rapportFraude != null) {
+            malus         = rapportFraude.calculerMalus();
+            nbInfractions = rapportFraude.getNombreInfractions();
+            suspectFraude = rapportFraude.estSuspect();
+
+            // Sérialiser le détail des infractions en JSON
+            try {
+                detailInfractionsJson = objectMapper.writeValueAsString(
+                        rapportFraude.getInfractions());
+            } catch (Exception e) {
+                log.warn("Impossible de sérialiser les infractions : {}", e.getMessage());
+            }
+
+            if (suspectFraude) {
+                log.warn("⚠️ Fraude détectée — apprenant={} formation={} infractions={} malus={}pts",
+                        soumission.getEmail(), soumission.getFormationId(), nbInfractions, malus);
+            }
+        }
+
+        // Score final = scoreBrut - malus (jamais en dessous de 0)
+        float scoreApresmalus = Math.max(0f, scoreBrut - malus);
+
+        // ─────────────────────────────────────────────────────────
+
         float   notePassage         = quiz.getNotePassage() != null ? quiz.getNotePassage() : 75f;
-        boolean reussi              = score >= notePassage;
+        boolean reussi              = scoreApresmalus >= notePassage;
         int     tentativeNumero     = (int) tentativesUtilisees + 1;
         int     tentativesRestantes = (int) Math.max(0, maxTentatives - tentativeNumero);
 
-        log.info("QuizFinal corrigé : apprenant={} formation={} score={}% reussi={} tentative={}/{}",
+        log.info("QuizFinal corrigé : apprenant={} formation={} scoreBrut={}% malus={} scoreFinal={}% reussi={} tentative={}/{}",
                 soumission.getEmail(), soumission.getFormationId(),
-                score, reussi, tentativeNumero, maxTentatives);
+                scoreBrut, malus, scoreApresmalus, reussi, tentativeNumero, maxTentatives);
 
-        // 6. Persister le résultat
+        // 7. Persister le résultat avec les données anti-fraude
         ResultatQuizFinal resultat = ResultatQuizFinal.builder()
                 .apprenantEmail(soumission.getEmail())
                 .quizId(quiz.getId())
                 .formationId(soumission.getFormationId())
-                .score(score)
+                .scoreBrut(scoreBrut)
+                .penaliteAppliquee(malus)
+                .score(scoreApresmalus)
                 .nombreBonnesReponses(bonnesReponses)
                 .nombreQuestions(totalQuestions)
                 .tempsPasse(soumission.getTempsPasse())
@@ -159,12 +192,15 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
                 .tentativeNumero(tentativeNumero)
                 .tentativesRestantes(tentativesRestantes)
                 .datePassage(LocalDateTime.now())
+                .nbInfractions(nbInfractions)
+                .suspectFraude(suspectFraude)
+                .detailInfractions(detailInfractionsJson)
                 .reponses(details)
                 .build();
 
         ResultatQuizFinal saved = repositoryPort.saveResultat(resultat);
 
-        // 7. Générer le certificat + envoyer email si réussi (non bloquant)
+        // 8. Générer le certificat + envoyer email si réussi (non bloquant)
         if (reussi) {
             try {
                 Long apprenantId = repositoryPort.findApprenantIdByEmail(soumission.getEmail());
@@ -172,21 +208,17 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
                         apprenantId,
                         soumission.getFormationId(),
                         quiz.getId(),
-                        score
+                        scoreApresmalus   // ← on utilise le score après malus
                 );
                 log.info("Certificat généré : apprenant={} formation={}",
                         soumission.getEmail(), soumission.getFormationId());
-                // ← NOUVEAU : mettre à jour le statut → CERTIFIE
+
                 inscriptionJpaRepository.updateStatutApprenant(
                         apprenantId,
                         soumission.getFormationId(),
                         "CERTIFIE"
                 );
-                log.info("Statut apprenant mis à CERTIFIE : apprenantId={} formationId={}",
-                        apprenantId, soumission.getFormationId());
 
-
-                // ── Envoi email automatique ──────────────────────────────────
                 if (cert != null) {
                     try {
                         certificatEmailService.envoyerCertificat(cert);
@@ -206,11 +238,10 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
         return saved;
     }
 
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     // HELPERS PRIVÉS
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
-    /** Masque estCorrecte dans toutes les options — sécurité frontend */
     private void masquerBonnesReponses(Quiz quiz) {
         if (quiz.getQuestions() == null) return;
         for (Question q : quiz.getQuestions()) {

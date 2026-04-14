@@ -3554,3 +3554,505 @@
   justify-content: center;
   flex-shrink: 0;
 }
+/* ══════════════════════════════════════════════════
+   BADGE RISQUE SUR CARTE FORMATION
+══════════════════════════════════════════════════ */
+
+.risque-alerte-badge {
+  position: absolute;
+  top: 8px;         /* ← haut de l'image */
+  left: 8px;        /* ← côté gauche */
+  bottom: auto;     /* ← annuler le bottom: 38px */
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.3);
+  animation: risquePop .4s cubic-bezier(.68,-.55,.265,1.55);
+  z-index: 10;
+  pointer-events: none;
+}
+@keyframes risquePop {
+  from { transform: scale(0) translateY(8px); opacity: 0; }
+  to   { transform: scale(1) translateY(0);   opacity: 1; }
+}
+.risque-eleve {
+  background: rgba(231,76,60,.88);
+  color: #FFF;
+  box-shadow: 0 2px 12px rgba(231,76,60,.4);
+}
+.risque-moyen {
+  background: rgba(243,156,18,.88);
+  color: #FFF;
+  box-shadow: 0 2px 12px rgba(243,156,18,.3);
+}
+.risque-emoji { font-size: 13px; }
+.risque-texte { font-size: 11px; font-weight: 700; }
+.risque-score {
+  background: rgba(255,255,255,.25);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* ══════════════════════════════════════════════════
+   BANNIÈRE RISQUE DANS VUE COURS
+══════════════════════════════════════════════════ */
+
+.risque-cours-banner {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  gap: 16px;
+  animation: alertIn .35s ease;
+  position: relative;
+  overflow: hidden;
+}
+.risque-cours-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.risque-banner-eleve {
+  background: linear-gradient(135deg, rgba(231,76,60,.08), rgba(231,76,60,.04));
+  border: 1.5px solid rgba(231,76,60,.3);
+}
+.risque-banner-eleve::before { background: #e74c3c; }
+.risque-banner-moyen {
+  background: linear-gradient(135deg, rgba(243,156,18,.08), rgba(243,156,18,.04));
+  border: 1.5px solid rgba(243,156,18,.3);
+}
+.risque-banner-moyen::before { background: #f39c12; }
+
+.rcb-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+}
+.rcb-emoji {
+  font-size: 32px;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+.rcb-content { flex: 1; }
+.rcb-titre {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1612;
+  margin: 0 0 6px;
+}
+.rcb-expl {
+  font-size: 13px;
+  color: #6B5F52;
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+.rcb-reco {
+  font-size: 13px;
+  color: #1A1612;
+  margin: 0;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.rcb-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 4px;
+}
+.rcb-score-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 3px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.rcb-score-eleve {
+  border-color: #e74c3c;
+  background: rgba(231,76,60,.1);
+}
+.rcb-score-moyen {
+  border-color: #f39c12;
+  background: rgba(243,156,18,.1);
+}
+.rcb-score-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1A1612;
+}
+.rcb-score-unit { font-size: 9px; color: #9B8B6E; margin-top: 1px; }
+.rcb-score-label { font-size: 10px; color: #9B8B6E; text-align: center; }
+
+/* ══════════════════════════════════════════════════════════════
+   ANTI-FRAUDE —
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Barre de statut (toujours visible pendant le quiz) ──────── */
+.qaf-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid transparent;
+  transition: all .4s ease;
+  min-height: 36px;
+}
+.qaf-status-vert {
+  background: rgba(39,174,96,.06);
+  border-bottom-color: rgba(39,174,96,.15);
+  color: #1a7a44;
+}
+.qaf-status-orange {
+  background: rgba(243,156,18,.08);
+  border-bottom-color: rgba(243,156,18,.25);
+  color: #8a5c00;
+}
+.qaf-status-rouge {
+  background: rgba(231,76,60,.08);
+  border-bottom-color: rgba(231,76,60,.25);
+  color: #922b21;
+  animation: qafRougeShake .3s ease;
+}
+@keyframes qafRougeShake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+
+/* Point de statut animé */
+.qaf-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.qaf-dot-vert {
+  background: #27ae60;
+  box-shadow: 0 0 0 0 rgba(39,174,96,.4);
+  animation: qafPulseVert 2s ease-in-out infinite;
+}
+@keyframes qafPulseVert {
+  0%,100% { box-shadow: 0 0 0 0 rgba(39,174,96,.4); }
+  50%      { box-shadow: 0 0 0 4px rgba(39,174,96,.0); }
+}
+.qaf-dot-orange {
+  background: #f39c12;
+  box-shadow: 0 0 0 0 rgba(243,156,18,.5);
+  animation: qafPulseOrange 1.2s ease-in-out infinite;
+}
+@keyframes qafPulseOrange {
+  0%,100% { box-shadow: 0 0 0 0 rgba(243,156,18,.5); }
+  50%      { box-shadow: 0 0 0 5px rgba(243,156,18,.0); }
+}
+.qaf-dot-rouge {
+  background: #e74c3c;
+  box-shadow: 0 0 0 0 rgba(231,76,60,.6);
+  animation: qafPulseRouge .8s ease-in-out infinite;
+}
+@keyframes qafPulseRouge {
+  0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,.6); }
+  50%      { box-shadow: 0 0 0 6px rgba(231,76,60,.0); }
+}
+
+.qaf-status-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Compteur d'infractions */
+.qaf-compteur {
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.qaf-compteur-orange {
+  background: rgba(243,156,18,.15);
+  color: #7d5200;
+  border: 1px solid rgba(243,156,18,.3);
+}
+.qaf-compteur-rouge {
+  background: rgba(231,76,60,.15);
+  color: #7b241c;
+  border: 1px solid rgba(231,76,60,.3);
+}
+
+
+/* ── Bannière orange (niveau 1-2 infractions) ─────────────────── */
+.qaf-banniere-orange {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 24px;
+  background: rgba(243,156,18,.07);
+  border-bottom: 1px solid rgba(243,156,18,.2);
+  animation: qafSlideDown .35s cubic-bezier(.16,1,.3,1);
+}
+@keyframes qafSlideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.qaf-banniere-orange > svg { flex-shrink: 0; color: #f39c12; margin-top: 1px; }
+.qaf-banniere-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.qaf-banniere-content strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7d5200;
+}
+.qaf-banniere-content span {
+  font-size: 12px;
+  color: #8a6000;
+  line-height: 1.5;
+}
+.qaf-banniere-note {
+  font-size: 11px;
+  color: #9B8B6E;
+  font-style: italic;
+}
+
+
+/* ── Modale rouge (niveau 3+ infractions) ─────────────────────── */
+.qaf-modale-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(26,22,18,.75);
+  backdrop-filter: blur(3px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border-radius: 24px;
+  animation: qafOverlayIn .25s ease;
+}
+@keyframes qafOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.qaf-modale-rouge {
+  background: #FFF;
+  border-radius: 18px;
+  padding: 28px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 24px 60px rgba(26,22,18,.3);
+  animation: qafModaleIn .35s cubic-bezier(.16,1,.3,1);
+  border-top: 4px solid #e74c3c;
+}
+@keyframes qafModaleIn {
+  from { opacity: 0; transform: scale(.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+
+.qaf-modale-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.qaf-modale-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(231,76,60,.08);
+  border: 1px solid rgba(231,76,60,.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.qaf-modale-titre {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1612;
+  margin: 0 0 4px;
+}
+.qaf-modale-sous-titre {
+  font-size: 13px;
+  color: #6B5F52;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Liste des infractions */
+.qaf-modale-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.qaf-modale-liste::-webkit-scrollbar { width: 4px; }
+.qaf-modale-liste::-webkit-scrollbar-thumb {
+  background: #E8E3DB;
+  border-radius: 2px;
+}
+
+.qaf-modale-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #FAFAF7;
+  border: 1px solid #E8E3DB;
+  border-radius: 10px;
+  border-left: 3px solid #e74c3c;
+}
+.qaf-modale-item-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(231,76,60,.1);
+  color: #c0392b;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.qaf-modale-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.qaf-modale-item-heure {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9B8B6E;
+  font-family: monospace;
+}
+.qaf-modale-item-msg {
+  font-size: 12px;
+  color: #1A1612;
+  line-height: 1.5;
+}
+
+/* Message conséquence */
+.qaf-modale-consequence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(231,76,60,.06);
+  border: 1px solid rgba(231,76,60,.15);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #922b21;
+  margin-bottom: 18px;
+}
+
+/* Bouton continuer */
+.qaf-modale-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border-radius: 10px;
+  border: none;
+  background: #1A1612;
+  color: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.qaf-modale-btn:hover {
+  background: #e74c3c;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(231,76,60,.3);
+}
+
+
+/* ── Bloc malus dans l'écran de résultats ─────────────────────── */
+.qaf-resultat-avertissement {
+  margin: 16px 24px;
+  padding: 18px 20px;
+  background: rgba(231,76,60,.05);
+  border: 1.5px solid rgba(231,76,60,.2);
+  border-radius: 14px;
+  animation: qafSlideDown .35s ease;
+}
+.qaf-res-avert-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #922b21;
+}
+.qaf-res-avert-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.qaf-res-avert-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #6B5F52;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(231,76,60,.08);
+}
+.qaf-res-avert-ligne:last-child { border-bottom: none; }
+.qaf-res-avert-final {
+  font-weight: 700;
+  color: #1A1612;
+  padding-top: 10px;
+  margin-top: 4px;
+  border-top: 1.5px solid rgba(231,76,60,.2) !important;
+  border-bottom: none !important;
+}
+.qaf-score-brut  { font-weight: 700; color: #6B5F52; }
+.qaf-score-malus { font-weight: 700; color: #e74c3c; }
+.qaf-score-final {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #e74c3c;
+}
+.qaf-res-avert-note {
+  font-size: 11px;
+  color: #9B8B6E;
+  font-style: italic;
+  margin: 0;
+  line-height: 1.5;
+}

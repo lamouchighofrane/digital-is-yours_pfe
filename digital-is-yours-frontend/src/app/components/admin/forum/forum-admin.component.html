@@ -1,0 +1,201 @@
+<!-- Toast -->
+<div *ngIf="toast" class="toast" [class.toast-error]="toast.type==='error'">
+  {{ toast.type === 'success' ? '✓' : '✗' }} {{ toast.msg }}
+</div>
+
+<div class="forum-page">
+
+  <!-- KPI -->
+  <div class="kpi-strip">
+    <div class="kpi-mini"><div class="kpi-mini-icon" style="background:#fce4e4">💬</div><div><p class="kpi-mini-val">{{ stats.totalQuestions }}</p><p class="kpi-mini-lbl">Questions</p></div></div>
+    <div class="kpi-mini"><div class="kpi-mini-icon" style="background:#fff3cd">⏳</div><div><p class="kpi-mini-val" style="color:#f39c12">{{ stats.nonRepondues }}</p><p class="kpi-mini-lbl">Sans réponse</p></div></div>
+    <div class="kpi-mini"><div class="kpi-mini-icon" style="background:#e8f5e9">✓</div><div><p class="kpi-mini-val" style="color:#27ae60">{{ stats.repondues }}</p><p class="kpi-mini-lbl">Répondues</p></div></div>
+    <div class="kpi-mini"><div class="kpi-mini-icon" style="background:rgba(74,124,126,.1)">⭐</div><div><p class="kpi-mini-val" style="color:#4A7C7E">{{ stats.resolues }}</p><p class="kpi-mini-lbl">Résolues</p></div></div>
+    <div class="kpi-mini"><div class="kpi-mini-icon" style="background:#f9f0f0">📝</div><div><p class="kpi-mini-val">{{ stats.totalReponses }}</p><p class="kpi-mini-lbl">Réponses</p></div></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-box">
+      <svg width="14" height="14" fill="none" stroke="#6B5F52" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input type="text" [(ngModel)]="searchTerm" (input)="onSearch()" placeholder="Rechercher une question..."/>
+    </div>
+    <select class="ctrl-sel" [(ngModel)]="filterStatut" (change)="loadQuestions(0)">
+      <option value="ALL">Tous les statuts</option>
+      <option value="NON_REPONDU">En attente</option>
+      <option value="REPONDU">Répondues</option>
+      <option value="RESOLU">Résolues</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div><span>Chargement...</span>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!isLoading" class="table-wrap">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Question</th>
+          <th>Auteur</th>
+          <th>Formation</th>
+          <th>Statut</th>
+          <th>Réponses</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let q of questions" style="cursor:pointer" (click)="ouvrirDetail(q)">
+          <td>
+            <p style="font-weight:600;color:#1A1612;margin:0 0 3px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.titre }}</p>
+            <p style="font-size:11px;color:#6B5F52;margin:0;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.contenu }}</p>
+          </td>
+          <td class="td-muted">{{ q.auteurPrenom }} {{ q.auteurNom }}</td>
+          <td class="td-muted" style="font-size:12px">{{ q.formationTitre || '—' }}</td>
+          <td>
+           <span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block"
+      [style.background]="getStatutBg(q.statut)"
+      [style.color]="getStatutColor(q.statut)">
+  {{ getStatutLabel(q.statut) }}
+</span>
+          </td>
+          <td class="td-muted" style="text-align:center">{{ q.nombreReponses }}</td>
+          <td class="td-muted" style="font-size:11px">{{ formatDate(q.dateCreation) }}</td>
+          <td (click)="$event.stopPropagation()">
+            <div class="act-row">
+              <button class="act" (click)="ouvrirDetail(q)" title="Voir détail">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </button>
+              <button class="act act-del" (click)="supprimerQuestion(q, $event)" title="Supprimer">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="questions.length === 0">
+          <td colspan="7" class="empty-td">Aucune question trouvée</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="table-count">{{ total }} question(s) · Page {{ page + 1 }} / {{ totalPages || 1 }}</p>
+
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" style="display:flex;justify-content:center;gap:6px;padding:12px">
+      <button class="act" [disabled]="page===0" (click)="changerPage(page-1)">←</button>
+      <button *ngFor="let p of [].constructor(totalPages); let i=index"
+              class="act" [style.background]="i===page?'#8B3A3A':''" [style.color]="i===page?'#FFF':''"
+              (click)="changerPage(i)">{{ i+1 }}</button>
+      <button class="act" [disabled]="page===totalPages-1" (click)="changerPage(page+1)">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal détail question -->
+<div *ngIf="selectedQuestion || detailLoading" class="m-overlay" (click)="fermerDetail()">
+  <div class="m-box" style="max-width:680px" (click)="$event.stopPropagation()">
+
+    <div *ngIf="detailLoading" style="padding:48px;text-align:center">
+      <div class="spinner" style="margin:0 auto"></div>
+    </div>
+
+    <div *ngIf="selectedQuestion && !detailLoading">
+      <!-- Header -->
+      <div class="m-hd" style="padding-bottom:16px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700"
+                  [style.background]="getStatutBg(selectedQuestion.statut)"
+                  [style.color]="getStatutColor(selectedQuestion.statut)">
+              {{ getStatutLabel(selectedQuestion.statut) }}
+            </span>
+            <span *ngIf="selectedQuestion.formationTitre" style="font-size:11px;color:#4A7C7E;background:rgba(74,124,126,.1);padding:3px 10px;border-radius:20px">
+              📚 {{ selectedQuestion.formationTitre }}
+            </span>
+          </div>
+          <h3 class="m-title" style="font-size:18px">{{ selectedQuestion.titre }}</h3>
+          <p style="font-size:12px;color:#6B5F52;margin-top:3px">
+            Par {{ selectedQuestion.auteurPrenom }} {{ selectedQuestion.auteurNom }} · {{ formatDate(selectedQuestion.dateCreation) }}
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <button class="act act-del" (click)="supprimerQuestion(selectedQuestion)" title="Supprimer la question">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+          <button class="m-close" (click)="fermerDetail()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenu question -->
+      <div style="padding:0 28px 16px">
+        <p style="font-size:13px;color:#1A1612;line-height:1.6;background:#F5F1EB;padding:14px;border-radius:10px">{{ selectedQuestion.contenu }}</p>
+        <div *ngIf="selectedQuestion.tags?.length" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <span *ngFor="let tag of selectedQuestion.tags" style="padding:3px 9px;background:rgba(74,124,126,.1);color:#4A7C7E;border-radius:20px;font-size:11px;font-weight:600">{{ tag }}</span>
+        </div>
+      </div>
+
+      <!-- Réponses -->
+      <div style="padding:0 28px 24px;max-height:400px;overflow-y:auto">
+        <h4 style="font-size:14px;font-weight:700;color:#1A1612;margin-bottom:12px">
+          {{ selectedQuestion.nombreReponses || selectedQuestion.reponses?.length || 0 }} Réponse(s)
+        </h4>
+
+        <div *ngIf="!selectedQuestion.reponses?.length" style="text-align:center;padding:24px;color:#9B8B6E;font-size:13px">
+          Aucune réponse pour cette question.
+        </div>
+
+        <div *ngFor="let r of selectedQuestion.reponses" style="margin-bottom:12px;padding:14px;border:1px solid #E8E3DB;border-radius:10px;position:relative"
+             [style.border-color]="r.estSolution ? '#27ae60' : '#E8E3DB'"
+             [style.background]="r.estSolution ? 'rgba(39,174,96,.04)' : '#FFF'">
+
+          <div *ngIf="r.estSolution" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#27ae60;background:rgba(39,174,96,.1);padding:2px 8px;border-radius:20px;margin-bottom:8px">
+            ✓ Solution validée
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#8B3A3A;color:#FFF;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">
+                {{ (r.auteurPrenom||'?')[0].toUpperCase() }}
+              </div>
+              <div>
+                <p style="font-size:13px;font-weight:600;color:#1A1612;margin:0">
+                  {{ r.auteurPrenom }} {{ r.auteurNom }}
+                  <span *ngIf="r.auteurRole==='FORMATEUR'" style="font-size:10px;background:rgba(74,124,126,.12);color:#4A7C7E;padding:1px 7px;border-radius:20px;margin-left:4px">⭐ Formateur</span>
+                </p>
+                <p style="font-size:11px;color:#6B5F52;margin:0">{{ formatDate(r.dateCreation) }}</p>
+              </div>
+            </div>
+            <button class="act act-del" (click)="supprimerReponse(r)" title="Supprimer cette réponse">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+          <p style="font-size:13px;color:#1A1612;line-height:1.6;margin:0">{{ r.contenu }}</p>
+          <!-- Documents joints de la réponse -->
+<div *ngIf="r.documents && r.documents.length > 0"
+     style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+  <a *ngFor="let doc of r.documents"
+     (click)="downloadReponseDoc(r.id, doc)"
+     style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;
+            background:#F5F1EB;border:1px solid #E8E3DB;border-radius:8px;
+            font-size:12px;font-weight:600;color:#1A1612;cursor:pointer;
+            text-decoration:none;transition:all .15s"
+     onmouseover="this.style.borderColor='#8B3A3A';this.style.color='#8B3A3A'"
+     onmouseout="this.style.borderColor='#E8E3DB';this.style.color='#1A1612'">
+    <span>{{ doc.typeFichier?.includes('pdf') ? '📄' : '🖼️' }}</span>
+    <span style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+      {{ doc.nomFichier }}
+    </span>
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+    </svg>
+  </a>
+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

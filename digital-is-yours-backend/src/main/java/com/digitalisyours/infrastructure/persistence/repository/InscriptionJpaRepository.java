@@ -82,5 +82,14 @@ public interface InscriptionJpaRepository extends JpaRepository<InscriptionEntit
     Optional<InscriptionEntity> findByApprenantIdAndFormationId(
             @Param("apprenantId") Long apprenantId,
             @Param("formationId") Long formationId);
+    // Charge toutes les inscriptions PAYÉES avec apprenant ET formationen une seule requête JOIN FETCH pour éviter LazyInitializationException
+
+    @Query("SELECT i FROM InscriptionEntity i " +
+            "JOIN FETCH i.apprenant a " +
+            "JOIN FETCH i.formation f " +
+            "WHERE i.statutPaiement = 'PAYE' " +
+            "AND i.statutApprenant != 'CERTIFIE'")  // ← EXCLURE les certifiés
+    List<InscriptionEntity> findAllPayeesAvecApprenantEtFormation();
+
 
 }

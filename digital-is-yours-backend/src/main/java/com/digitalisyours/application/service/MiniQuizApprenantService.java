@@ -3,6 +3,9 @@ package com.digitalisyours.application.service;
 import com.digitalisyours.domain.model.*;
 import com.digitalisyours.domain.port.in.MiniQuizApprenantUseCase;
 import com.digitalisyours.domain.port.out.MiniQuizApprenantRepositoryPort;
+import com.digitalisyours.infrastructure.persistence.entity.ResultatMiniQuizEntity;
+import com.digitalisyours.infrastructure.persistence.repository.ResultatMiniQuizJpaRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,11 +20,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class MiniQuizApprenantService implements MiniQuizApprenantUseCase {
-    private final MiniQuizApprenantRepositoryPort repositoryPort;
 
-    // ══════════════════════════════════════════════════════
+    private final MiniQuizApprenantRepositoryPort repositoryPort;
+    private final ResultatMiniQuizJpaRepository   miniQuizResultatRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // ══════════════════════════════════════════════════════════════
     // RÉCUPÉRER LE QUIZ (sans révéler les bonnes réponses)
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     @Override
     public Optional<Quiz> getMiniQuiz(String email, Long formationId, Long coursId) {
@@ -29,13 +36,12 @@ public class MiniQuizApprenantService implements MiniQuizApprenantUseCase {
 
         Optional<Quiz> quizOpt = repositoryPort.findMiniQuizByCoursId(coursId);
 
-        // ── Masquer estCorrecte avant d'envoyer au frontend ──
         quizOpt.ifPresent(quiz -> {
             if (quiz.getQuestions() != null) {
                 for (Question q : quiz.getQuestions()) {
                     if (q.getOptions() != null) {
                         for (OptionQuestion opt : q.getOptions()) {
-                            opt.setEstCorrecte(null); // ← sécurité : ne pas exposer la bonne réponse
+                            opt.setEstCorrecte(null);
                         }
                     }
                 }
@@ -45,9 +51,9 @@ public class MiniQuizApprenantService implements MiniQuizApprenantUseCase {
         return quizOpt;
     }
 
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     // SOUMETTRE ET CORRIGER
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     @Override
     public ResultatMiniQuiz soumettre(SoumissionMiniQuiz soumission) {
@@ -71,11 +77,7 @@ public class MiniQuizApprenantService implements MiniQuizApprenantUseCase {
             for (Question question : quiz.getQuestions()) {
 
                 Long optionChoisieId = reponsesApprenant.get(question.getId());
-
-                // Trouver la bonne réponse
-                OptionQuestion bonneOption = trouverBonneReponse(question);
-
-                // Trouver l'option choisie par l'apprenant
+                OptionQuestion bonneOption   = trouverBonneReponse(question);
                 OptionQuestion optionChoisie = trouverOption(question, optionChoisieId);
 
                 boolean estCorrecte = optionChoisie != null
@@ -93,38 +95,97 @@ public class MiniQuizApprenantService implements MiniQuizApprenantUseCase {
                         .bonneReponseTexte(bonneOption != null ? bonneOption.getTexte() : null)
                         .build());
             }
-
         }
 
-        // ── Calculer le score ─────────────────────────────────────
-        float score = totalQuestions > 0
+        // ── Calculer le score BRUT ────────────────────────────────
+        float scoreBrut = totalQuestions > 0
                 ? Math.round((float) bonnesReponses / totalQuestions * 100.0f)
                 : 0f;
 
-        float notePassage = quiz.getNotePassage() != null ? quiz.getNotePassage() : 70f;
-        boolean reussi    = score >= notePassage;
+        // ── APPLIQUER LE MALUS ANTI-FRAUDE ────────────────────────
+        RapportFraude rapportFraude  = soumission.getRapportFraude();
+        int malus                    = 0;
+        int nbInfractions            = 0;
+        boolean suspectFraude        = false;
+        String detailInfractionsJson = null;
 
-        log.info("Mini-quiz corrigé : apprenant={} cours={} score={}% reussi={}",
-                soumission.getEmail(), soumission.getCoursId(), score, reussi);
+        if (rapportFraude != null) {
+            malus         = rapportFraude.calculerMalus();
+            nbInfractions = rapportFraude.getNombreInfractions();
+            suspectFraude = rapportFraude.estSuspect();
+
+            try {
+                detailInfractionsJson = objectMapper.writeValueAsString(
+                        rapportFraude.getInfractions());
+            } catch (Exception e) {
+                log.warn("Impossible de sérialiser les infractions mini-quiz : {}", e.getMessage());
+            }
+
+            if (suspectFraude) {
+                log.warn("⚠️ Fraude détectée (mini-quiz) — apprenant={} cours={} infractions={} malus={}pts",
+                        soumission.getEmail(), soumission.getCoursId(), nbInfractions, malus);
+            }
+        }
+
+        // Score final = scoreBrut - malus (jamais en dessous de 0)
+        float scoreApresMalus = Math.max(0f, scoreBrut - malus);
+
+        // ─────────────────────────────────────────────────────────
+
+        float notePassage = quiz.getNotePassage() != null ? quiz.getNotePassage() : 70f;
+        boolean reussi    = scoreApresMalus >= notePassage;
+
+        log.info("Mini-quiz corrigé : apprenant={} cours={} scoreBrut={}% malus={} scoreFinal={}% reussi={}",
+                soumission.getEmail(), soumission.getCoursId(),
+                scoreBrut, malus, scoreApresMalus, reussi);
+
+        // Persister le résultat mini-quiz avec données anti-fraude
+        try {
+            ResultatMiniQuizEntity entity = ResultatMiniQuizEntity.builder()
+                    .apprenantEmail(soumission.getEmail())
+                    .quizId(quiz.getId())
+                    .coursId(soumission.getCoursId())
+                    .formationId(soumission.getFormationId())
+                    .scoreBrut(scoreBrut)
+                    .penaliteAppliquee(malus)
+                    .score(scoreApresMalus)
+                    .nombreBonnesReponses(bonnesReponses)
+                    .nombreQuestions(totalQuestions)
+                    .tempsPasse(soumission.getTempsPasse())
+                    .reussi(reussi)
+                    .notePassage(notePassage)
+                    .tentativeNumero(1)
+                    .nbInfractions(nbInfractions)
+                    .suspectFraude(suspectFraude)
+                    .detailInfractions(detailInfractionsJson)
+                    .build();
+            miniQuizResultatRepository.save(entity);
+        } catch (Exception e) {
+            log.error("Erreur sauvegarde résultat mini-quiz (non bloquant) : {}", e.getMessage());
+        }
 
         return ResultatMiniQuiz.builder()
                 .quizId(quiz.getId())
                 .coursId(soumission.getCoursId())
                 .formationId(soumission.getFormationId())
-                .score(score)
+                .scoreBrut(scoreBrut)
+                .penaliteAppliquee(malus)
+                .score(scoreApresMalus)
                 .nombreBonnesReponses(bonnesReponses)
                 .nombreQuestions(totalQuestions)
                 .tempsPasse(soumission.getTempsPasse())
                 .reussi(reussi)
                 .notePassage(notePassage)
+                .nbInfractions(nbInfractions)
+                .suspectFraude(suspectFraude)
                 .datePassage(LocalDateTime.now())
                 .reponses(details)
                 .build();
     }
 
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
     // HELPERS PRIVÉS
-    // ══════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════════
 
     private void verifierAcces(String email, Long formationId, Long coursId) {
         if (!repositoryPort.estInscritEtPaye(email, formationId)) {

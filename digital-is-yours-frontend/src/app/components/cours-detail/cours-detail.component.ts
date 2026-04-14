@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { QuizAntiFraudeService, EtatFraude, NiveauFraude } from '../../services/quiz-anti-fraude.service';
 
 @Component({
   selector: 'app-cours-detail',
@@ -41,6 +42,11 @@ export class CoursDetailComponent implements OnInit, OnDestroy {
   mqTempsTotal        = 0;
   mqConfetti: any[]   = [];
   private mqTimerInterval: any = null;
+  // ── Anti-fraude mini-quiz ──────────────────────────────────────
+mqEtatFraude: EtatFraude | null     = null;
+mqNiveauFraude: NiveauFraude        = 'vert';
+mqShowModaleRouge                   = false;
+private mqFraudeSubscription: any  = null;
 
   private api = 'http://localhost:8080/api/apprenant';
 
@@ -48,7 +54,8 @@ export class CoursDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private http: HttpClient,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    public antiFraude: QuizAntiFraudeService
   ) {}
 
   ngOnInit() {
@@ -62,8 +69,12 @@ export class CoursDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.stopChrono();
-  }
+  this.antiFraude.arreter();                       // ← AJOUTER
+  if (this.mqFraudeSubscription) {                 // ← AJOUTER
+    this.mqFraudeSubscription.unsubscribe();       // ← AJOUTER
+  }                                                // ← AJOUTER
+  this.stopChrono();
+}
 
   private headers(): HttpHeaders {
     return new HttpHeaders({
@@ -291,13 +302,31 @@ export class CoursDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  demarrerQuiz() {
-    this.mqQuestionIndex = 0;
-    this.mqReponses      = {};
-    this.mqTemps         = 0;
-    this.mqEtape         = 'question';
-    this.demarrerChrono();
-  }
+ demarrerQuiz() {
+  this.mqQuestionIndex  = 0;
+  this.mqReponses       = {};
+  this.mqTemps          = 0;
+  this.mqEtatFraude     = null;
+  this.mqNiveauFraude   = 'vert';
+  this.mqShowModaleRouge = false;
+  this.mqEtape          = 'question';
+  this.demarrerChrono();
+  // Demander le plein écran sur le modal mini-quiz
+  setTimeout(() => {
+    const modal = document.querySelector('.mq-modal') as HTMLElement;
+    if (modal) this.antiFraude.demanderPleinEcran(modal);
+  }, 100);
+
+  // Démarrer la surveillance anti-fraude
+  this.antiFraude.demarrer();
+  this.mqFraudeSubscription = this.antiFraude.etat$.subscribe((etat: EtatFraude) => {
+    this.mqEtatFraude    = etat;
+    this.mqNiveauFraude  = etat.niveau;
+    if (etat.niveau === 'rouge') {
+      this.mqShowModaleRouge = true;
+    }
+  });
+}
 
   private demarrerChrono() {
     this.stopChrono();
@@ -343,31 +372,45 @@ export class CoursDetailComponent implements OnInit, OnDestroy {
     this.mqQuestionIndex = index;
   }
 
-  soumettreQuiz() {
-    if (!this.formationId || !this.coursId) return;
-    this.stopChrono();
-    this.mqTempsTotal = this.mqTemps;
-    this.mqSoumission = true;
+ soumettreQuiz() {
+  if (!this.formationId || !this.coursId) return;
+  this.stopChrono();
+  this.mqTempsTotal = this.mqTemps;
 
-    this.http.post<any>(
-      `${this.api}/formations/${this.formationId}/cours/${this.coursId}/mini-quiz/soumettre`,
-      { reponses: this.mqReponses, tempsPasse: this.mqTempsTotal },
-      { headers: this.headers() }
-    ).subscribe({
-      next: (resultat: any) => {
-        this.mqResultat   = resultat;
-        this.mqSoumission = false;
-        this.mqEtape      = 'resultat';
-        if (resultat.reussi) this.genererConfetti();
-        this.terminerCours();
-        setTimeout(() => {
-          const modal = document.querySelector('.mq-modal');
-          if (modal) modal.scrollTop = 0;
-        }, 100);
-      },
-      error: () => { this.mqSoumission = false; }
-    });
+  // Récupérer le rapport AVANT d'arrêter
+  const rapportFraude = this.antiFraude.getRapport();
+  this.antiFraude.arreter();
+  if (this.mqFraudeSubscription) {
+    this.mqFraudeSubscription.unsubscribe();
+    this.mqFraudeSubscription = null;
   }
+
+  this.mqSoumission = true;
+
+  this.http.post<any>(
+    `${this.api}/formations/${this.formationId}/cours/${this.coursId}/mini-quiz/soumettre`,
+    {
+      reponses:      this.mqReponses,
+      tempsPasse:    this.mqTempsTotal,
+      rapportFraude: rapportFraude       // ← AJOUT
+    },
+    { headers: this.headers() }
+  ).subscribe({
+    next: (resultat: any) => {
+      this.mqResultat    = resultat;
+      this.mqSoumission  = false;
+      this.mqEtape       = 'resultat';
+      this.mqShowModaleRouge = false;
+      if (resultat.reussi) this.genererConfetti();
+      this.terminerCours();
+      setTimeout(() => {
+        const modal = document.querySelector('.mq-modal');
+        if (modal) modal.scrollTop = 0;
+      }, 100);
+    },
+    error: () => { this.mqSoumission = false; }
+  });
+}
 
   getMqDashOffset(): number {
     const score = this.mqResultat?.score || 0;
@@ -403,14 +446,26 @@ export class CoursDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  fermerMiniQuiz() {
-    this.stopChrono();
-    this.showMiniQuizModal = false;
-    this.mqQuiz            = null;
-    this.mqResultat        = null;
-    this.mqConfetti        = [];
-    this.mqSoumission      = false;
+ fermerMiniQuiz() {
+  // Nettoyage anti-fraude
+  this.antiFraude.arreter();
+  if (this.mqFraudeSubscription) {
+    this.mqFraudeSubscription.unsubscribe();
+    this.mqFraudeSubscription = null;
   }
+  this.stopChrono();
+  this.showMiniQuizModal  = false;
+  this.mqQuiz             = null;
+  this.mqResultat         = null;
+  this.mqConfetti         = [];
+  this.mqSoumission       = false;
+  this.mqEtatFraude       = null;
+  this.mqNiveauFraude     = 'vert';
+  this.mqShowModaleRouge  = false;
+}
+fermerModaleRouge(): void {
+  this.mqShowModaleRouge = false;
+}
 
   // ══════════════════════════════════════════════════════
   // UTILITAIRES

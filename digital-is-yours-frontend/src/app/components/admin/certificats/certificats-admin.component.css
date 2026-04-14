@@ -232,6 +232,7 @@
 .ca-act:disabled        { opacity: .5; cursor: not-allowed; }
 .ca-act-email:hover     { border-color: #4A7C7E; color: #4A7C7E; background: rgba(74,124,126,.08); }
 .ca-act-link:hover      { border-color: #9b59b6; color: #9b59b6; background: rgba(155,89,182,.08); }
+.ca-act-voir:hover { border-color: #4A7C7E; color: #4A7C7E; background: rgba(74,124,126,.08); }
 
 .ca-mini-spinner {
   width: 12px; height: 12px; border-radius: 50%;

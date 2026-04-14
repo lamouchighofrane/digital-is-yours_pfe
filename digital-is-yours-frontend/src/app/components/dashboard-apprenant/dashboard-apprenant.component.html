@@ -260,6 +260,16 @@
           <p class="kpi-val">{{ stats.progressionGlobale || 0 }}%</p>
           <p class="kpi-label">Progression globale</p>
         </div>
+        <div class="kpi" style="--accent:#e74c3c" *ngIf="risqueAnalyses.length > 0">
+  <div class="kpi-ico" style="background:#fce4e4">
+    <svg width="18" height="18" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+      <path stroke-width="1.6" d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+    </svg>
+  </div>
+<p class="kpi-val">{{ formationsASurveiller }}</p>
+  <p class="kpi-label">Formations à surveiller</p>
+</div>
       </div>
 
       <!-- Formations récentes -->
@@ -537,6 +547,21 @@
   {{ getStatutApprenantIcon(f.statutApprenant) }}
   {{ getStatutApprenantLabel(f.statutApprenant) }}
 </span>
+<!-- Badge risque abandon — visible uniquement si MOYEN ou ÉLEVÉ -->
+<ng-container *ngIf="getRisquePourFormation(f.formationId || f.id) as risque">
+  <div class="risque-alerte-badge"
+       *ngIf="risque.niveauRisque === 'ELEVE' || risque.niveauRisque === 'MOYEN'"
+       [class.risque-eleve]="risque.niveauRisque === 'ELEVE'"
+       [class.risque-moyen]="risque.niveauRisque === 'MOYEN'">
+    <span class="risque-emoji">
+      {{ risque.niveauRisque === 'ELEVE' ? '🚨' : '⚠️' }}
+    </span>
+    <span class="risque-texte">
+      {{ risque.niveauRisque === 'ELEVE' ? 'Risque élevé' : 'À surveiller' }}
+    </span>
+    <span class="risque-score">{{ risque.scoreRisque | number:'1.0-0' }}%</span>
+  </div>
+</ng-container>
           </div>
           <div class="fc-body">
             <h3 class="fc-titre">{{ f.titre }}</h3>
@@ -632,6 +657,42 @@
       </div>
       <button class="cours-retry-btn" (click)="loadCours()">Réessayer</button>
     </div>
+ <!-- Alerte risque dans la vue cours -->
+<ng-container *ngIf="selectedFormation && getRisquePourFormation(
+    selectedFormation.formationId || selectedFormation.id) as risque">
+  <div class="risque-cours-banner"
+       *ngIf="risque.niveauRisque && risque.niveauRisque !== 'FAIBLE'"
+       [class.risque-banner-eleve]="risque.niveauRisque === 'ELEVE'"
+       [class.risque-banner-moyen]="risque.niveauRisque === 'MOYEN'">
+    <div class="rcb-left">
+      <div class="rcb-emoji">
+        {{ risque.niveauRisque === 'ELEVE' ? '🚨' : '💪' }}
+      </div>
+      <div class="rcb-content">
+        <p class="rcb-titre">
+          {{ risque.niveauRisque === 'ELEVE'
+            ? 'Attention — risque d\'abandon détecté !'
+            : 'Un peu plus d\'effort !' }}
+        </p>
+        <p class="rcb-expl">{{ risque.explication }}</p>
+        <p class="rcb-reco">{{ risque.recommandationIA }}</p>
+      </div>
+    </div>
+    <div class="rcb-right">
+      <div class="rcb-score-circle"
+           [class.rcb-score-eleve]="risque.niveauRisque === 'ELEVE'"
+           [class.rcb-score-moyen]="risque.niveauRisque === 'MOYEN'">
+        <span class="rcb-score-val">
+          {{ risque.scoreRisque | number:'1.0-0' }}
+        </span>
+        <span class="rcb-score-unit">/ 100</span>
+      </div>
+      <p class="rcb-score-label">Score risque</p>
+    </div>
+  </div>
+</ng-container>
+
+
 
     <div *ngIf="!coursLoading && !coursError && cours.length===0" class="cours-empty">
       <div class="cours-empty-icon">
@@ -1311,22 +1372,7 @@
                     {{ q.nombreLikes }}
                   </button>
 
-                  <button *ngIf="estMonAuteur(q)"
-                          class="forum-q-edit-btn"
-                          (click)="editerQuestionForum(q, $event)"
-                          title="Modifier">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                  </button>
-                  <button *ngIf="estMonAuteur(q)"
-                          class="forum-q-del-btn"
-                          (click)="supprimerQuestionForum(q, $event)"
-                          title="Supprimer">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                  </button>
+
 
                   <button class="forum-q-voir-btn">
                     Voir
@@ -2863,6 +2909,70 @@
 
     <!-- ── QUESTION ── -->
     <div *ngIf="qfEtape==='question'" class="qf-question-screen">
+      <!-- Barre de statut anti-fraude — toujours visible pendant le quiz -->
+<div class="qaf-status-bar"
+     [class.qaf-status-vert]="qfNiveauFraude === 'vert'"
+     [class.qaf-status-orange]="qfNiveauFraude === 'orange'"
+     [class.qaf-status-rouge]="qfNiveauFraude === 'rouge'">
+
+  <!-- Point de statut animé -->
+  <div class="qaf-dot"
+       [class.qaf-dot-vert]="qfNiveauFraude === 'vert'"
+       [class.qaf-dot-orange]="qfNiveauFraude === 'orange'"
+       [class.qaf-dot-rouge]="qfNiveauFraude === 'rouge'">
+  </div>
+
+  <!-- Texte de statut -->
+  <span class="qaf-status-text">
+    <ng-container *ngIf="qfNiveauFraude === 'vert'">
+      Session sécurisée
+    </ng-container>
+    <ng-container *ngIf="qfNiveauFraude === 'orange'">
+      {{ qfEtatFraude?.derniereInfraction?.message }}
+    </ng-container>
+    <ng-container *ngIf="qfNiveauFraude === 'rouge'">
+      {{ qfEtatFraude?.derniereInfraction?.message }}
+    </ng-container>
+  </span>
+
+  <!-- Compteur infractions (visible seulement si > 0) -->
+  <span *ngIf="qfEtatFraude && qfEtatFraude.nbInfractions > 0"
+        class="qaf-compteur"
+        [class.qaf-compteur-orange]="qfNiveauFraude === 'orange'"
+        [class.qaf-compteur-rouge]="qfNiveauFraude === 'rouge'">
+    {{ qfEtatFraude.nbInfractions }} infraction{{ qfEtatFraude.nbInfractions > 1 ? 's' : '' }}
+  </span>
+
+  <!-- Icône cadenas -->
+  <svg *ngIf="qfNiveauFraude === 'vert'" width="12" height="12"
+       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-width="2"
+          d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+
+  <!-- Icône alerte orange/rouge -->
+  <svg *ngIf="qfNiveauFraude !== 'vert'" width="12" height="12"
+       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-width="2"
+          d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94
+             a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+  </svg>
+
+</div>
+<div *ngIf="qfNiveauFraude === 'orange'" class="qaf-banniere-orange">
+  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+    <path stroke-width="2" d="M12 8v4M12 16h.01"/>
+  </svg>
+  <div class="qaf-banniere-content">
+    <strong>Attention</strong>
+    <span>{{ qfEtatFraude?.derniereInfraction?.message }}</span>
+    <span class="qaf-banniere-note">
+      Cette session est surveillée. Votre résultat peut être ajusté.
+    </span>
+  </div>
+</div>
 
       <!-- Header sticky avec timer -->
       <div class="qf-q-header">
@@ -2928,6 +3038,62 @@
           {{ qfSoumission ? 'Correction...' : 'Terminer et soumettre' }}
         </button>
       </div>
+       <!-- ═══ MODALE ROUGE ANTI-FRAUDE ═══ -->
+        <div *ngIf="qfShowModaleRouge" class="qaf-modale-overlay" (click)="$event.stopPropagation()">
+  <div class="qaf-modale-rouge">
+
+    <!-- En-tête -->
+    <div class="qaf-modale-header">
+      <div class="qaf-modale-icon">
+        <svg width="28" height="28" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+          <path stroke-width="1.8"
+                d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94
+                   a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="qaf-modale-titre">Activités enregistrées</h3>
+        <p class="qaf-modale-sous-titre">
+          Les actions suivantes ont été détectées pendant votre session
+        </p>
+      </div>
+    </div>
+
+    <!-- Liste des infractions -->
+    <div class="qaf-modale-liste">
+      <div *ngFor="let inf of qfEtatFraude?.infractions; let i = index"
+           class="qaf-modale-item">
+        <div class="qaf-modale-item-num">{{ i + 1 }}</div>
+        <div class="qaf-modale-item-content">
+          <span class="qaf-modale-item-heure">
+            {{ inf.horodatage | date:'HH:mm:ss' }}
+          </span>
+          <span class="qaf-modale-item-msg">{{ inf.message }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message conséquence -->
+    <div class="qaf-modale-consequence">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2"
+              d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      Ces actions ont été transmises au formateur.
+      Votre score final fera l'objet d'un examen.
+    </div>
+
+    <!-- Bouton continuer -->
+    <button class="qaf-modale-btn" (click)="fermerModaleRouge()">
+      Je comprends et je continue
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+
+  </div>
+</div>
 
       <!-- Modal confirmation soumission -->
       <div *ngIf="showQfConfirm" class="qf-confirm-overlay" (click)="showQfConfirm=false">
@@ -2985,6 +3151,99 @@
             : 'Vous n\'avez pas atteint la note de passage de ' + (qfResultat?.notePassage || 75) + '%.' }}
         </p>
       </div>
+       <!-- ═══ AVERTISSEMENT MALUS ANTI-FRAUDE ═══ -->
+        <div *ngIf="qfShowModaleRouge" class="qaf-modale-overlay" (click)="$event.stopPropagation()">
+  <div class="qaf-modale-rouge">
+
+    <!-- En-tête -->
+    <div class="qaf-modale-header">
+      <div class="qaf-modale-icon">
+        <svg width="28" height="28" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+          <path stroke-width="1.8"
+                d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94
+                   a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="qaf-modale-titre">Activités enregistrées</h3>
+        <p class="qaf-modale-sous-titre">
+          Les actions suivantes ont été détectées pendant votre session
+        </p>
+      </div>
+    </div>
+
+    <!-- Liste des infractions -->
+    <div class="qaf-modale-liste">
+      <div *ngFor="let inf of qfEtatFraude?.infractions; let i = index"
+           class="qaf-modale-item">
+        <div class="qaf-modale-item-num">{{ i + 1 }}</div>
+        <div class="qaf-modale-item-content">
+          <span class="qaf-modale-item-heure">
+            {{ inf.horodatage | date:'HH:mm:ss' }}
+          </span>
+          <span class="qaf-modale-item-msg">{{ inf.message }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message conséquence -->
+    <div class="qaf-modale-consequence">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2"
+              d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      Ces actions ont été transmises au formateur.
+      Votre score final fera l'objet d'un examen.
+    </div>
+
+    <!-- Bouton continuer -->
+    <button class="qaf-modale-btn" (click)="fermerModaleRouge()">
+      Je comprends et je continue
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+
+  </div>
+</div>
+
+
+<!-- ────────────────────────────────────────────────────────────
+     EMPLACEMENT 4 :
+     Dans l'écran de RÉSULTATS — qfEtape==='resultat'
+     Ajouter le bloc malus JUSTE AVANT .qf-res-stats (les 4 stats)
+     Uniquement si des infractions ont été détectées
+     ──────────────────────────────────────────────────────────── -->
+
+<div *ngIf="qfResultat?.nbInfractions > 0" class="qaf-resultat-avertissement">
+  <div class="qaf-res-avert-header">
+    <svg width="16" height="16" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+      <path stroke-width="2"
+            d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94
+               a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <path stroke-width="2" d="M12 9v4M12 17h.01"/>
+    </svg>
+    <strong>Ajustement de score appliqué</strong>
+  </div>
+  <div class="qaf-res-avert-detail">
+    <div class="qaf-res-avert-ligne">
+      <span>Score obtenu</span>
+      <span class="qaf-score-brut">{{ qfResultat?.scoreBrut | number:'1.0-0' }}%</span>
+    </div>
+    <div class="qaf-res-avert-ligne">
+      <span>Pénalité ({{ qfResultat?.nbInfractions }} infraction{{ qfResultat?.nbInfractions > 1 ? 's' : '' }})</span>
+      <span class="qaf-score-malus">− {{ qfResultat?.penaliteAppliquee }} pts</span>
+    </div>
+    <div class="qaf-res-avert-ligne qaf-res-avert-final">
+      <span>Score final</span>
+      <span class="qaf-score-final">{{ qfResultat?.score | number:'1.0-0' }}%</span>
+    </div>
+  </div>
+  <p class="qaf-res-avert-note">
+    Votre score final inclut un ajustement lié aux activités détectées pendant la session.
+  </p>
+</div>
 
       <!-- Stats -->
       <div class="qf-res-stats">
