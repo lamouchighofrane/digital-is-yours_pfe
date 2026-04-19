@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { QuizAntiFraudeService, EtatFraude, NiveauFraude } from '../../services/quiz-anti-fraude.service';
+import { QuizCameraService, EtatCamera, EvenementCamera } from '../../services/quiz-camera.service';
 
 @Component({
   selector: 'app-cours-detail',
@@ -47,6 +48,12 @@ mqEtatFraude: EtatFraude | null     = null;
 mqNiveauFraude: NiveauFraude        = 'vert';
 mqShowModaleRouge                   = false;
 private mqFraudeSubscription: any  = null;
+// ── Caméra mini-quiz ──
+mqEtatCamera: EtatCamera | null           = null;
+mqShowModaleCamera                        = false;
+mqInfractionCamera: EvenementCamera | null = null;
+private mqCameraSubscription: any         = null;
+private mqCameraInfraSubscription: any    = null;
 
   private api = 'http://localhost:8080/api/apprenant';
 
@@ -55,7 +62,8 @@ private mqFraudeSubscription: any  = null;
     private router: Router,
     private http: HttpClient,
     private sanitizer: DomSanitizer,
-    public antiFraude: QuizAntiFraudeService
+    public antiFraude: QuizAntiFraudeService,
+    public camera: QuizCameraService
   ) {}
 
   ngOnInit() {
@@ -303,13 +311,15 @@ private mqFraudeSubscription: any  = null;
   }
 
  demarrerQuiz() {
-  this.mqQuestionIndex  = 0;
-  this.mqReponses       = {};
-  this.mqTemps          = 0;
-  this.mqEtatFraude     = null;
-  this.mqNiveauFraude   = 'vert';
+  this.mqQuestionIndex   = 0;
+  this.mqReponses        = {};
+  this.mqTemps           = 0;
+  this.mqEtatFraude      = null;
+  this.mqNiveauFraude    = 'vert';
   this.mqShowModaleRouge = false;
-  this.mqEtape          = 'question';
+  this.mqEtatCamera      = null;
+  this.mqShowModaleCamera = false;
+  this.mqEtape           = 'question';
   this.demarrerChrono();
   // Demander le plein écran sur le modal mini-quiz
   setTimeout(() => {
@@ -317,15 +327,32 @@ private mqFraudeSubscription: any  = null;
     if (modal) this.antiFraude.demanderPleinEcran(modal);
   }, 100);
 
-  // Démarrer la surveillance anti-fraude
-  this.antiFraude.demarrer();
-  this.mqFraudeSubscription = this.antiFraude.etat$.subscribe((etat: EtatFraude) => {
-    this.mqEtatFraude    = etat;
-    this.mqNiveauFraude  = etat.niveau;
-    if (etat.niveau === 'rouge') {
-      this.mqShowModaleRouge = true;
-    }
+
+
+  // Anti-fraude clavier/onglet
+  this.antiFraude.demarrer(); // sans plein écran pour le mini-quiz
+  this.mqFraudeSubscription = this.antiFraude.etat$.subscribe((etat) => {
+    this.mqEtatFraude   = etat;
+    this.mqNiveauFraude = etat.niveau;
+    if (etat.niveau === 'rouge') this.mqShowModaleRouge = true;
   });
+
+  // ── Caméra ──────────────────────────────────────────────────
+  setTimeout(() => {
+    const videoEl = document.getElementById('mq-camera-video') as HTMLVideoElement;
+    if (videoEl) {
+      this.camera.demarrer(videoEl);
+
+      this.mqCameraSubscription = this.camera.etat$.subscribe((etat: EtatCamera) => {
+        this.mqEtatCamera = etat;
+      });
+
+      this.mqCameraInfraSubscription = this.camera.infra$.subscribe((inf: EvenementCamera) => {
+        this.mqInfractionCamera  = inf;
+        this.mqShowModaleCamera  = inf.type !== 'camera_refusee';
+      });
+    }
+  }, 400);
 }
 
   private demarrerChrono() {
@@ -377,13 +404,29 @@ private mqFraudeSubscription: any  = null;
   this.stopChrono();
   this.mqTempsTotal = this.mqTemps;
 
-  // Récupérer le rapport AVANT d'arrêter
+  // Récupérer les rapports AVANT d'arrêter
   const rapportFraude = this.antiFraude.getRapport();
-  this.antiFraude.arreter();
-  if (this.mqFraudeSubscription) {
-    this.mqFraudeSubscription.unsubscribe();
-    this.mqFraudeSubscription = null;
+  const infrasCamera  = this.camera.getInfractions();
+
+  // Fusionner infractions caméra
+  if (infrasCamera.length > 0) {
+    rapportFraude.infractions = [
+      ...rapportFraude.infractions,
+      ...infrasCamera.map(i => ({
+        type:       i.type,
+        message:    i.message,
+        horodatage: i.horodatage,
+      }))
+    ];
+    rapportFraude.nombreInfractions = rapportFraude.infractions.length;
   }
+
+  // Arrêter tout
+  this.antiFraude.arreter();
+  this.camera.arreter();
+  if (this.mqFraudeSubscription)      { this.mqFraudeSubscription.unsubscribe();      this.mqFraudeSubscription = null; }
+  if (this.mqCameraSubscription)      { this.mqCameraSubscription.unsubscribe();      this.mqCameraSubscription = null; }
+  if (this.mqCameraInfraSubscription) { this.mqCameraInfraSubscription.unsubscribe(); this.mqCameraInfraSubscription = null; }
 
   this.mqSoumission = true;
 
@@ -392,7 +435,7 @@ private mqFraudeSubscription: any  = null;
     {
       reponses:      this.mqReponses,
       tempsPasse:    this.mqTempsTotal,
-      rapportFraude: rapportFraude       // ← AJOUT
+      rapportFraude: rapportFraude
     },
     { headers: this.headers() }
   ).subscribe({
@@ -400,7 +443,7 @@ private mqFraudeSubscription: any  = null;
       this.mqResultat    = resultat;
       this.mqSoumission  = false;
       this.mqEtape       = 'resultat';
-      this.mqShowModaleRouge = false;
+      this.mqShowModaleCamera = false;
       if (resultat.reussi) this.genererConfetti();
       this.terminerCours();
       setTimeout(() => {
@@ -445,14 +488,16 @@ private mqFraudeSubscription: any  = null;
       this.retour();
     }
   }
+  fermerModaleCameraMiniquiz(): void {
+  this.mqShowModaleCamera = false;
+}
 
  fermerMiniQuiz() {
-  // Nettoyage anti-fraude
   this.antiFraude.arreter();
-  if (this.mqFraudeSubscription) {
-    this.mqFraudeSubscription.unsubscribe();
-    this.mqFraudeSubscription = null;
-  }
+  this.camera.arreter();                                                // ← AJOUTER
+  if (this.mqCameraSubscription)      { this.mqCameraSubscription.unsubscribe();      this.mqCameraSubscription = null; }      // ← AJOUTER
+  if (this.mqCameraInfraSubscription) { this.mqCameraInfraSubscription.unsubscribe(); this.mqCameraInfraSubscription = null; } // ← AJOUTER
+  if (this.mqFraudeSubscription)      { this.mqFraudeSubscription.unsubscribe();      this.mqFraudeSubscription = null; }
   this.stopChrono();
   this.showMiniQuizModal  = false;
   this.mqQuiz             = null;
@@ -462,6 +507,8 @@ private mqFraudeSubscription: any  = null;
   this.mqEtatFraude       = null;
   this.mqNiveauFraude     = 'vert';
   this.mqShowModaleRouge  = false;
+  this.mqEtatCamera       = null;
+  this.mqShowModaleCamera = false;
 }
 fermerModaleRouge(): void {
   this.mqShowModaleRouge = false;

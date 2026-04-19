@@ -10,7 +10,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 })
 export class DashboardFormateurComponent implements OnInit, OnDestroy {
 
-  activeSection: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' | 'forum' = 'dashboard';
+  activeSection: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' | 'forum' | 'seances' = 'dashboard';
   formateurUser: any = null;
   formations: any[] = [];
   stats: any = { totalApprenants: 0, tauxReussite: 0, nouveauxInscrits: 0, noteMoyenne: 0 };
@@ -155,9 +155,31 @@ reponseSuccess              = '';
 editingReponseId: number | null = null;
 editingReponseContenu       = '';
 editingSaving               = false;
+// ── Jitsi iFrame ──
+showJitsiModal   = false;
+jitsiRoomName    = '';
+jitsiSeanceTitre = '';
+private jitsiApi: any = null;
 // ── Forum : fichier joint ──────────────────────────────────
 reponseFile: File | null = null;
 reponseFileSelected = false;
+// ══════════════════════════════════════════════════
+// SÉANCES EN LIGNE
+// ══════════════════════════════════════════════════
+seances: any[]         = [];
+seancesLoading         = false;
+showSeanceModal        = false;
+seanceCreating         = false;
+seanceSuccess          = '';
+seanceError            = '';
+seanceForm = {
+  formationId:  null as number | null,
+  titre:        '',
+  dateSeance:   '',
+  heure:        '14:00',
+  dureeMinutes: 60,
+  description:  ''
+};
 
   // ══════════════════════════════════════════════════════════
   // QUIZ FINAL
@@ -279,7 +301,7 @@ reponseFileSelected = false;
     });
   }
 
-  setSection(section: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' | 'forum') {
+  setSection(section: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' | 'forum' | 'seances') {
     this.activeSection = section;
     if (section === 'mes-formations') this.loadFormations();
     if (section === 'profil') this.loadProfil();
@@ -302,6 +324,8 @@ reponseFileSelected = false;
   this.loadForumQuestions();
   this.loadForumStats();
 }
+if (section === 'seances') { this.loadSeances(); }
+
     this.closeNotifPanel();
 
   }
@@ -1796,6 +1820,255 @@ reagirReponse(r: any, emoji: string, event: Event) {
     },
     error: () => {}
   });
+}
+// ══════════════════════════════════════════════════
+// SÉANCES EN LIGNE
+// ══════════════════════════════════════════════════
+
+loadSeances() {
+  this.seancesLoading = true;
+  this.http.get<any[]>(`${this.api}/seances`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        this.seances = d || [];
+        this.seancesLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.seances = [];
+        this.seancesLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+}
+
+ouvrirModalSeance() {
+  this.seanceForm = {
+    formationId:  null,
+    titre:        '',
+    dateSeance:   '',
+    heure:        '14:00',
+    dureeMinutes: 60,
+    description:  ''
+  };
+  this.seanceError   = '';
+  this.seanceSuccess = '';
+  this.showSeanceModal = true;
+  this.cdr.detectChanges();
+}
+
+fermerModalSeance() {
+  this.showSeanceModal = false;
+  this.cdr.detectChanges();
+}
+
+creerSeance() {
+  if (!this.seanceForm.formationId || !this.seanceForm.titre.trim() || !this.seanceForm.dateSeance) {
+    this.seanceError = 'Formation, titre et date sont obligatoires.';
+    return;
+  }
+  this.seanceCreating = true;
+  this.seanceError    = '';
+  const payload = {
+    formationId:  this.seanceForm.formationId,
+    titre:        this.seanceForm.titre,
+    dateSeance:   `${this.seanceForm.dateSeance}T${this.seanceForm.heure}:00`,
+    dureeMinutes: this.seanceForm.dureeMinutes,
+    description:  this.seanceForm.description
+  };
+  this.http.post<any>(`${this.api}/seances`, payload, { headers: this.headers() })
+    .subscribe({
+      next: s => {
+        this.seanceCreating  = false;
+        this.seanceSuccess   = '✅ Séance créée ! Les apprenants ont été notifiés par email.';
+        this.showSeanceModal = false;
+        this.loadSeances();
+        this.showToast('Séance créée ! Apprenants notifiés 📧', 'success');
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        this.seanceCreating = false;
+        this.seanceError    = err.error?.message || 'Erreur lors de la création.';
+        this.cdr.detectChanges();
+      }
+    });
+}
+
+supprimerSeance(seance: any) {
+  if (!confirm(`Supprimer la séance "${seance.titre}" ?`)) return;
+  this.http.delete(`${this.api}/seances/${seance.id}`, { headers: this.headers() })
+    .subscribe({
+      next: () => { this.loadSeances(); this.showToast('Séance supprimée.', 'success'); },
+      error: () => this.showToast('Erreur lors de la suppression.', 'error')
+    });
+}
+
+rejoindreSeance(lien: string, titre?: string) {
+  const parts = lien.split('/');
+  this.jitsiRoomName    = parts[parts.length - 1];
+  this.jitsiSeanceTitre = titre || 'Séance en ligne';
+  this.showJitsiModal   = true;
+  this.cdr.detectChanges();
+  this.chargerScriptJitsi().then(() => {
+    setTimeout(() => this.lancerJitsi('jitsi-container-formateur'), 300);
+  });
+}
+private chargerScriptJitsi(): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).JitsiMeetExternalAPI) {
+      resolve();
+      return;
+    }
+    if (document.getElementById('jitsi-external-api')) {
+      const script = document.getElementById('jitsi-external-api') as HTMLScriptElement;
+      script.addEventListener('load', () => resolve());
+      return;
+    }
+    const script = document.createElement('script');
+    script.id    = 'jitsi-external-api';
+    script.src   = 'https://meet.jit.si/external_api.js';
+    script.async = true;
+    script.onload  = () => resolve();
+    script.onerror = () => { console.error('Jitsi API non chargée'); resolve(); };
+    document.head.appendChild(script);
+  });
+}
+
+private lancerJitsi(containerId: string) {
+  if (this.jitsiApi) { this.jitsiApi.dispose(); this.jitsiApi = null; }
+  const JitsiMeetExternalAPI = (window as any).JitsiMeetExternalAPI;
+  if (!JitsiMeetExternalAPI) return;
+
+  const displayName = ((this.formateurUser?.prenom || '') + ' ' +
+                       (this.formateurUser?.nom    || '') + ' (Formateur)').trim();
+
+  this.jitsiApi = new JitsiMeetExternalAPI('meet.jit.si', {
+    roomName:   this.jitsiRoomName,
+    parentNode: document.getElementById(containerId),
+    width:      '100%',
+    height:     '100%',
+    userInfo: {
+      displayName: displayName,
+      email:       this.formateurUser?.email || ''
+    },
+    configOverwrite: {
+      startWithAudioMuted:         false,
+      startWithVideoMuted:         false,
+      enableWelcomePage:           false,
+      prejoinPageEnabled:          false,
+      disableDeepLinking:          true,
+      defaultLanguage:             'fr',
+      enableLobbyChat:             false,
+      // ── Masquer logo Jitsi (méthode configOverwrite) ──
+      hideConferenceSubject:       false,
+      hideConferenceTimer:         false,
+      brandingRoomAlias:           null,
+      // Désactiver watermark via config (plus fiable)
+      disableThirdPartyRequests:   false,
+      localRecording: {
+  enabled:                 true,
+  notifyAllParticipants:   true,
+  disableSelfRecording:    false
+},
+      deploymentUrls: {
+        userDocumentationURL: '',
+        downloadAppsUrl:      ''
+      }
+    },
+    interfaceConfigOverwrite: {
+     TOOLBAR_BUTTONS: [
+  'microphone', 'camera', 'closedcaptions',
+  'desktop',
+  'fodeviceselection',
+  'hangup', 'chat',
+  'localrecording',      // ← enregistrement LOCAL (fonctionne sans serveur)
+  'livestreaming',
+  'sharedvideo',
+  'shareaudio',
+  'noisesuppression',
+  'whiteboard',
+  'select-background',
+  'settings', 'raisehand', 'videoquality',
+  'filmstrip', 'invite', 'stats',
+  'shortcuts', 'tileview',
+  'download', 'help', 'mute-everyone', 'security',
+  'polls'
+],
+      // ── Logo : méthode interfaceConfig ──
+      SHOW_JITSI_WATERMARK:             false,
+      SHOW_WATERMARK_FOR_GUESTS:        false,
+      SHOW_BRAND_WATERMARK:             false,
+      HIDE_INVITE_MORE_HEADER:          true,
+      DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+      JITSI_WATERMARK_LINK:             '',
+      // ── Branding avec votre logo ──
+      DEFAULT_LOGO_URL:       'http://localhost:4200/assets/images/logo.png',
+      DEFAULT_WELCOME_PAGE_LOGO_URL: 'http://localhost:4200/assets/images/logo.png',
+      BRAND_WATERMARK_LINK:   'http://localhost:4200',
+      APP_NAME:               'Digital Is Yours',
+      NATIVE_APP_NAME:        'Digital Is Yours',
+      PROVIDER_NAME:          'Digital Is Yours',
+      DEFAULT_BACKGROUND:     '#1a1a2e',
+      DEFAULT_LOCAL_DISPLAY_NAME: 'moi',
+      DEFAULT_REMOTE_DISPLAY_NAME: 'Participant',
+    }
+  });
+
+ // Activer le lobby dès que le formateur rejoint
+this.jitsiApi.addEventListener('videoConferenceJoined', () => {
+  // Attendre 1 seconde que Jitsi établisse le rôle modérateur
+  setTimeout(() => {
+    try {
+      this.jitsiApi.executeCommand('toggleLobby', true);
+    } catch(e) {
+      console.log('Lobby non disponible:', e);
+    }
+  }, 1000);
+});
+
+this.jitsiApi.addEventListener('readyToClose', () => {
+  this.fermerJitsiModal();
+});
+}
+
+fermerJitsiModal() {
+  if (this.jitsiApi) { this.jitsiApi.dispose(); this.jitsiApi = null; }
+  this.showJitsiModal = false;
+  this.cdr.detectChanges();
+}
+copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text).catch(() => {});
+}
+
+getSeanceStatutColor(statut: string): string {
+  return statut === 'PLANIFIEE' ? '#4A7C7E'
+       : statut === 'EN_COURS'  ? '#27ae60'
+       : statut === 'TERMINEE'  ? '#9B8B6E'
+       : '#e74c3c';
+}
+
+getSeanceStatutBg(statut: string): string {
+  return statut === 'PLANIFIEE' ? 'rgba(74,124,126,.12)'
+       : statut === 'EN_COURS'  ? 'rgba(39,174,96,.12)'
+       : statut === 'TERMINEE'  ? 'rgba(155,139,110,.1)'
+       : 'rgba(231,76,60,.1)';
+}
+
+formatSeanceDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  }) + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+estDansMoinsD24h(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const today = new Date();
+  return d.getDate()     === today.getDate() &&
+         d.getMonth()    === today.getMonth() &&
+         d.getFullYear() === today.getFullYear();
 }
   logout() {
     if (this.pollingInterval) clearInterval(this.pollingInterval);

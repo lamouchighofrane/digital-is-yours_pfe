@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { QuizAntiFraudeService, EtatFraude, NiveauFraude } from '../../services/quiz-anti-fraude.service';
+import { QuizCameraService, EtatCamera, EvenementCamera } from '../../services/quiz-camera.service';
 
 @Component({
   selector: 'app-dashboard-apprenant',
@@ -11,7 +12,7 @@ import { QuizAntiFraudeService, EtatFraude, NiveauFraude } from '../../services/
 })
 export class DashboardApprenantComponent implements OnInit, OnDestroy {
 
-  activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' | 'forum' = 'dashboard';
+  activeSection: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' | 'forum' | 'seances' = 'dashboard';
   // ── Ma Progression ──
 progressionFormations: any[]  = [];
 progressionLoading            = false;
@@ -89,12 +90,22 @@ qfEtatFraude: EtatFraude | null = null;
 qfNiveauFraude: NiveauFraude   = 'vert';
 qfShowModaleRouge               = false;
 private qfFraudeSubscription: any = null;
+// ── Caméra anti-fraude ──
+qfEtatCamera: EtatCamera | null          = null;
+qfShowModaleCamera                       = false;
+qfInfractionCamera: EvenementCamera | null = null;
+private qfCameraSubscription: any        = null;
+private qfCameraInfraSubscription: any   = null;
 
 // ── US-048 : Certificats ──           // ← ajouter ici
 certificats: any[]     = [];
 certificatsLoading     = false;
 qfCertificat: any      = null;
 qfCertDownloading      = false;
+// ── Portfolio ──
+portfolio: any = null;
+portfolioLoading = false;
+portfolioRegenerating = false;
 // ══════════════════════════════════════════════════
 // FORUM
 // ══════════════════════════════════════════════════
@@ -126,6 +137,16 @@ private detailPollInterval: any = null;
 private typingPollInterval: any = null;
 private lastReponseCount = 0;
 private readonly forumDraftKey = 'forum_draft_apprenant';
+// ══════════════════════════════════════════════════
+// SÉANCES EN LIGNE
+// ══════════════════════════════════════════════════
+seances: any[] = [];
+seancesLoading = false;
+// ── Jitsi iFrame ──
+showJitsiModal   = false;
+jitsiRoomName    = '';
+jitsiSeanceTitre = '';
+private jitsiApi: any = null;
 // ── Bannière nouvelle réponse ──────────────────────
 nouvelleReponseBanniere: { questionId: number; questionTitre: string } | null = null;
 private mesQuestionsSnapshot: { id: number; nombreReponses: number }[] = [];
@@ -133,6 +154,7 @@ private nouvelleReponseInterval: any = null;
 // ── Risque abandon ──
 risqueAnalyses: any[] = [];
 risqueLoading = false;
+
 // ── US-029 : Cours actif + documents + vidéo ──
 coursActif: any = null;
 showCoursDetail = false;
@@ -226,7 +248,8 @@ documentsError = '';
   private http: HttpClient,
   private cdr: ChangeDetectorRef,
   private sanitizer: DomSanitizer,
-  public antiFraude: QuizAntiFraudeService   // ← AJOUTER (public pour accès template)
+  public antiFraude: QuizAntiFraudeService ,
+  public camera: QuizCameraService   // ← AJOUTER (public pour accès template)
 
 
 ) {}
@@ -537,7 +560,7 @@ estMonAuteur(q: any): boolean {
   // NAVIGATION
   // ══════════════════════════════════════════════════════
 
-setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' | 'forum') {
+setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certificats' | 'calendrier' | 'cours' | 'forum' | 'seances') {
   this.activeSection = s;
    if (s === 'formations')  { this.loadFormations(); this.loadRisqueAnalyses(); }
   if (s === 'profil')      this.loadProfil();
@@ -545,8 +568,12 @@ setSection(s: 'dashboard' | 'formations' | 'profil' | 'progression' | 'certifica
   if (s === 'calendrier')  this.loadSessions();
   if (s === 'progression') this.loadProgressionData();
   this.closeNotifPanel();
-  if (s === 'certificats') this.loadCertificats();
+ if (s === 'certificats') {
+  this.loadCertificats();
+  this.loadPortfolio(); // ← AJOUTER
+}
   if (s === 'forum') { this.loadForumQuestions(); this.loadForumStats(); this.startSurveillanceNouvellesReponses(); }
+  if (s === 'seances') this.loadSeancesApprenant();
 
 }
 voirCours(formation: any) {
@@ -1479,6 +1506,13 @@ get heuresMois(): number {
       .reduce((acc, s) => acc + (s.dureeMinutes || 60), 0) / 60
   );
 }
+estJourPasse(date: Date): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d < today;
+}
 
 // Modal ajouter
 ouvrirModalAjouter(date?: Date) {
@@ -1487,6 +1521,14 @@ ouvrirModalAjouter(date?: Date) {
   this.sessionError     = '';
   this.sessionSuccess   = '';
   const d = date || new Date();
+
+  // Bloquer les jours passés
+  if (this.estJourPasse(d)) {
+    this.sessionError = 'Impossible de planifier une session dans le passé.';
+    this.showSessionModal = true;
+    this.cdr.detectChanges();
+    return;
+  }
   const pad = (n: number) => n.toString().padStart(2, '0');
   this.sessionForm = {
     titre:        '',
@@ -1555,6 +1597,12 @@ sauvegarderSession() {
   }
   if (!this.sessionForm.dateSession) {
     this.sessionError = 'La date est requise.'; return;
+  }
+  const dateChoisie = new Date(this.sessionDateISO);
+  if (dateChoisie <= new Date()) {
+    this.sessionError = 'La date de session doit être dans le futur.';
+    this.cdr.detectChanges();
+    return;
   }
 
   this.sessionLoading = true;
@@ -1762,16 +1810,18 @@ ouvrirQuizFinal() {
 demarrerQuizFinal(): void {
   if (!this.qfConditionsAcceptees) return;
 
-  this.qfEtape         = 'question';
-  this.qfQuestionIndex = 0;
-  this.qfReponses      = {};
-  this.qfTempsTotal    = (this.qfData?.dureeMinutes || 20) * 60;
-  this.qfTempsRestant  = this.qfTempsTotal;
-  this.qfEtatFraude    = null;
-  this.qfNiveauFraude  = 'vert';
+  this.qfEtape           = 'question';
+  this.qfQuestionIndex   = 0;
+  this.qfReponses        = {};
+  this.qfTempsTotal      = (this.qfData?.dureeMinutes || 20) * 60;
+  this.qfTempsRestant    = this.qfTempsTotal;
+  this.qfEtatFraude      = null;
+  this.qfNiveauFraude    = 'vert';
   this.qfShowModaleRouge = false;
+  this.qfEtatCamera      = null;
+  this.qfShowModaleCamera = false;
 
-  // Démarrer le chronomètre
+  // Chronomètre
   this.stopTimerQf();
   this.qfTimerInterval = setInterval(() => {
     this.qfTempsRestant--;
@@ -1782,20 +1832,37 @@ demarrerQuizFinal(): void {
     this.cdr.detectChanges();
   }, 1000);
 
-  // Démarrer le plein écran et la surveillance
+  // Anti-fraude clavier/onglet
   const modal = document.querySelector('.qf-modal') as HTMLElement;
   if (modal) this.antiFraude.demanderPleinEcran(modal);
   this.antiFraude.demarrer();
-
-  // S'abonner aux événements fraude
-  this.qfFraudeSubscription = this.antiFraude.etat$.subscribe((etat: EtatFraude) => {
-    this.qfEtatFraude    = etat;
-    this.qfNiveauFraude  = etat.niveau;
-    if (etat.niveau === 'rouge') {
-      this.qfShowModaleRouge = true;
-    }
+  this.qfFraudeSubscription = this.antiFraude.etat$.subscribe((etat) => {
+    this.qfEtatFraude   = etat;
+    this.qfNiveauFraude = etat.niveau;
+    if (etat.niveau === 'rouge') this.qfShowModaleRouge = true;
     this.cdr.detectChanges();
   });
+
+  // ── Caméra ───────────────────────────────────────────────────
+  setTimeout(() => {
+    const videoEl = document.getElementById('qf-camera-video') as HTMLVideoElement;
+    if (videoEl) {
+      this.camera.demarrer(videoEl);
+
+      // Abonnement état caméra
+      this.qfCameraSubscription = this.camera.etat$.subscribe((etat: EtatCamera) => {
+        this.qfEtatCamera = etat;
+        this.cdr.detectChanges();
+      });
+
+      // Abonnement infractions caméra
+      this.qfCameraInfraSubscription = this.camera.infra$.subscribe((inf: EvenementCamera) => {
+        this.qfInfractionCamera  = inf;
+        this.qfShowModaleCamera  = inf.type !== 'camera_refusee';
+        this.cdr.detectChanges();
+      });
+    }
+  }, 500);
 
   this.cdr.detectChanges();
 }
@@ -1821,16 +1888,30 @@ confirmerSoumission(): void {
   this.showQfConfirm = false;
   this.stopTimerQf();
 
-  // ← CORRECTION : getRapport() EN PREMIER avant arreter()
-  const rapportFraude = this.antiFraude.getRapport();
-  console.log('Rapport fraude envoyé :', JSON.stringify(rapportFraude));
+  // Récupérer les deux rapports AVANT d'arrêter
+  const rapportFraude  = this.antiFraude.getRapport();
+  const infrasCamera   = this.camera.getInfractions();
 
-  // Ensuite seulement on arrête
-  this.antiFraude.arreter();
-  if (this.qfFraudeSubscription) {
-    this.qfFraudeSubscription.unsubscribe();
-    this.qfFraudeSubscription = null;
+  // Fusionner les infractions caméra dans le rapport existant
+  if (infrasCamera.length > 0) {
+    rapportFraude.infractions = [
+      ...rapportFraude.infractions,
+      ...infrasCamera.map(i => ({
+        type:       i.type,
+        message:    i.message,
+        horodatage: i.horodatage,
+      }))
+    ];
+    rapportFraude.nombreInfractions =
+      rapportFraude.infractions.length;
   }
+
+  // Arrêter tout
+  this.antiFraude.arreter();
+  this.camera.arreter();
+  if (this.qfFraudeSubscription)       { this.qfFraudeSubscription.unsubscribe();       this.qfFraudeSubscription = null; }
+  if (this.qfCameraSubscription)       { this.qfCameraSubscription.unsubscribe();       this.qfCameraSubscription = null; }
+  if (this.qfCameraInfraSubscription)  { this.qfCameraInfraSubscription.unsubscribe();  this.qfCameraInfraSubscription = null; }
 
   this.qfSoumission = true;
   this.cdr.detectChanges();
@@ -1900,14 +1981,17 @@ retenterQuizFinal() {
   // Recharger les infos (tentatives mises à jour)
   this.ouvrirQuizFinal();
 }
+fermerModaleCamera(): void {
+  this.qfShowModaleCamera = false;
+  this.cdr.detectChanges();
+}
 
 fermerQuizFinal(): void {
-  // Nettoyage anti-fraude
   this.antiFraude.arreter();
-  if (this.qfFraudeSubscription) {
-    this.qfFraudeSubscription.unsubscribe();
-    this.qfFraudeSubscription = null;
-  }
+  this.camera.arreter();                                          // ← AJOUTER
+  if (this.qfCameraSubscription)      { this.qfCameraSubscription.unsubscribe();      this.qfCameraSubscription = null; }      // ← AJOUTER
+  if (this.qfCameraInfraSubscription) { this.qfCameraInfraSubscription.unsubscribe(); this.qfCameraInfraSubscription = null; } // ← AJOUTER
+  if (this.qfFraudeSubscription)      { this.qfFraudeSubscription.unsubscribe();      this.qfFraudeSubscription = null; }
 
   this.showQuizFinalModal    = false;
   this.qfData                = null;
@@ -2213,6 +2297,61 @@ downloadCertificatFromModal() {
       this.ouvrirModalLinkedIn(cert);
     }, 300);
   }
+  loadPortfolio() {
+  this.portfolioLoading = true;
+  this.http.get<any>(`${this.api}/portfolio`, { headers: this.headers() })
+    .subscribe({
+      next: data => {
+        this.portfolio = data;
+        this.portfolioLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.portfolio = null;
+        this.portfolioLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+}
+regenererPortfolio() {
+  this.portfolioRegenerating = true;
+  this.cdr.detectChanges();
+  this.http.post<any>(
+    `${this.api}/portfolio/regenerer`, {},
+    { headers: this.headers() }
+  ).subscribe({
+    next: res => {
+      this.portfolioRegenerating = false;
+      if (res.success) {
+        this.portfolio = {
+          existe: true,
+          estPublie: true,
+          urlGithubPages: res.urlGithubPages,
+          slug: res.slug,
+          nombreCertificats: this.certificats.length,
+          derniereMiseAJour: new Date().toISOString()
+        };
+        this.showCertToast('Portfolio régénéré et publié sur GitHub Pages ! 🚀');
+      } else {
+        this.showCertToast(res.message || 'Erreur lors de la publication.', 'error');
+      }
+      this.cdr.detectChanges();
+    },
+    error: err => {
+      this.portfolioRegenerating = false;
+      this.showCertToast(
+        err.error?.message || 'Erreur lors de la régénération.', 'error'
+      );
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+ouvrirPortfolio() {
+  if (this.portfolio?.urlGithubPages) {
+    window.open(this.portfolio.urlGithubPages, '_blank');
+  }
+}
   // ── Brouillon ──────────────────────────────────────────────
 checkForumDraft() {
   const d = localStorage.getItem(this.forumDraftKey);
@@ -2518,6 +2657,153 @@ get formationsASurveiller(): number {
 }
 get risqueElevesCount(): number {
   return this.risqueAnalyses.filter(r => r.niveauRisque !== 'FAIBLE').length;
+}
+loadSeancesApprenant() {
+  this.seancesLoading = true;
+  const token = localStorage.getItem('token');
+  this.http.get<any[]>('http://localhost:8080/api/apprenant/seances', {
+    headers: { Authorization: `Bearer ${token}` }
+  }).subscribe({
+    next: (data) => { this.seances = data; this.seancesLoading = false; },
+    error: () => { this.seancesLoading = false; }
+  });
+}
+
+rejoindreSeanceApprenant(lien: string, titre?: string) {
+  const parts = lien.split('/');
+  this.jitsiRoomName    = parts[parts.length - 1];
+  this.jitsiSeanceTitre = titre || 'Séance en ligne';
+  this.showJitsiModal   = true;
+  this.cdr.detectChanges();
+  this.chargerScriptJitsi().then(() => {
+    setTimeout(() => this.lancerJitsiApprenant('jitsi-container-apprenant'), 300);
+  });
+}
+private chargerScriptJitsi(): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).JitsiMeetExternalAPI) {
+      resolve();
+      return;
+    }
+    if (document.getElementById('jitsi-external-api')) {
+      const script = document.getElementById('jitsi-external-api') as HTMLScriptElement;
+      script.addEventListener('load', () => resolve());
+      return;
+    }
+    const script = document.createElement('script');
+    script.id    = 'jitsi-external-api';
+    script.src   = 'https://meet.jit.si/external_api.js';
+    script.async = true;
+    script.onload  = () => resolve();
+    script.onerror = () => { console.error('Jitsi API non chargée'); resolve(); };
+    document.head.appendChild(script);
+  });
+}
+
+private lancerJitsiApprenant(containerId: string) {
+  if (this.jitsiApi) { this.jitsiApi.dispose(); this.jitsiApi = null; }
+  const JitsiMeetExternalAPI = (window as any).JitsiMeetExternalAPI;
+  if (!JitsiMeetExternalAPI) return;
+
+  const displayName = ((this.apprenantUser?.prenom || '') + ' ' +
+                       (this.apprenantUser?.nom    || '') + ' (Apprenant)').trim();
+
+  this.jitsiApi = new JitsiMeetExternalAPI('meet.jit.si', {
+    roomName:   this.jitsiRoomName,
+    parentNode: document.getElementById(containerId),
+    width:      '100%',
+    height:     '100%',
+    userInfo: {
+      displayName: displayName,
+      email:       this.apprenantUser?.email || ''
+    },
+    configOverwrite: {
+      startWithAudioMuted:       true,
+      startWithVideoMuted:       false,
+      enableWelcomePage:         false,
+      prejoinPageEnabled:        false,
+      disableDeepLinking:        true,
+      defaultLanguage:           'fr',
+      enableLobbyChat:           false,
+      disableThirdPartyRequests: false,
+      deploymentUrls: {
+        userDocumentationURL: '',
+        downloadAppsUrl:      ''
+      }
+    },
+    interfaceConfigOverwrite: {
+      TOOLBAR_BUTTONS: [
+  'microphone', 'camera', 'closedcaptions',
+  'desktop',
+  // 'fullscreen' ← SUPPRIMÉ
+  'fodeviceselection',
+  'hangup', 'chat',
+  'etherpad',
+  'sharedvideo',
+  'raisehand', 'videoquality',
+  'filmstrip', 'tileview',
+  'select-background', 'download', 'help',
+  'whiteboard'
+],
+      SHOW_JITSI_WATERMARK:             false,
+      SHOW_WATERMARK_FOR_GUESTS:        false,
+      SHOW_BRAND_WATERMARK:             false,
+      HIDE_INVITE_MORE_HEADER:          true,
+      DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+      JITSI_WATERMARK_LINK:             '',
+      // ── Branding avec votre logo ──
+      DEFAULT_LOGO_URL:       'http://localhost:4200/assets/images/logo.png',
+      DEFAULT_WELCOME_PAGE_LOGO_URL: 'http://localhost:4200/assets/images/logo.png',
+      BRAND_WATERMARK_LINK:   'http://localhost:4200',
+      APP_NAME:               'Digital Is Yours',
+      NATIVE_APP_NAME:        'Digital Is Yours',
+      PROVIDER_NAME:          'Digital Is Yours',
+      DEFAULT_BACKGROUND:     '#1a1a2e',
+      DEFAULT_LOCAL_DISPLAY_NAME:  'moi',
+      DEFAULT_REMOTE_DISPLAY_NAME: 'Participant',
+    }
+  });
+
+  this.jitsiApi.addEventListener('readyToClose', () => {
+    this.fermerJitsiModal();
+  });
+}
+
+fermerJitsiModal() {
+  if (this.jitsiApi) { this.jitsiApi.dispose(); this.jitsiApi = null; }
+  this.showJitsiModal = false;
+  this.cdr.detectChanges();
+}
+
+getStatutClass(statut: string): string {
+  const map: any = {
+    'PLANIFIEE': 'statut-planifiee',
+    'EN_COURS': 'statut-en-cours',
+    'TERMINEE': 'statut-terminee',
+    'ANNULEE': 'statut-annulee'
+  };
+  return map[statut] || '';
+}
+
+getStatutSeanceLabel(statut: string): string {
+  const map: any = {
+    'PLANIFIEE': 'Planifiée',
+    'EN_COURS': 'En cours',
+    'TERMINEE': 'Terminée',
+    'ANNULEE': 'Annulée'
+  };
+  return map[statut] || statut;
+}
+
+isAujourdhui(dateStr: string): boolean {
+  const d = new Date(dateStr);
+  const today = new Date();
+  return d.toDateString() === today.toDateString();
+}
+
+formatDateSeance(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ' à ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
 }
 
 }

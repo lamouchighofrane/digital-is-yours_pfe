@@ -35,12 +35,18 @@ public class SessionCalendrierService implements SessionCalendrierUseCase {
         if (payload.get("dateSession") == null)
             throw new RuntimeException("La date est requise");
 
+        LocalDateTime dateSession = LocalDateTime.parse(
+                payload.get("dateSession").toString());
+
+        if (dateSession.isBefore(LocalDateTime.now()))
+            throw new RuntimeException(
+                    "La date de session doit être dans le futur.");
+
         SessionCalendrier session = SessionCalendrier.builder()
                 .apprenantId(apprenantId)
                 .formationId(getLong(payload, "formationId"))
                 .titrePersonnalise(payload.get("titre").toString())
-                .dateSession(LocalDateTime.parse(
-                        payload.get("dateSession").toString()))
+                .dateSession(dateSession)
                 .dureeMinutes(getInt(payload, "dureeMinutes", 60))
                 .typeSession(payload.getOrDefault(
                         "typeSession", "COURS").toString())
@@ -62,9 +68,16 @@ public class SessionCalendrierService implements SessionCalendrierUseCase {
         if (payload.containsKey("titre"))
             session.setTitrePersonnalise(
                     payload.get("titre").toString());
-        if (payload.containsKey("dateSession"))
-            session.setDateSession(LocalDateTime.parse(
-                    payload.get("dateSession").toString()));
+
+        if (payload.containsKey("dateSession")) {
+            LocalDateTime nouvelleDate = LocalDateTime.parse(
+                    payload.get("dateSession").toString());
+            if (nouvelleDate.isBefore(LocalDateTime.now()))
+                throw new RuntimeException(
+                        "La date de session doit être dans le futur.");
+            session.setDateSession(nouvelleDate);
+        }
+
         if (payload.containsKey("dureeMinutes"))
             session.setDureeMinutes(
                     getInt(payload, "dureeMinutes", 60));

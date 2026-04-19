@@ -7,7 +7,10 @@ export type TypeInfraction =
   | 'onglet_quitte'
   | 'copie'
   | 'raccourci'
-  | 'plein_ecran';
+  | 'plein_ecran'
+  | 'absence_visage'      // ← AJOUTER
+  | 'visages_multiples'   // ← AJOUTER
+  | 'camera_refusee';     // ← AJOUTER
 
 export type NiveauFraude = 'vert' | 'orange' | 'rouge';
 

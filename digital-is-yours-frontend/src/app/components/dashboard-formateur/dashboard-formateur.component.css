@@ -3934,3 +3934,425 @@
 .fr-emoji-btn:hover { border-color:#4A7C7E; background:#f0f7f7; transform:scale(1.08); }
 .fr-emoji-active { border-color:#4A7C7E!important; background:rgba(74,124,126,.1)!important; }
 .fr-emoji-count { font-size:12px; font-weight:700; color:#1A1612; }
+/* ══════════════════════════════════════════════════
+   SÉANCES EN LIGNE
+══════════════════════════════════════════════════ */
+
+.seances-header-block {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #FFF; border: 1px solid #E8E3DB; border-radius: 16px;
+  padding: 20px 24px; margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(26,22,18,.05);
+}
+.seances-header-left { display: flex; align-items: center; gap: 14px; }
+.seances-header-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: rgba(74,124,126,.1); border: 1px solid rgba(74,124,126,.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.seances-header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 700; color: #1A1612; margin: 0 0 2px;
+}
+.seances-header-sub { font-size: 12px; color: #6B5F52; margin: 0; }
+.seances-btn-new {
+  display: flex; align-items: center; gap: 7px;
+  padding: 11px 20px; border-radius: 10px; border: none;
+  background: #4A7C7E; color: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all .2s; box-shadow: 0 4px 12px rgba(74,124,126,.25);
+  white-space: nowrap;
+}
+.seances-btn-new:hover { background: #3a6264; transform: translateY(-1px); }
+
+.seance-success-banner {
+  background: #e8f5e9; border: 1px solid rgba(39,174,96,.2); border-radius: 12px;
+  padding: 14px 18px; font-size: 14px; font-weight: 600; color: #2e7d32;
+  margin-bottom: 20px;
+}
+
+.jitsi-info-card {
+  display: flex; align-items: center; gap: 16px;
+  background: linear-gradient(135deg, #f0f7f7, #FFF);
+  border: 1.5px solid rgba(74,124,126,.25);
+  border-radius: 16px; padding: 18px 22px; margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.jic-icon { font-size: 32px; flex-shrink: 0; }
+.jic-content { flex: 1; min-width: 0; }
+.jic-title { font-size: 14px; font-weight: 700; color: #1A1612; margin-bottom: 4px; }
+.jic-sub { font-size: 12px; color: #6B5F52; }
+.jic-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.jic-badge {
+  background: rgba(74,124,126,.1); color: #4A7C7E;
+  border: 1px solid rgba(74,124,126,.2);
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+}
+
+.seances-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.seance-card {
+  background: #FFF; border: 1.5px solid #E8E3DB; border-radius: 16px;
+  padding: 0; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(26,22,18,.05);
+  transition: all .2s; position: relative;
+}
+.seance-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(26,22,18,.1); }
+.seance-card-imminente { border-color: rgba(231,76,60,.3); }
+
+.seance-badge-urgent {
+  background: rgba(231,76,60,.1); color: #e74c3c;
+  border: 1px solid rgba(231,76,60,.2);
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.seance-card-header {
+  display: flex;
+  align-items: flex-start;   /* ← flex-start au lieu de center */
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid #F5F1EB;
+  background: linear-gradient(135deg, #f0f7f7, #FFF);
+  /* SUPPRIME flex-wrap et style inline */
+}
+.seance-video-icon {
+  width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+  background: rgba(74,124,126,.1); border: 1px solid rgba(74,124,126,.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.seance-card-info { flex: 1; min-width: 0; }
+.seance-card-titre {
+  font-size: 15px; font-weight: 700; color: #1A1612; margin: 0 0 4px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  word-break: break-word;
+  line-height: 1.4;
+}
+.seance-card-formation { font-size: 12px; color: #6B5F52; margin: 0; }
+.seance-statut-badge {
+  padding: 4px 10px; border-radius: 20px; font-size: 11px;
+  font-weight: 700; white-space: nowrap; flex-shrink: 0;
+}
+
+.seance-card-meta {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 14px 18px;
+}
+.seance-meta-item {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: #6B5F52; font-weight: 500;
+}
+
+.seance-card-desc {
+  font-size: 12.5px; color: #6B5F52; margin: 0; padding: 0 18px 12px;
+  line-height: 1.6;
+}
+
+.seance-lien-zone {
+  margin: 0 18px 12px;
+  padding: 10px 14px;
+  background: rgba(74,124,126,.06); border: 1px solid rgba(74,124,126,.15);
+  border-radius: 10px;
+}
+.seance-lien-label {
+  font-size: 10px; font-weight: 700; color: #4A7C7E;
+  text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 4px;
+}
+.seance-lien-url {
+  font-size: 11px; color: #4A7C7E; font-family: monospace;
+  word-break: break-all; text-decoration: none;
+}
+.seance-lien-url:hover { text-decoration: underline; }
+
+.seance-features {
+  display: flex; gap: 6px; padding: 0 18px 14px; flex-wrap: wrap;
+}
+.seance-feat {
+  background: #F5F1EB; color: #6B5F52;
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+  border: 1px solid #E8E3DB;
+}
+
+.seance-card-actions {
+  display: flex; gap: 8px; align-items: center;
+  padding: 14px 18px; border-top: 1px solid #F5F1EB;
+  background: #FAFAF7;
+}
+.seance-btn-rejoindre {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px; border-radius: 10px; border: none;
+  background: #4A7C7E; color: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all .2s; box-shadow: 0 4px 12px rgba(74,124,126,.25);
+}
+.seance-btn-rejoindre:hover { background: #3a6264; transform: translateY(-1px); }
+.seance-btn-copier {
+  display: flex; align-items: center; gap: 5px;
+  padding: 10px 14px; border-radius: 10px;
+  border: 1.5px solid #E8E3DB; background: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px; font-weight: 600; color: #6B5F52;
+  cursor: pointer; transition: all .2s;
+}
+.seance-btn-copier:hover { border-color: #4A7C7E; color: #4A7C7E; }
+.seance-btn-supprimer {
+  width: 38px; height: 38px; border-radius: 8px;
+  border: 1.5px solid rgba(231,76,60,.2); background: rgba(231,76,60,.05);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #e74c3c; transition: all .15s;
+}
+.seance-btn-supprimer:hover { background: rgba(231,76,60,.12); border-color: #e74c3c; }
+
+.modal-seance {
+  background: #FFF;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 28px 80px rgba(26, 22, 18, .28);
+  animation: modalUp .3s cubic-bezier(.16, 1, .3, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;   /* ajouté */
+}
+.modal-seance::-webkit-scrollbar { width: 4px; }
+.modal-seance::-webkit-scrollbar-thumb { background: #E8E3DB; border-radius: 2px; }
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 22, 18, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;        /* augmenté */
+  padding: 20px;
+  animation: fadeIn .2s ease;
+}
+.jitsi-subtle-note {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem; color: #9ca3af;
+  margin-bottom: 20px;
+}
+/* ── AJOUTER : header du modal séance ── */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #E8E3DB;
+  background: linear-gradient(135deg, #f0f7f7, #FFF);
+  border-radius: 20px 20px 0 0;
+  flex-shrink: 0;
+}
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1612;
+  margin: 0 0 2px;
+}
+.modal-subtitle {
+  font-size: 12px;
+  color: #6B5F52;
+  margin: 0;
+}
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #E8E3DB;
+  background: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6B5F52;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.modal-close:hover { background: #F5F1EB; color: #8B3A3A; }
+
+/* ── AJOUTER : body du modal ── */
+.modal-body {
+  padding: 22px 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-thumb { background: #E8E3DB; border-radius: 2px; }
+
+/* ── AJOUTER : actions footer ── */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid #E8E3DB;
+  background: #FAFAF7;
+  border-radius: 0 0 20px 20px;
+  flex-shrink: 0;
+}
+.btn-annuler {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1.5px solid #E8E3DB;
+  background: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B5F52;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-annuler:hover { background: #F5F1EB; border-color: #C8BEB2; }
+.btn-annuler:disabled { opacity: .5; cursor: not-allowed; }
+.btn-payer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: none;
+  color: #FFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  box-shadow: 0 4px 12px rgba(74,124,126,.3);
+}
+.btn-payer:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+.btn-payer:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+/* ═══ JITSI MODAL ═══ */
+.jitsi-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: #1a1a2e;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+}
+.jitsi-modal-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Header votre app ── */
+.jitsi-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: #1a1a2e;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  flex-shrink: 0;
+  height: 52px;
+  z-index: 2147483647;
+  position: relative;
+}
+.jitsi-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.jitsi-app-logo {
+  display: flex;
+  align-items: center;
+}
+.jitsi-header-logo-img {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+.jitsi-live-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231,76,60,.3);
+  animation: jitsiPulse 1.5s infinite;
+  flex-shrink: 0;
+}
+@keyframes jitsiPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(231,76,60,.3); }
+  50%       { box-shadow: 0 0 0 6px rgba(231,76,60,.1); }
+}
+.jitsi-modal-titre {
+  font-size: 14px; font-weight: 700;
+  color: #fff; margin: 0 0 1px;
+}
+.jitsi-modal-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,.5);
+}
+.jitsi-modal-close {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 8px;
+  border: 1.5px solid rgba(231,76,60,.4);
+  background: rgba(231,76,60,.1);
+  color: #e74c3c;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 0;
+}
+.jitsi-modal-close:hover {
+  background: rgba(231,76,60,.2);
+  border-color: #e74c3c;
+}
+
+/* ── Wrapper qui COUPE le haut de l'iframe ── */
+.jitsi-iframe-wrapper {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  background: #1a1a2e;
+  position: relative;
+  overflow: hidden;
+}
+
+.jitsi-iframe-container {
+  width: 100%;
+  height: 100%;
+  margin-top: 0;
+  background: #000;
+  position: relative;
+}
+
+.jitsi-iframe-container iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  display: block;
+}

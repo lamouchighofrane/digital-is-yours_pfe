@@ -82,6 +82,14 @@
     {{ prochainesSessions.length }}
   </span>
 </button>
+<button class="sb-item" [class.sb-active]="activeSection==='seances'" (click)="setSection('seances')">
+  <span class="sb-item-icon">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="1.6" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+    </svg>
+  </span>
+  <span class="sb-item-label">Séances en ligne</span>
+</button>
 
         <button class="sb-item" [class.sb-active]="activeSection==='certificats'" (click)="setSection('certificats')">
           <span class="sb-item-icon">
@@ -134,23 +142,29 @@
           <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
           </svg>
-          <span>
-            {{ activeSection==='dashboard'   ? 'Tableau de bord'
-             : activeSection==='formations'  ? 'Mes formations'
-             : activeSection==='progression' ? 'Ma progression'
-             : activeSection==='certificats' ? 'Certificats'
-             : activeSection==='forum' ? 'Forum'
-             : 'Mon profil' }}
-          </span>
+         <span>
+  {{ activeSection==='dashboard'    ? 'Tableau de bord'
+   : activeSection==='formations'   ? 'Mes formations'
+   : activeSection==='progression'  ? 'Ma progression'
+   : activeSection==='certificats'  ? 'Certificats'
+   : activeSection==='forum'        ? 'Forum'
+   : activeSection==='seances'      ? 'Séances en ligne'
+   : activeSection==='calendrier'   ? 'Mon calendrier'
+   : activeSection==='cours'        ? 'Mes cours'
+   : 'Mon profil' }}
+</span>
         </p>
         <h1 class="topbar-title">
-          {{ activeSection==='dashboard'   ? 'Bonjour, '+(apprenantUser?.prenom||'')
-           : activeSection==='formations'  ? 'Mes formations'
-           : activeSection==='progression' ? 'Ma progression'
-           : activeSection==='certificats' ? 'Mes certificats'
-           : activeSection==='forum' ? 'Forum de discussion'
-           : 'Mon profil' }}
-        </h1>
+  {{ activeSection==='dashboard'    ? 'Bonjour, '+(apprenantUser?.prenom||'')
+   : activeSection==='formations'   ? 'Mes formations'
+   : activeSection==='progression'  ? 'Ma progression'
+   : activeSection==='certificats'  ? 'Mes certificats'
+   : activeSection==='forum'        ? 'Forum de discussion'
+   : activeSection==='seances'      ? 'Séances en ligne'
+   : activeSection==='calendrier'   ? 'Mon calendrier'
+   : activeSection==='cours'        ? selectedFormation?.titre || 'Mes cours'
+   : 'Mon profil' }}
+</h1>
         <p *ngIf="activeSection==='formations'" class="section-subtitle">{{ formations.length }} formation(s) disponible(s)</p>
         <p *ngIf="activeSection==='profil'" class="section-subtitle">Gérez vos informations personnelles et préférences</p>
       </div>
@@ -1083,6 +1097,65 @@
       </div>
     </div>
   </div>
+  <!-- ── BLOC PORTFOLIO ── -->
+<div class="portfolio-block" *ngIf="!certificatsLoading">
+
+  <!-- Portfolio publié -->
+  <div class="portfolio-card" *ngIf="portfolio?.existe && portfolio?.estPublie">
+    <div class="portfolio-card-left">
+      <div class="portfolio-icon">🌐</div>
+      <div class="portfolio-info">
+        <div class="portfolio-title">Mon Portfolio en ligne</div>
+        <div class="portfolio-url">{{ portfolio?.urlGithubPages }}</div>
+        <div class="portfolio-meta">
+          {{ portfolio?.nombreCertificats }} certification(s) ·
+          Mis à jour {{ portfolio?.derniereMiseAJour | date:'dd/MM/yyyy' }}
+        </div>
+      </div>
+    </div>
+    <div class="portfolio-actions">
+      <button class="portfolio-btn-visit" (click)="ouvrirPortfolio()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+        </svg>
+        Voir mon portfolio
+      </button>
+      <button class="portfolio-btn-regen"
+              (click)="regenererPortfolio()"
+              [disabled]="portfolioRegenerating">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             [class.reco-spin]="portfolioRegenerating">
+          <path stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        {{ portfolioRegenerating ? 'Publication...' : 'Régénérer' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Portfolio pas encore généré -->
+  <div class="portfolio-card portfolio-card-empty"
+       *ngIf="!portfolio?.existe || !portfolio?.estPublie">
+    <div class="portfolio-icon">🌐</div>
+    <div class="portfolio-info">
+      <div class="portfolio-title">Portfolio en ligne</div>
+      <div class="portfolio-empty-msg"
+           *ngIf="certificats.length === 0">
+        Obtenez votre première certification pour générer automatiquement votre portfolio en ligne.
+      </div>
+      <div class="portfolio-empty-msg"
+           *ngIf="certificats.length > 0">
+        {{ portfolio?.existe ? 'Publication en cours...' : 'Portfolio disponible, cliquez pour générer.' }}
+      </div>
+    </div>
+    <button class="portfolio-btn-regen"
+            *ngIf="certificats.length > 0"
+            (click)="regenererPortfolio()"
+            [disabled]="portfolioRegenerating">
+      {{ portfolioRegenerating ? 'Publication...' : 'Générer mon portfolio' }}
+    </button>
+  </div>
+
+</div>
 
   <!-- Loading -->
   <div class="cours-loading" *ngIf="certificatsLoading">
@@ -1775,6 +1848,125 @@
   </div>
 
 </section>
+<!-- ===== SÉANCES EN LIGNE ===== -->
+<section class="page-content" *ngIf="activeSection==='seances'">
+  <div class="section-header-row">
+    <div>
+      <h2 class="section-title">Séances en ligne</h2>
+      <p class="section-subtitle">Vos sessions live avec vos formateurs</p>
+    </div>
+  </div>
+
+  <!-- Chargement -->
+  <div class="loading-state" *ngIf="seancesLoading">
+    <div class="spinner"></div>
+    <p>Chargement des séances...</p>
+  </div>
+
+  <!-- Aucune séance -->
+  <div class="empty-state-card" *ngIf="!seancesLoading && seances.length === 0">
+    <div class="empty-icon">
+      <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.3" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+      </svg>
+    </div>
+    <h3>Aucune séance planifiée</h3>
+    <p>Vos formateurs n'ont pas encore planifié de sessions live pour vos formations.</p>
+  </div>
+
+  <!-- Liste des séances -->
+  <div class="seances-grid" *ngIf="!seancesLoading && seances.length > 0">
+    <div class="seance-card-apprenant" *ngFor="let s of seances">
+      <div class="sca-header">
+        <div class="sca-icon">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="1.6" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+          </svg>
+        </div>
+        <div class="sca-meta">
+          <h3 class="sca-titre">{{ s.titre }}</h3>
+          <span class="sca-formation">{{ s.formationTitre }}</span>
+        </div>
+        <div class="sca-badges">
+          <span class="badge-aujourd-hui" *ngIf="isAujourdhui(s.dateSeance)">Aujourd'hui</span>
+          <span class="sca-statut" [ngClass]="getStatutClass(s.statut)">{{ getStatutSeanceLabel(s.statut) }}</span>
+        </div>
+      </div>
+
+      <div class="sca-infos">
+        <div class="sca-info-row">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke-width="1.6"/>
+            <path d="M16 2v4M8 2v4M3 10h18" stroke-width="1.6"/>
+          </svg>
+          <span>{{ formatDateSeance(s.dateSeance) }}</span>
+        </div>
+        <div class="sca-info-row">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.6"/>
+            <path d="M12 6v6l4 2" stroke-width="1.6"/>
+          </svg>
+          <span>{{ s.dureeMinutes }} minutes</span>
+        </div>
+        <div class="sca-info-row">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="1.6" d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+            <path stroke-width="1.6" d="M16 3v4M8 3v4"/>
+          </svg>
+          <span>Formateur : <strong>{{ s.formateurPrenom }} {{ s.formateurNom }}</strong></span>
+        </div>
+      </div>
+
+      <p class="sca-description" *ngIf="s.description">{{ s.description }}</p>
+
+      <div class="sca-lien-box" *ngIf="s.lienJitsi">
+        <span class="sca-lien-label">🔗 LIEN DE LA SÉANCE</span>
+        <a [href]="s.lienJitsi" target="_blank" class="sca-lien-url">{{ s.lienJitsi }}</a>
+      </div>
+
+      <div class="sca-actions">
+       <button class="btn-rejoindre-seance"
+        (click)="rejoindreSeanceApprenant(s.lienJitsi, s.titre)"
+        [disabled]="s.statut === 'ANNULEE' || s.statut === 'TERMINEE'">
+  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-width="1.8" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+  </svg>
+  Rejoindre la séance
+</button>
+      </div>
+    </div>
+  </div>
+  <!-- ═══ MODAL JITSI APPRENANT ═══ -->
+<div *ngIf="showJitsiModal" class="jitsi-modal-overlay" (click)="$event.stopPropagation()">
+  <div class="jitsi-modal-container">
+
+   <div class="jitsi-modal-header">
+  <div class="jitsi-modal-header-left">
+    <div class="jitsi-app-logo">
+      <img src="assets/images/logo.png" alt="Digital Is Yours" class="jitsi-header-logo-img"/>
+    </div>
+    <div class="jitsi-live-dot"></div>
+    <div>
+      <h3 class="jitsi-modal-titre">{{ jitsiSeanceTitre }}</h3>
+      <span class="jitsi-modal-sub">En direct · Digital Is Yours</span>
+    </div>
+  </div>
+  <button class="jitsi-modal-close" (click)="fermerJitsiModal()">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+    Quitter la séance
+  </button>
+</div>
+
+<div class="jitsi-iframe-wrapper">
+  <div id="jitsi-container-apprenant" class="jitsi-iframe-container"></div>
+</div>
+
+  </div>
+</div>
+</section>
+
     <!-- ═══ CALENDRIER ═══ -->
 <section *ngIf="activeSection==='calendrier'" class="page-content">
 
@@ -1846,10 +2038,11 @@
       <!-- Grille calendrier mois -->
       <div *ngIf="!sessionsLoading" class="cal-grid-body">
         <div *ngFor="let jour of calJoursMois"
-             class="cal-cell"
-             [class.cal-cell-today]="estAujourdhuiCal(jour)"
-             [class.cal-cell-other-month]="!estMoisCourant(jour)"
-             (click)="ouvrirModalAjouter(jour)">
+     class="cal-cell"
+     [class.cal-cell-today]="estAujourdhuiCal(jour)"
+     [class.cal-cell-other-month]="!estMoisCourant(jour)"
+     [class.cal-cell-passe]="estJourPasse(jour)"
+     (click)="!estJourPasse(jour) && ouvrirModalAjouter(jour)">
 
           <div class="cal-cell-num"
                [class.cal-num-today]="estAujourdhuiCal(jour)">
@@ -2909,6 +3102,76 @@
 
     <!-- ── QUESTION ── -->
     <div *ngIf="qfEtape==='question'" class="qf-question-screen">
+      <!-- ══ VIGNETTE CAMÉRA ══ -->
+<div class="qf-camera-widget"
+     [class.qf-cam-active]="qfEtatCamera?.statut === 'active'"
+     [class.qf-cam-orange]="qfEtatCamera?.statut === 'orange'"
+     [class.qf-cam-refusee]="qfEtatCamera?.statut === 'refusee'"
+     [class.qf-cam-erreur]="qfEtatCamera?.statut === 'erreur'"
+     [class.qf-cam-demande]="qfEtatCamera?.statut === 'demande'">
+
+  <!-- Flux vidéo -->
+  <div class="qf-cam-video-wrap">
+    <video id="qf-camera-video"
+           class="qf-cam-video"
+           autoplay muted playsinline
+           [style.display]="qfEtatCamera?.statut === 'active' || qfEtatCamera?.statut === 'orange' ? 'block' : 'none'">
+    </video>
+
+    <!-- Overlay si caméra non active -->
+    <div class="qf-cam-placeholder"
+         *ngIf="qfEtatCamera?.statut !== 'active' && qfEtatCamera?.statut !== 'orange'">
+      <svg *ngIf="qfEtatCamera?.statut === 'refusee'" width="22" height="22"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.8"
+              d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+        <path stroke-width="2" d="M1 1l22 22"/>
+      </svg>
+      <svg *ngIf="qfEtatCamera?.statut === 'demande'" width="22" height="22"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.8"
+              d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+      </svg>
+      <svg *ngIf="qfEtatCamera?.statut === 'erreur'" width="22" height="22"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+        <path stroke-width="2" d="M12 8v4M12 16h.01"/>
+      </svg>
+    </div>
+
+    <!-- Badge nombre de visages -->
+    <div class="qf-cam-visages-badge"
+         *ngIf="qfEtatCamera?.statut === 'active' || qfEtatCamera?.statut === 'orange'">
+      <span class="qf-cam-badge-dot"
+            [class.qf-badge-ok]="qfEtatCamera?.nbVisagesDetectes === 1"
+            [class.qf-badge-warn]="qfEtatCamera?.nbVisagesDetectes === 0 || (qfEtatCamera?.nbVisagesDetectes || 0) > 1">
+      </span>
+      {{ qfEtatCamera?.nbVisagesDetectes === 1 ? '1 visage' :
+         qfEtatCamera?.nbVisagesDetectes === 0 ? 'Aucun visage' :
+         qfEtatCamera?.nbVisagesDetectes + ' visages' }}
+    </div>
+  </div>
+
+  <!-- Indicateur de statut -->
+  <div class="qf-cam-status">
+    <span class="qf-cam-status-dot"
+          [class.qf-cam-dot-vert]="qfEtatCamera?.statut === 'active'"
+          [class.qf-cam-dot-orange]="qfEtatCamera?.statut === 'orange'"
+          [class.qf-cam-dot-gris]="qfEtatCamera?.statut === 'refusee' || qfEtatCamera?.statut === 'erreur' || qfEtatCamera?.statut === 'inactive'"
+          [class.qf-cam-dot-pulse]="qfEtatCamera?.statut === 'demande'">
+    </span>
+    <span class="qf-cam-status-label">
+      <ng-container [ngSwitch]="qfEtatCamera?.statut">
+        <ng-container *ngSwitchCase="'active'">Caméra active</ng-container>
+        <ng-container *ngSwitchCase="'orange'">Vérification...</ng-container>
+        <ng-container *ngSwitchCase="'demande'">Connexion...</ng-container>
+        <ng-container *ngSwitchCase="'refusee'">Caméra désactivée</ng-container>
+        <ng-container *ngSwitchCase="'erreur'">Erreur caméra</ng-container>
+        <ng-container *ngSwitchDefault>Initialisation...</ng-container>
+      </ng-container>
+    </span>
+  </div>
+</div>
       <!-- Barre de statut anti-fraude — toujours visible pendant le quiz -->
 <div class="qaf-status-bar"
      [class.qaf-status-vert]="qfNiveauFraude === 'vert'"
@@ -3092,6 +3355,68 @@
       </svg>
     </button>
 
+  </div>
+</div>
+<!-- ══ MODALE CAMÉRA ══ -->
+<div *ngIf="qfShowModaleCamera" class="qaf-modale-overlay" (click)="$event.stopPropagation()">
+  <div class="qaf-modale-rouge qaf-modale-camera">
+
+    <div class="qaf-modale-header">
+      <div class="qaf-modale-icon"
+           [style.background]="qfInfractionCamera?.type === 'visages_multiples'
+             ? 'rgba(231,76,60,.08)' : 'rgba(243,156,18,.08)'"
+           [style.border-color]="qfInfractionCamera?.type === 'visages_multiples'
+             ? 'rgba(231,76,60,.2)' : 'rgba(243,156,18,.2)'">
+        <!-- Icône plusieurs visages -->
+        <svg *ngIf="qfInfractionCamera?.type === 'visages_multiples'"
+             width="28" height="28" fill="none" stroke="#e74c3c" viewBox="0 0 24 24">
+          <path stroke-width="1.8" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4" stroke-width="1.8"/>
+          <path stroke-width="1.8" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <!-- Icône absence visage -->
+        <svg *ngIf="qfInfractionCamera?.type === 'absence_visage'"
+             width="28" height="28" fill="none" stroke="#f39c12" viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4" stroke-width="1.8"/>
+          <path stroke-width="1.8" d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          <path stroke-width="2" d="M1 1l22 22"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="qaf-modale-titre">
+          {{ qfInfractionCamera?.type === 'visages_multiples'
+            ? 'Plusieurs personnes détectées'
+            : 'Absence détectée' }}
+        </h3>
+        <p class="qaf-modale-sous-titre">
+          {{ qfInfractionCamera?.message }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Heure de détection -->
+    <div class="qaf-cam-detection-info">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+        <path stroke-width="1.8" d="M12 6v6l4 2"/>
+      </svg>
+      Détecté à {{ qfInfractionCamera?.horodatage | date:'HH:mm:ss' }}
+    </div>
+
+    <div class="qaf-modale-consequence">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      Cette détection a été transmise au formateur.
+      Votre session continue mais fera l'objet d'un examen.
+    </div>
+
+    <button class="qaf-modale-btn" (click)="fermerModaleCamera()">
+      Je comprends et je continue
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
   </div>
 </div>
 

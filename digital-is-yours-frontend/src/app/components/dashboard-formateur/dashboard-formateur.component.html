@@ -79,6 +79,15 @@
     {{ forumStats.questionsNonRepondues }}
   </span>
 </button>
+<button class="sb-item" [class.sb-active]="activeSection==='seances'" (click)="setSection('seances')">
+  <span class="sb-item-icon">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="1.6" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+    </svg>
+  </span>
+  <span class="sb-item-label">Séances en ligne</span>
+  <span *ngIf="seances.length > 0" class="sb-count-badge">{{ seances.length }}</span>
+</button>
     </nav>
 
     <button class="sb-logout" (click)="logout()">
@@ -99,11 +108,11 @@
           Digital Is Yours
           <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
-          </svg>
-<span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? selectedFormation.titre : 'Mes cours') : activeSection==='quiz-final' ? (selectedFormation ? selectedFormation.titre : 'Quiz Final IA') : activeSection==='forum' ? (forumModalMode==='detail' && forumQuestionDetail ? forumQuestionDetail.titre : 'Forum') : 'Mon profil' }}</span>
+          </svg><span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? selectedFormation.titre : 'Mes cours') : activeSection==='quiz-final' ? (selectedFormation ? selectedFormation.titre : 'Quiz Final IA') : activeSection==='forum' ? (forumModalMode==='detail' && forumQuestionDetail ? forumQuestionDetail.titre : 'Forum') : activeSection==='seances' ? 'Séances en ligne' : 'Mon profil' }}</span>
+
         </p>
        <h1 class="topbar-title">
-  {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? 'Gestion des cours' : 'Mes cours') : activeSection==='quiz-final' ? 'Quiz Final IA' : activeSection==='forum' ? 'Forum de discussion' : 'Mon profil' }}
+  {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? 'Gestion des cours' : 'Mes cours') : activeSection==='quiz-final' ? 'Quiz Final IA' : activeSection==='forum' ? 'Forum de discussion' : activeSection==='seances' ? 'Séances en ligne' : 'Mon profil' }}
 </h1>
         <p *ngIf="activeSection==='mes-formations'" class="section-subtitle">{{ formations.length }} formation(s) affectée(s)</p>
         <p *ngIf="activeSection==='cours' && selectedFormation" class="section-subtitle">{{ selectedFormation.titre }}</p>
@@ -1535,7 +1544,307 @@
   </div><!-- fin vue detail -->
 
 </section>
+
 <!-- FIN FORUM FORMATEUR -->
+ <!-- ═══ SÉANCES EN LIGNE ═══ -->
+<section *ngIf="activeSection==='seances'" class="page-content">
+
+  <!-- Header -->
+  <div class="seances-header-block">
+    <div class="seances-header-left">
+      <div class="seances-header-icon">
+        <svg width="24" height="24" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <path stroke-width="1.6" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="seances-header-title">Séances en ligne</h2>
+        <p class="seances-header-sub">Créez et gérez vos sessions de visioconférence avec vos apprenants</p>
+      </div>
+    </div>
+    <button class="seances-btn-new" (click)="ouvrirModalSeance()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2.5" d="M12 5v14M5 12h14"/>
+      </svg>
+      Planifier une séance
+    </button>
+  </div>
+
+  <!-- Message succès global -->
+  <div *ngIf="seanceSuccess" class="seance-success-banner">
+    {{ seanceSuccess }}
+  </div>
+
+  <div class="jitsi-subtle-note">
+  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" stroke-width="1.6"/>
+    <path d="M12 16v-4M12 8h.01" stroke-width="2"/>
+  </svg>
+  Sessions de visioconférence sécurisées · Aucune installation requise
+</div>
+
+  <!-- Loading -->
+  <div *ngIf="seancesLoading" class="cours-loading" style="padding:60px 0">
+    <div class="cours-spinner"></div>
+    <span>Chargement des séances...</span>
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!seancesLoading && seances.length === 0" class="empty-state-card">
+    <svg width="48" height="48" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+      <path stroke-width="1.4" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+    </svg>
+    <p class="empty-title">Aucune séance planifiée</p>
+    <p class="empty-sub">Créez votre première séance en ligne et invitez automatiquement vos apprenants.</p>
+    <button class="seances-btn-new" style="margin-top:8px" (click)="ouvrirModalSeance()">
+      + Planifier ma première séance
+    </button>
+  </div>
+
+  <!-- Liste des séances -->
+  <div *ngIf="!seancesLoading && seances.length > 0" class="seances-grid">
+    <div *ngFor="let s of seances; let i=index" class="seance-card"
+         [class.seance-card-imminente]="estDansMoinsD24h(s.dateSeance)">
+
+      <!-- Header carte -->
+     <div class="seance-card-header">
+
+  <div class="seance-video-icon">
+    <svg width="22" height="22" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+      <path stroke-width="1.6" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554
+        a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8
+        a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+    </svg>
+  </div>
+
+  <div class="seance-card-info">
+    <h3 class="seance-card-titre">{{ s.titre }}</h3>
+    <p class="seance-card-formation">📚 {{ s.formationTitre }}</p>
+  </div>
+
+  <!-- Colonne droite : statut + badge urgent empilés -->
+  <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0;">
+    <span class="seance-statut-badge"
+          [style.background]="getSeanceStatutBg(s.statut)"
+          [style.color]="getSeanceStatutColor(s.statut)">
+      {{ s.statut === 'PLANIFIEE' ? '🗓 Planifiée'
+       : s.statut === 'EN_COURS'  ? '🔴 En cours'
+       : s.statut === 'TERMINEE'  ? '✓ Terminée'
+       : '✗ Annulée' }}
+    </span>
+    <div *ngIf="estDansMoinsD24h(s.dateSeance)" class="seance-badge-urgent">
+      🔴 Aujourd'hui
+    </div>
+  </div>
+
+</div>
+
+      <!-- Métadonnées -->
+      <div class="seance-card-meta">
+        <div class="seance-meta-item">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          {{ formatSeanceDate(s.dateSeance) }}
+        </div>
+        <div class="seance-meta-item">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke-width="1.8"/>
+            <path stroke-width="1.8" d="M12 6v6l4 2"/>
+          </svg>
+          {{ s.dureeMinutes }} minutes
+        </div>
+        <div *ngIf="s.notifEnvoyee" class="seance-meta-item" style="color:#27ae60">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Apprenants notifiés
+        </div>
+      </div>
+
+      <!-- Description -->
+      <p *ngIf="s.description" class="seance-card-desc">{{ s.description }}</p>
+
+      <!-- Lien Jitsi -->
+      <div class="seance-lien-zone">
+        <span class="seance-lien-label">🔗 Lien de la séance</span>
+        <a [href]="s.lienJitsi" target="_blank" class="seance-lien-url">
+          {{ s.lienJitsi }}
+        </a>
+      </div>
+
+      <!-- Fonctionnalités -->
+      <div class="seance-features">
+        <span class="seance-feat">🎥 Vidéo</span>
+        <span class="seance-feat">💬 Chat</span>
+        <span class="seance-feat">🖥 Écran</span>
+        <span class="seance-feat">⏺ Enregistrement</span>
+      </div>
+
+      <!-- Actions -->
+      <div class="seance-card-actions">
+        <button class="seance-btn-rejoindre" (click)="rejoindreSeance(s.lienJitsi, s.titre)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14"/>
+            <rect stroke-width="2" x="1" y="6" width="14" height="12" rx="2"/>
+          </svg>
+          Rejoindre la séance
+        </button>
+        <button class="seance-btn-copier"
+                (click)="$any($event.target).innerText='✓ Copié !'; copyToClipboard(s.lienJitsi)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Copier le lien
+        </button>
+        <button class="seance-btn-supprimer" (click)="supprimerSeance(s)">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CRÉER SÉANCE -->
+  <div *ngIf="showSeanceModal" class="modal-overlay" (click)="fermerModalSeance()">
+    <div class="modal-seance" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-icon" style="background:rgba(74,124,126,.1)">
+            <svg width="20" height="20" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+              <path stroke-width="1.6" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="modal-title">Planifier une séance en ligne</h2>
+            <p class="modal-subtitle">Les apprenants inscrits seront notifiés automatiquement</p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="fermerModalSeance()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="seanceError" class="profil-alert profil-alert-error">{{ seanceError }}</div>
+
+        <!-- Formation -->
+        <div class="cms-field">
+          <label class="cms-label">Formation <span style="color:#4A7C7E">*</span></label>
+          <select class="cms-input" [(ngModel)]="seanceForm.formationId">
+            <option [value]="null">— Choisissez une formation —</option>
+            <option *ngFor="let f of formations" [value]="f.id">{{ f.titre }}</option>
+          </select>
+        </div>
+
+        <!-- Titre -->
+        <div class="cms-field">
+          <label class="cms-label">Titre de la séance <span style="color:#4A7C7E">*</span></label>
+          <input class="cms-input" [(ngModel)]="seanceForm.titre"
+                 placeholder="Ex: Introduction aux composants Angular, Questions-Réponses...">
+        </div>
+
+        <!-- Date + Heure -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="cms-field">
+            <label class="cms-label">Date <span style="color:#4A7C7E">*</span></label>
+            <input class="cms-input" type="date" [(ngModel)]="seanceForm.dateSeance">
+          </div>
+          <div class="cms-field">
+            <label class="cms-label">Heure</label>
+            <select class="cms-input" [(ngModel)]="seanceForm.heure">
+              <option *ngFor="let h of ['08:00','09:00','10:00','11:00','12:00','13:00',
+                '14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00']"
+                [value]="h">{{ h }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Durée -->
+        <div class="cms-field">
+          <label class="cms-label">Durée estimée</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button *ngFor="let d of [{v:30,l:'30 min'},{v:60,l:'1h'},{v:90,l:'1h30'},{v:120,l:'2h'}]"
+                    type="button"
+                    [style.background]="seanceForm.dureeMinutes === d.v ? '#4A7C7E' : '#F5F1EB'"
+                    [style.color]="seanceForm.dureeMinutes === d.v ? '#FFF' : '#6B5F52'"
+                    style="padding:8px 16px;border-radius:8px;border:1.5px solid #E8E3DB;
+                           font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s"
+                    (click)="seanceForm.dureeMinutes = d.v">
+              {{ d.l }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="cms-field">
+          <label class="cms-label">Note / Programme <small style="color:#9B8B6E">(optionnel)</small></label>
+          <textarea class="cms-textarea" [(ngModel)]="seanceForm.description" rows="3"
+                    placeholder="Décrivez le programme de la séance, les sujets abordés..."></textarea>
+        </div>
+
+        <!-- Info notification -->
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;
+                    background:rgba(74,124,126,.08);border:1px solid rgba(74,124,126,.2);
+                    border-radius:12px;font-size:12px;color:#4A7C7E;margin-top:8px">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px">
+            <path stroke-width="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <span>Un <strong>email avec le lien Jitsi</strong> et une <strong>notification in-app</strong>
+          seront envoyés automatiquement à tous les apprenants inscrits à la formation sélectionnée.</span>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="padding:18px 24px">
+        <button class="btn-annuler" (click)="fermerModalSeance()" [disabled]="seanceCreating">Annuler</button>
+        <button class="btn-payer" style="background:#4A7C7E" (click)="creerSeance()" [disabled]="seanceCreating">
+          <span *ngIf="seanceCreating" class="btn-spinner"></span>
+          <svg *ngIf="!seanceCreating" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+          </svg>
+          {{ seanceCreating ? 'Envoi en cours...' : 'Créer et notifier les apprenants' }}
+        </button>
+      </div>
+    </div>
+  </div>
+ <!-- ═══ MODAL JITSI FORMATEUR ═══ -->
+<div *ngIf="showJitsiModal" class="jitsi-modal-overlay" (click)="$event.stopPropagation()">
+  <div class="jitsi-modal-container">
+
+    <div class="jitsi-modal-header">
+  <div class="jitsi-modal-header-left">
+    <!-- Votre logo ICI dans le header (zone que vous contrôlez) -->
+    <div class="jitsi-app-logo">
+      <img src="assets/images/logo.png" alt="Digital Is Yours" class="jitsi-header-logo-img"/>
+    </div>
+    <div class="jitsi-live-dot"></div>
+    <div>
+      <h3 class="jitsi-modal-titre">{{ jitsiSeanceTitre }}</h3>
+      <span class="jitsi-modal-sub">En direct · Digital Is Yours</span>
+    </div>
+  </div>
+  <button class="jitsi-modal-close" (click)="fermerJitsiModal()">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+    Quitter la séance
+  </button>
+</div>
+
+<!-- Wrapper sans overlay (inutile dans l'iframe) -->
+<div class="jitsi-iframe-wrapper">
+  <div id="jitsi-container-formateur" class="jitsi-iframe-container"></div>
+</div>
+
+
+  </div>
+</div>
+</section>
+
+
 
     <!-- ═══ MON PROFIL ═══ -->
     <section *ngIf="activeSection==='profil'" class="page-content">

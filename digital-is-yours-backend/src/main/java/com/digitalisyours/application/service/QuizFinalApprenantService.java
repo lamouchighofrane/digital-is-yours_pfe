@@ -26,6 +26,7 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
     private final CertificatUseCase               certificatUseCase;
     private final CertificatEmailService           certificatEmailService;
     private final InscriptionJpaRepository         inscriptionJpaRepository;
+    private final PortfolioService portfolioService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -212,6 +213,13 @@ public class QuizFinalApprenantService implements QuizFinalApprenantUseCase {
                 );
                 log.info("Certificat généré : apprenant={} formation={}",
                         soumission.getEmail(), soumission.getFormationId());
+                // Génération automatique du portfolio (non bloquant)
+                try {
+                    portfolioService.genererOuMettreAJour(apprenantId);
+                    log.info("Portfolio généré/mis à jour pour apprenant={}", apprenantId);
+                } catch (Exception portfolioEx) {
+                    log.error("Erreur génération portfolio (non bloquant) : {}", portfolioEx.getMessage());
+                }
 
                 inscriptionJpaRepository.updateStatutApprenant(
                         apprenantId,
