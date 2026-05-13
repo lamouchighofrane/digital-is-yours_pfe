@@ -100,4 +100,20 @@ public class AdminService implements AdminUseCase {
     public void rejectFormateur(Long id) {
         adminRepository.deleteById(id);
     }
+
+    // ── NOUVEAU ──────────────────────────────────────────────────
+
+    @Override
+    public List<Map<String, Object>> getApprenantsAvecStatut() {
+        return adminRepository.findApprenantsAvecStatut();
+    }
+    @Override
+    public Map<String, Object> getInfractionsStats() {
+        return adminRepository.findInfractionsStats();
+    }
+
+    @Override
+    public Map<String, Object> getInfractions(int page, int size, String search, String type) {
+        return adminRepository.findInfractions(page, size, search, type);
+    }
 }

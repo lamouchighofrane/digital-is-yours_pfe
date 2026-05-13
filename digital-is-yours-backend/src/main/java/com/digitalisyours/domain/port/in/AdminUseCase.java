@@ -15,4 +15,10 @@ public interface AdminUseCase {
     void deleteUser(Long id);
     void approveFormateur(Long id);
     void rejectFormateur(Long id);
+
+    // ── NOUVEAU ──────────────────────────────────────────────────
+    List<Map<String, Object>> getApprenantsAvecStatut();
+    Map<String, Object> getInfractionsStats();
+    Map<String, Object> getInfractions(int page, int size, String search, String type);
+
 }

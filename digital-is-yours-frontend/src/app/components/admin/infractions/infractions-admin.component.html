@@ -1,0 +1,257 @@
+<!-- Toast -->
+<div *ngIf="toast" class="toast" [class.toast-error]="toast.type==='error'">
+  {{ toast.type === 'success' ? '✓' : '✗' }} {{ toast.msg }}
+</div>
+
+<div class="infra-page">
+
+  <!-- KPI -->
+  <div class="kpi-strip">
+    <div class="kpi-mini">
+      <div class="kpi-mini-icon" style="background:#fce4e4">🚨</div>
+      <div>
+        <p class="kpi-mini-val" style="color:#c0392b">{{ stats.totalSuspects }}</p>
+        <p class="kpi-mini-lbl">Suspects total</p>
+      </div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-icon" style="background:#fff3cd">⚡</div>
+      <div>
+        <p class="kpi-mini-val" style="color:#f39c12">{{ stats.totalInfractions }}</p>
+        <p class="kpi-mini-lbl">Infractions total</p>
+      </div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-icon" style="background:rgba(74,124,126,.1)">📝</div>
+      <div>
+        <p class="kpi-mini-val" style="color:#4A7C7E">{{ stats.totalMiniSuspects }}</p>
+        <p class="kpi-mini-lbl">Suspects Mini Quiz</p>
+      </div>
+    </div>
+    <div class="kpi-mini">
+      <div class="kpi-mini-icon" style="background:rgba(139,92,246,.1)">🏆</div>
+      <div>
+        <p class="kpi-mini-val" style="color:#7C3AED">{{ stats.totalFinalSuspects }}</p>
+        <p class="kpi-mini-lbl">Suspects Quiz Final</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-box">
+      <svg width="14" height="14" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8" stroke-width="2"/>
+        <path stroke-width="2" d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" [(ngModel)]="searchTerm" (input)="onSearch()"
+             placeholder="Rechercher apprenant, formation..."/>
+    </div>
+    <select class="ctrl-sel" [(ngModel)]="filterType" (change)="loadInfractions(0)">
+      <option value="ALL">Tous les quiz</option>
+      <option value="MINI_QUIZ">Mini Quiz</option>
+      <option value="QUIZ_FINAL">Quiz Final</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div><span>Chargement...</span>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!isLoading" class="table-wrap">
+    <table class="infra-table">
+      <thead>
+        <tr>
+          <th>Apprenant</th>
+          <th>Formation</th>
+          <th>Type quiz</th>
+          <th>Infractions</th>
+          <th>Score brut</th>
+          <th>Malus</th>
+          <th>Score final</th>
+          <th>Date</th>
+          <th>Détail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of infractions">
+          <td>
+            <div class="user-cell">
+              <div class="uc-av-infra">{{ getInitials(item) }}</div>
+              <div>
+                <p class="uc-name">{{ item.apprenantPrenom }} {{ item.apprenantNom }}</p>
+                <p class="uc-date">{{ item.apprenantEmail }}</p>
+              </div>
+            </div>
+          </td>
+          <td>
+            <p style="font-size:12px;font-weight:600;color:#1A1612;max-width:160px;
+                      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0">
+              {{ item.formationTitre || '—' }}
+            </p>
+            <p *ngIf="item.coursTitre" style="font-size:11px;color:#6B5F52;margin:2px 0 0;
+                      max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              {{ item.coursTitre }}
+            </p>
+          </td>
+          <td>
+            <span class="type-badge"
+                  [style.background]="item.typeQuiz==='Quiz Final' ? 'rgba(139,92,246,.1)' : 'rgba(74,124,126,.1)'"
+                  [style.color]="item.typeQuiz==='Quiz Final' ? '#7C3AED' : '#4A7C7E'">
+              {{ item.typeQuiz === 'Quiz Final' ? '🏆' : '📝' }} {{ item.typeQuiz }}
+            </span>
+          </td>
+          <td>
+            <span class="niveau-badge" [class]="getNiveauClass(item.nbInfractions)">
+              {{ item.nbInfractions }} infraction{{ item.nbInfractions > 1 ? 's' : '' }}
+            </span>
+          </td>
+          <td style="font-size:13px;font-weight:600;color:#1A1612;text-align:center">
+            {{ item.scoreBrut | number:'1.0-0' }}%
+          </td>
+          <td style="text-align:center">
+            <span *ngIf="item.penalite > 0" style="color:#c0392b;font-weight:700;font-size:13px">
+              -{{ item.penalite }}pts
+            </span>
+            <span *ngIf="!item.penalite || item.penalite === 0" style="color:#9B8B6E;font-size:12px">—</span>
+          </td>
+          <td style="text-align:center">
+            <span [style.color]="item.scoreFinal >= 70 ? '#27ae60' : '#c0392b'"
+                  style="font-weight:700;font-size:13px">
+              {{ item.scoreFinal | number:'1.0-0' }}%
+            </span>
+          </td>
+          <td style="font-size:11px;color:#6B5F52;white-space:nowrap">
+            {{ formatDate(item.datePassage) }}
+          </td>
+          <td>
+            <button class="btn-detail" (click)="ouvrirDetail(item)" title="Voir détail infractions">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              Voir
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="infractions.length === 0">
+          <td colspan="9" class="empty-td">Aucune infraction détectée 🎉</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="table-count">
+      {{ total }} résultat(s) · Page {{ page + 1 }} / {{ totalPages || 1 }}
+    </p>
+    <div *ngIf="totalPages > 1" class="pagination">
+      <button class="act" [disabled]="page===0" (click)="changerPage(page-1)">←</button>
+      <button *ngFor="let p of [].constructor(totalPages); let i=index"
+              class="act"
+              [style.background]="i===page ? '#8B3A3A' : ''"
+              [style.color]="i===page ? '#FFF' : ''"
+              (click)="changerPage(i)">{{ i+1 }}</button>
+      <button class="act" [disabled]="page===totalPages-1" (click)="changerPage(page+1)">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal détail infractions -->
+<div *ngIf="selectedInfraction" class="m-overlay" (click)="fermerDetail()">
+  <div class="m-box" (click)="$event.stopPropagation()">
+
+    <!-- Header modal -->
+    <div class="m-hd">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span class="niveau-badge" [class]="getNiveauClass(selectedInfraction.nbInfractions)">
+            {{ selectedInfraction.nbInfractions }} infraction(s)
+          </span>
+          <span class="type-badge"
+                [style.background]="selectedInfraction.typeQuiz==='Quiz Final' ? 'rgba(139,92,246,.1)' : 'rgba(74,124,126,.1)'"
+                [style.color]="selectedInfraction.typeQuiz==='Quiz Final' ? '#7C3AED' : '#4A7C7E'">
+            {{ selectedInfraction.typeQuiz }}
+          </span>
+        </div>
+        <h3 class="m-title">
+          {{ selectedInfraction.apprenantPrenom }} {{ selectedInfraction.apprenantNom }}
+        </h3>
+        <p style="font-size:12px;color:#6B5F52;margin-top:3px">
+          {{ selectedInfraction.apprenantEmail }} · {{ formatDate(selectedInfraction.datePassage) }}
+        </p>
+      </div>
+      <button class="m-close" (click)="fermerDetail()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Résumé scores -->
+    <div class="modal-scores">
+      <div class="score-box">
+        <span class="score-val">{{ selectedInfraction.scoreBrut | number:'1.0-0' }}%</span>
+        <span class="score-lbl">Score brut</span>
+      </div>
+      <div class="score-arrow">→</div>
+      <div class="score-box score-box-malus">
+        <span class="score-val" style="color:#c0392b">-{{ selectedInfraction.penalite || 0 }} pts</span>
+        <span class="score-lbl">Malus appliqué</span>
+      </div>
+      <div class="score-arrow">→</div>
+      <div class="score-box score-box-final">
+        <span class="score-val"
+              [style.color]="selectedInfraction.scoreFinal >= 70 ? '#27ae60' : '#c0392b'">
+          {{ selectedInfraction.scoreFinal | number:'1.0-0' }}%
+        </span>
+        <span class="score-lbl">Score final</span>
+      </div>
+    </div>
+
+    <!-- Formation -->
+    <div style="padding:0 28px 16px">
+      <div class="formation-info-box">
+        <svg width="14" height="14" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <span>{{ selectedInfraction.formationTitre || '—' }}</span>
+        <span *ngIf="selectedInfraction.coursTitre" style="color:#9B8B6E">
+          · {{ selectedInfraction.coursTitre }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Liste des infractions -->
+    <div style="padding:0 28px 28px">
+      <h4 style="font-size:13px;font-weight:700;color:#1A1612;margin-bottom:12px">
+        Détail des infractions horodatées
+      </h4>
+
+      <div *ngIf="infractionsDetail.length === 0"
+           style="text-align:center;padding:20px;color:#9B8B6E;font-size:13px">
+        Aucun détail disponible.
+      </div>
+
+      <div *ngFor="let inf of infractionsDetail; let i=index" class="infra-detail-item">
+        <div class="infra-detail-num">{{ i + 1 }}</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span class="infra-type-chip"
+                  [style.background]="getTypeColor(inf.type) + '18'"
+                  [style.color]="getTypeColor(inf.type)">
+              {{ getTypeLabel(inf.type) }}
+            </span>
+            <span style="font-size:10px;color:#9B8B6E">
+              {{ formatDate(inf.horodatage) }}
+            </span>
+          </div>
+          <p style="font-size:12px;color:#6B5F52;margin:0;line-height:1.5">
+            {{ inf.message }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

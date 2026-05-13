@@ -88,6 +88,26 @@
   <span class="sb-item-label">Séances en ligne</span>
   <span *ngIf="seances.length > 0" class="sb-count-badge">{{ seances.length }}</span>
 </button>
+<button class="sb-item" [class.sb-active]="activeSection==='mes-apprenants'"
+        (click)="setSection('mes-apprenants')">
+  <span class="sb-item-icon">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
+      <path stroke-width="1.6" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  </span>
+  <span class="sb-item-label">Mes apprenants</span>
+</button>
+<button class="sb-item" [class.sb-active]="activeSection==='mes-infractions'"
+        (click)="setSection('mes-infractions')">
+  <span class="sb-item-icon">
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="1.6" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>
+  </span>
+  <span class="sb-item-label">Infractions quiz</span>
+</button>
     </nav>
 
     <button class="sb-logout" (click)="logout()">
@@ -108,11 +128,11 @@
           Digital Is Yours
           <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-width="2.5" d="M9 18l6-6-6-6"/>
-          </svg><span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? selectedFormation.titre : 'Mes cours') : activeSection==='quiz-final' ? (selectedFormation ? selectedFormation.titre : 'Quiz Final IA') : activeSection==='forum' ? (forumModalMode==='detail' && forumQuestionDetail ? forumQuestionDetail.titre : 'Forum') : activeSection==='seances' ? 'Séances en ligne' : 'Mon profil' }}</span>
+          </svg><span>{{ activeSection==='dashboard' ? 'Tableau de bord' : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? selectedFormation.titre : 'Mes cours') : activeSection==='quiz-final' ? (selectedFormation ? selectedFormation.titre : 'Quiz Final IA') : activeSection==='forum' ? (forumModalMode==='detail' && forumQuestionDetail ? forumQuestionDetail.titre : 'Forum') : activeSection==='seances' ? 'Séances en ligne' : activeSection==='mes-apprenants' ? 'Mes apprenants' : activeSection==='mes-infractions' ? 'Infractions quiz' : 'Mon profil'}}</span>
 
         </p>
        <h1 class="topbar-title">
-  {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? 'Gestion des cours' : 'Mes cours') : activeSection==='quiz-final' ? 'Quiz Final IA' : activeSection==='forum' ? 'Forum de discussion' : activeSection==='seances' ? 'Séances en ligne' : 'Mon profil' }}
+  {{ activeSection==='dashboard' ? 'Bonjour, '+(formateurUser?.prenom||'') : activeSection==='mes-formations' ? 'Mes formations' : activeSection==='cours' ? (selectedFormation ? 'Gestion des cours' : 'Mes cours') : activeSection==='quiz-final' ? 'Quiz Final IA' : activeSection==='forum' ? 'Forum de discussion' : activeSection==='seances' ? 'Séances en ligne' : activeSection==='mes-apprenants' ? 'Mes apprenants' : activeSection==='mes-infractions' ? 'Infractions — Surveillance quiz' : 'Mon profil' }}
 </h1>
         <p *ngIf="activeSection==='mes-formations'" class="section-subtitle">{{ formations.length }} formation(s) affectée(s)</p>
         <p *ngIf="activeSection==='cours' && selectedFormation" class="section-subtitle">{{ selectedFormation.titre }}</p>
@@ -1668,9 +1688,11 @@
       <!-- Lien Jitsi -->
       <div class="seance-lien-zone">
         <span class="seance-lien-label">🔗 Lien de la séance</span>
-        <a [href]="s.lienJitsi" target="_blank" class="seance-lien-url">
-          {{ s.lienJitsi }}
-        </a>
+        <span class="seance-lien-url"
+      style="cursor:pointer; text-decoration:underline;"
+      (click)="rejoindreSeance(s.lienJitsi, s.titre)">
+  {{ s.lienJitsi }}
+</span>
       </div>
 
       <!-- Fonctionnalités -->
@@ -1690,6 +1712,12 @@
           </svg>
           Rejoindre la séance
         </button>
+          <button class="seance-btn-copier" (click)="voirPresences(s)" title="Tableau de présence">
+    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+    </svg>
+    Présences
+  </button>
         <button class="seance-btn-copier"
                 (click)="$any($event.target).innerText='✓ Copié !'; copyToClipboard(s.lienJitsi)">
           <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1753,14 +1781,14 @@
             <label class="cms-label">Date <span style="color:#4A7C7E">*</span></label>
             <input class="cms-input" type="date" [(ngModel)]="seanceForm.dateSeance">
           </div>
-          <div class="cms-field">
-            <label class="cms-label">Heure</label>
-            <select class="cms-input" [(ngModel)]="seanceForm.heure">
-              <option *ngFor="let h of ['08:00','09:00','10:00','11:00','12:00','13:00',
-                '14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00']"
-                [value]="h">{{ h }}</option>
-            </select>
-          </div>
+         <div class="cms-field">
+  <label class="cms-label">Heure</label>
+  <input class="cms-input"
+         type="time"
+         [(ngModel)]="seanceForm.heure"
+         step="60"
+         placeholder="HH:MM">
+</div>
         </div>
 
         <!-- Durée -->
@@ -1816,7 +1844,6 @@
 
     <div class="jitsi-modal-header">
   <div class="jitsi-modal-header-left">
-    <!-- Votre logo ICI dans le header (zone que vous contrôlez) -->
     <div class="jitsi-app-logo">
       <img src="assets/images/logo.png" alt="Digital Is Yours" class="jitsi-header-logo-img"/>
     </div>
@@ -1826,12 +1853,30 @@
       <span class="jitsi-modal-sub">En direct · Digital Is Yours</span>
     </div>
   </div>
-  <button class="jitsi-modal-close" (click)="fermerJitsiModal()">
-    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-    </svg>
-    Quitter la séance
-  </button>
+
+  <div class="jitsi-header-actions">
+    <!-- Bouton enregistrement -->
+    <button *ngIf="!isRecording" class="jitsi-btn-record" (click)="demarrerEnregistrement()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="8"/>
+      </svg>
+      Enregistrer
+    </button>
+    <button *ngIf="isRecording" class="jitsi-btn-record-stop" (click)="arreterEnregistrement()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="4" y="4" width="16" height="16" rx="2"/>
+      </svg>
+      {{ formatRecordingTime(recordingDuration) }} — Arrêter
+    </button>
+
+    <!-- Bouton quitter -->
+    <button class="jitsi-modal-close" (click)="fermerJitsiModal()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+      Quitter la séance
+    </button>
+  </div>
 </div>
 
 <!-- Wrapper sans overlay (inutile dans l'iframe) -->
@@ -1842,7 +1887,555 @@
 
   </div>
 </div>
+<!-- ═══ MODAL PRÉSENCES ═══ -->
+<div *ngIf="showPresenceModal" class="modal-overlay" (click)="fermerPresenceModal()">
+  <div class="modal-seance" style="max-width:700px" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-icon" style="background:rgba(74,124,126,.1)">
+          <svg width="20" height="20" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+            <path stroke-width="1.6" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="modal-title">Tableau de présence</h2>
+          <p class="modal-subtitle">{{ presenceSeanceTitre }}</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+  <button class="seance-btn-copier" (click)="actualiserPresences()" title="Actualiser">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+    </svg>
+    Actualiser
+  </button>
+  <button class="modal-close" (click)="fermerPresenceModal()">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
+</div>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="presencesLoading" style="text-align:center;padding:40px;color:#6B5F52">
+        Chargement...
+      </div>
+      <div *ngIf="!presencesLoading && presences.length === 0"
+           style="text-align:center;padding:40px;color:#9B8B6E">
+        Aucun apprenant n'a encore rejoint cette séance.
+      </div>
+      <table *ngIf="!presencesLoading && presences.length > 0" class="presence-table">
+        <thead>
+          <tr>
+            <th>Apprenant</th>
+            <th>Statut</th>
+            <th>Heure d'entrée</th>
+            <th>Heure de sortie</th>
+            <th>Durée</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of presences">
+            <td>
+              <strong>{{ p.apprenantPrenom }} {{ p.apprenantNom }}</strong>
+              <br><small style="color:#9B8B6E">{{ p.apprenantEmail }}</small>
+            </td>
+            <td>
+              <span [style.background]="p.present ? 'rgba(39,174,96,.12)' : 'rgba(231,76,60,.1)'"
+                    [style.color]="p.present ? '#27ae60' : '#e74c3c'"
+                    style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">
+                {{ p.present ? '✓ Présent' : '✗ Absent' }}
+              </span>
+            </td>
+            <td style="font-size:12px;color:#6B5F52">
+              {{ p.dateRejoindre ? (p.dateRejoindre | date:'HH:mm') : '—' }}
+            </td>
+           <td style="font-size:12px;color:#6B5F52">
+  <ng-container *ngIf="!p.dateRejoindre">—</ng-container>
+  <ng-container *ngIf="p.dateRejoindre && p.dateQuitter">
+    {{ p.dateQuitter | date:'HH:mm' }}
+  </ng-container>
+  <ng-container *ngIf="p.dateRejoindre && !p.dateQuitter">
+    Encore présent
+  </ng-container>
+</td>
+            <td style="font-size:12px;color:#6B5F52">
+              {{ p.dureeMinutes ? p.dureeMinutes + ' min' : '—' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 </section>
+<!-- ═══ MES APPRENANTS ═══ -->
+<section *ngIf="activeSection==='mes-apprenants'" class="page-content">
+  <!-- KPI Cards -->
+  <div class="fa-kpi-row">
+
+    <div class="fa-kpi-card" style="--kpi-color:#4A7C7E">
+      <div class="fa-kpi-icon" style="background:rgba(74,124,126,.12)">
+        <svg width="22" height="22" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
+          <path stroke-width="1.6" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val">{{ kpiApprenants.total }}</p>
+        <p class="fa-kpi-label">Total apprenants</p>
+      </div>
+    </div>
+
+    <div class="fa-kpi-card" style="--kpi-color:#7C3AED;cursor:pointer"
+         (click)="apprenantFiltreStatut='CERTIFIE'; loadMesApprenants(0)">
+      <div class="fa-kpi-icon" style="background:rgba(124,58,237,.12)">
+        <svg width="22" height="22" fill="none" stroke="#7C3AED" viewBox="0 0 24 24">
+          <path stroke-width="1.6" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val" style="color:#7C3AED">{{ kpiApprenants.certifie }}</p>
+        <p class="fa-kpi-label">Certifiés</p>
+      </div>
+    </div>
+
+    <div class="fa-kpi-card" style="--kpi-color:#c0392b;cursor:pointer"
+         (click)="apprenantFiltreStatut='A_RISQUE'; loadMesApprenants(0)">
+      <div class="fa-kpi-icon" style="background:rgba(192,57,43,.1)">
+        <svg width="22" height="22" fill="none" stroke="#c0392b" viewBox="0 0 24 24">
+          <path stroke-width="1.6" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val" style="color:#c0392b">{{ kpiApprenants.aRisque }}</p>
+        <p class="fa-kpi-label">À risque</p>
+      </div>
+    </div>
+
+    <div class="fa-kpi-card" style="--kpi-color:#4A7C7E;cursor:pointer"
+         (click)="apprenantFiltreStatut='EN_COURS'; loadMesApprenants(0)">
+      <div class="fa-kpi-icon" style="background:rgba(74,124,126,.12)">
+        <svg width="22" height="22" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke-width="1.6"/>
+          <path stroke-width="1.6" d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val" style="color:#4A7C7E">{{ kpiApprenants.enCours }}</p>
+        <p class="fa-kpi-label">En cours</p>
+      </div>
+    </div>
+
+    <div class="fa-kpi-card" style="--kpi-color:#9B8B6E;cursor:pointer"
+         (click)="apprenantFiltreStatut='A_FAIRE'; loadMesApprenants(0)">
+      <div class="fa-kpi-icon" style="background:rgba(155,139,110,.12)">
+        <svg width="22" height="22" fill="none" stroke="#9B8B6E" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke-width="1.6"/>
+          <path stroke-width="1.6" d="M12 8v4M12 16h.01"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val" style="color:#9B8B6E">{{ kpiApprenants.aFaire }}</p>
+        <p class="fa-kpi-label">À faire</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Filtres -->
+  <div class="fa-toolbar">
+    <div class="fa-search">
+      <svg width="14" height="14" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8" stroke-width="2"/>
+        <path stroke-width="2" d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input placeholder="Rechercher apprenant..."
+             [(ngModel)]="apprenantSearch"
+             (input)="loadMesApprenants(0)"/>
+    </div>
+    <select class="fa-sel" [(ngModel)]="apprenantFiltreStatut"
+            (change)="loadMesApprenants(0)">
+      <option value="ALL">Tous les statuts</option>
+      <option value="CERTIFIE">✅ Certifiés</option>
+      <option value="A_RISQUE">🚨 À risque</option>
+      <option value="TERMINE">🏁 Terminés</option>
+      <option value="EN_COURS">▶ En cours</option>
+      <option value="A_FAIRE">⏳ À faire</option>
+    </select>
+    <select class="fa-sel" [(ngModel)]="apprenantFiltreFormation"
+            (change)="loadMesApprenants(0)">
+      <option value="">Toutes mes formations</option>
+      <option *ngFor="let f of formations" [value]="f.id">{{ f.titre }}</option>
+    </select>
+    <button class="fa-reset"
+            (click)="apprenantSearch=''; apprenantFiltreStatut='ALL'; apprenantFiltreFormation=''; loadMesApprenants(0)">
+      Réinitialiser
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="apprenantLoading" class="cours-loading">
+    <div class="cours-spinner"></div><span>Chargement...</span>
+  </div>
+
+  <!-- Vide -->
+  <div *ngIf="!apprenantLoading && mesApprenants.length === 0" class="empty-state-card">
+    <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+      <path stroke-width="1.4" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4" stroke-width="1.4"/>
+    </svg>
+    <p class="empty-title">Aucun apprenant trouvé</p>
+    <p class="empty-sub">Vos apprenants inscrits apparaîtront ici.</p>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!apprenantLoading && mesApprenants.length > 0" class="fa-table-wrap">
+    <table class="fa-table">
+      <thead>
+        <tr>
+          <th>Apprenant</th>
+          <th>Formation</th>
+          <th>Progression</th>
+          <th>Statut</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of mesApprenants">
+          <td>
+            <div class="fa-user-cell">
+              <div class="fa-av">{{ (a.prenom?.[0]||'') + (a.nom?.[0]||'') | uppercase }}</div>
+              <div>
+                <p class="fa-name">{{ a.prenom }} {{ a.nom }}</p>
+                <p class="fa-email">{{ a.email }}</p>
+              </div>
+            </div>
+          </td>
+          <td>
+            <p class="fa-formation-titre">{{ a.formationTitre }}</p>
+            <p class="fa-formation-date" *ngIf="a.dateInscriptionFormation">
+              Inscrit le {{ a.dateInscriptionFormation | date:'dd/MM/yyyy' }}
+            </p>
+          </td>
+          <td>
+            <div class="fa-prog-wrap">
+              <div class="fa-prog-header">
+                <span>Progression</span>
+                <span>{{ a.progression | number:'1.0-0' }}%</span>
+              </div>
+              <div class="fa-prog-track">
+                <div class="fa-prog-fill"
+                     [style.width]="(a.progression || 0) + '%'"
+                     [style.background]="getProgressionColor(a.progression || 0)">
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="fa-statut-chip"
+                  [style.background]="getStatutEnrichiBg(a.statutEnrichi)"
+                  [style.color]="getStatutEnrichiColor(a.statutEnrichi)">
+              <span class="fa-statut-dot"
+                    [style.background]="getStatutEnrichiColor(a.statutEnrichi)"
+                    [class.fa-statut-pulse]="a.statutEnrichi === 'A_RISQUE'">
+              </span>
+              {{ getStatutEnrichiLabel(a.statutEnrichi) }}
+            </span>
+            <p *ngIf="a.statutEnrichi === 'A_RISQUE' && a.joursInactivite != null"
+               style="font-size:10px;color:#c0392b;margin-top:4px;font-weight:600">
+              {{ a.joursInactivite }}j sans activité
+            </p>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="fa-table-footer">
+      <span class="fa-count">{{ apprenantsTotal }} apprenant(s)</span>
+      <div *ngIf="apprenantsTotalPages > 1" class="fa-pagination">
+        <button [disabled]="apprenantsPage===0"
+                (click)="changerPageApprenants(apprenantsPage-1)">←</button>
+        <span>{{ apprenantsPage + 1 }} / {{ apprenantsTotalPages }}</span>
+        <button [disabled]="apprenantsPage===apprenantsTotalPages-1"
+                (click)="changerPageApprenants(apprenantsPage+1)">→</button>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══ MES INFRACTIONS ═══ -->
+<section *ngIf="activeSection==='mes-infractions'" class="page-content">
+  <!-- KPI Cards -->
+  <div class="fa-kpi-row">
+
+    <div class="fa-kpi-card" style="--kpi-color:#8B3A3A">
+      <div class="fa-kpi-icon" style="background:rgba(139,58,58,.1)">
+        <svg width="22" height="22" fill="none" stroke="#8B3A3A" viewBox="0 0 24 24">
+          <path stroke-width="1.6" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4" stroke-width="1.6"/>
+          <path stroke-width="1.6" d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val" style="color:#8B3A3A">{{ kpiInfractions.suspects }}</p>
+        <p class="fa-kpi-label">Suspects total</p>
+      </div>
+    </div>
+
+    <div class="fa-kpi-card" style="--kpi-color:#f39c12">
+      <div class="fa-kpi-icon" style="background:rgba(243,156,18,.1)">
+        <svg width="22" height="22" fill="none" stroke="#f39c12" viewBox="0 0 24 24">
+          <path stroke-width="1.6" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val" style="color:#f39c12">{{ kpiInfractions.totalInfractions }}</p>
+        <p class="fa-kpi-label">Total infractions</p>
+      </div>
+    </div>
+
+    <div class="fa-kpi-card" style="--kpi-color:#4A7C7E;cursor:pointer"
+         (click)="infraFiltreType='MINI_QUIZ'; loadMesInfractions(0)">
+      <div class="fa-kpi-icon" style="background:rgba(74,124,126,.12)">
+        <svg width="22" height="22" fill="none" stroke="#4A7C7E" viewBox="0 0 24 24">
+          <path stroke-width="1.6" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val" style="color:#4A7C7E">{{ kpiInfractions.miniQuiz }}</p>
+        <p class="fa-kpi-label">Suspects Mini Quiz</p>
+      </div>
+    </div>
+
+    <div class="fa-kpi-card" style="--kpi-color:#7C3AED;cursor:pointer"
+         (click)="infraFiltreType='QUIZ_FINAL'; loadMesInfractions(0)">
+      <div class="fa-kpi-icon" style="background:rgba(124,58,237,.12)">
+        <svg width="22" height="22" fill="none" stroke="#7C3AED" viewBox="0 0 24 24">
+          <path stroke-width="1.6" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="fa-kpi-val" style="color:#7C3AED">{{ kpiInfractions.quizFinal }}</p>
+        <p class="fa-kpi-label">Suspects Quiz Final</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Filtres -->
+  <div class="fa-toolbar">
+    <div class="fa-search">
+      <svg width="14" height="14" fill="none" stroke="#6B5F52" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8" stroke-width="2"/>
+        <path stroke-width="2" d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input placeholder="Rechercher apprenant, formation..."
+             [(ngModel)]="infraSearch"
+             (input)="loadMesInfractions(0)"/>
+    </div>
+    <select class="fa-sel" [(ngModel)]="infraFiltreType"
+            (change)="loadMesInfractions(0)">
+      <option value="ALL">Tous les quiz</option>
+      <option value="MINI_QUIZ">Mini Quiz</option>
+      <option value="QUIZ_FINAL">Quiz Final</option>
+    </select>
+    <select class="fa-sel" [(ngModel)]="infraFiltreFormation"
+            (change)="loadMesInfractions(0)">
+      <option value="">Toutes mes formations</option>
+      <option *ngFor="let f of formations" [value]="f.id">{{ f.titre }}</option>
+    </select>
+    <button class="fa-reset"
+            (click)="infraSearch=''; infraFiltreType='ALL'; infraFiltreFormation=''; loadMesInfractions(0)">
+      Réinitialiser
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="infraLoading" class="cours-loading">
+    <div class="cours-spinner"></div><span>Chargement...</span>
+  </div>
+
+  <!-- Vide -->
+  <div *ngIf="!infraLoading && mesInfractions.length === 0" class="empty-state-card">
+    <svg width="40" height="40" fill="none" stroke="#C8BEB2" viewBox="0 0 24 24">
+      <path stroke-width="1.4" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="empty-title">Aucune infraction détectée 🎉</p>
+    <p class="empty-sub">Vos apprenants n'ont commis aucune infraction lors des quiz.</p>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!infraLoading && mesInfractions.length > 0" class="fa-table-wrap">
+    <table class="fa-table">
+      <thead>
+        <tr>
+          <th>Apprenant</th>
+          <th>Formation</th>
+          <th>Type quiz</th>
+          <th>Infractions</th>
+          <th>Score brut</th>
+          <th>Malus</th>
+          <th>Score final</th>
+          <th>Date</th>
+          <th>Détail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of mesInfractions">
+          <td>
+            <div class="fa-user-cell">
+              <div class="fa-av" style="background:#8B3A3A">
+                {{ ((item.apprenantPrenom?.[0]||'') + (item.apprenantNom?.[0]||'')) | uppercase }}
+              </div>
+              <div>
+                <p class="fa-name">{{ item.apprenantPrenom }} {{ item.apprenantNom }}</p>
+                <p class="fa-email">{{ item.apprenantEmail }}</p>
+              </div>
+            </div>
+          </td>
+          <td>
+            <p class="fa-formation-titre">{{ item.formationTitre || '—' }}</p>
+            <p *ngIf="item.coursTitre" class="fa-formation-date">{{ item.coursTitre }}</p>
+          </td>
+          <td>
+            <span class="fa-type-badge"
+                  [style.background]="item.typeQuiz==='QUIZ_FINAL' ? 'rgba(139,92,246,.1)' : 'rgba(74,124,126,.1)'"
+                  [style.color]="item.typeQuiz==='QUIZ_FINAL' ? '#7C3AED' : '#4A7C7E'">
+              {{ item.typeQuiz === 'QUIZ_FINAL' ? '🏆 Quiz Final' : '📝 Mini Quiz' }}
+            </span>
+          </td>
+          <td>
+            <span class="fa-infra-badge"
+                  [style.background]="getNiveauInfra(item.nbInfractions) === 'ELEVE' ? '#fce4e4' : '#fff3cd'"
+                  [style.color]="getNiveauInfra(item.nbInfractions) === 'ELEVE' ? '#c0392b' : '#f39c12'">
+              {{ item.nbInfractions }} infraction{{ item.nbInfractions > 1 ? 's' : '' }}
+            </span>
+          </td>
+          <td style="font-size:13px;font-weight:600;text-align:center">
+            {{ item.scoreBrut | number:'1.0-0' }}%
+          </td>
+          <td style="text-align:center">
+            <span *ngIf="item.penalite > 0" style="color:#c0392b;font-weight:700;font-size:13px">
+              -{{ item.penalite }}pts
+            </span>
+            <span *ngIf="!item.penalite || item.penalite === 0" style="color:#9B8B6E;font-size:12px">—</span>
+          </td>
+          <td style="text-align:center">
+            <span [style.color]="item.scoreFinal >= 70 ? '#27ae60' : '#c0392b'"
+                  style="font-weight:700;font-size:13px">
+              {{ item.scoreFinal | number:'1.0-0' }}%
+            </span>
+          </td>
+          <td style="font-size:11px;color:#6B5F52;white-space:nowrap">
+            {{ formatInfraDate(item.datePassage) }}
+          </td>
+          <td>
+            <button class="fa-voir-btn" (click)="ouvrirInfraDetail(item)">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              Voir
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="fa-table-footer">
+      <span class="fa-count">{{ infraTotal }} résultat(s)</span>
+      <div *ngIf="infraTotalPages > 1" class="fa-pagination">
+        <button [disabled]="infraPage===0"
+                (click)="changerPageInfractions(infraPage-1)">←</button>
+        <span>{{ infraPage + 1 }} / {{ infraTotalPages }}</span>
+        <button [disabled]="infraPage===infraTotalPages-1"
+                (click)="changerPageInfractions(infraPage+1)">→</button>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- Modal détail infraction -->
+<div *ngIf="infraSelected" class="cours-modal-backdrop" (click)="fermerInfraDetail()">
+  <div class="fa-infra-modal" (click)="$event.stopPropagation()">
+
+    <div class="fa-infra-modal-head">
+      <div>
+        <h3 class="cms-title">
+          {{ infraSelected.apprenantPrenom }} {{ infraSelected.apprenantNom }}
+        </h3>
+        <p class="cms-sub">
+          {{ infraSelected.formationTitre }} ·
+          {{ infraSelected.typeQuiz === 'QUIZ_FINAL' ? 'Quiz Final' : 'Mini Quiz' }}
+        </p>
+      </div>
+      <button class="cms-close" (click)="fermerInfraDetail()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Scores -->
+    <div class="fa-scores-row">
+      <div class="fa-score-box">
+        <span class="fa-score-val">{{ infraSelected.scoreBrut | number:'1.0-0' }}%</span>
+        <span class="fa-score-lbl">Score brut</span>
+      </div>
+      <div class="fa-score-arrow">→</div>
+      <div class="fa-score-box" style="border-color:#fce4e4;background:#fef8f8">
+        <span class="fa-score-val" style="color:#c0392b">-{{ infraSelected.penalite || 0 }}pts</span>
+        <span class="fa-score-lbl">Malus</span>
+      </div>
+      <div class="fa-score-arrow">→</div>
+      <div class="fa-score-box" style="border-color:#e8f5e9;background:#f8fef9">
+        <span class="fa-score-val"
+              [style.color]="infraSelected.scoreFinal >= 70 ? '#27ae60' : '#c0392b'">
+          {{ infraSelected.scoreFinal | number:'1.0-0' }}%
+        </span>
+        <span class="fa-score-lbl">Score final</span>
+      </div>
+    </div>
+
+    <!-- Détail infractions -->
+    <div class="fa-infra-list">
+      <h4 style="font-size:13px;font-weight:700;color:#1A1612;margin-bottom:12px">
+        Détail des {{ infraSelected.nbInfractions }} infraction(s)
+      </h4>
+
+      <div *ngIf="infraDetail.length === 0"
+           style="text-align:center;padding:20px;color:#9B8B6E;font-size:13px">
+        Aucun détail disponible.
+      </div>
+
+      <div *ngFor="let inf of infraDetail; let i=index" class="fa-infra-item">
+        <div class="fa-infra-num">{{ i + 1 }}</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span class="fa-infra-type"
+                  [style.background]="getTypeInfraColor(inf.type) + '18'"
+                  [style.color]="getTypeInfraColor(inf.type)">
+              {{ getTypeInfraLabel(inf.type) }}
+            </span>
+            <span style="font-size:10px;color:#9B8B6E">
+              {{ formatInfraDate(inf.horodatage) }}
+            </span>
+          </div>
+          <p style="font-size:12px;color:#6B5F52;margin:0;line-height:1.5">
+            {{ inf.message }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 
 

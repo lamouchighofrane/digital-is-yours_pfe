@@ -151,6 +151,9 @@ private jitsiApi: any = null;
 nouvelleReponseBanniere: { questionId: number; questionTitre: string } | null = null;
 private mesQuestionsSnapshot: { id: number; nombreReponses: number }[] = [];
 private nouvelleReponseInterval: any = null;
+private seanceIdCourante: number | null = null;
+
+
 // ── Risque abandon ──
 risqueAnalyses: any[] = [];
 risqueLoading = false;
@@ -2675,8 +2678,38 @@ rejoindreSeanceApprenant(lien: string, titre?: string) {
   this.jitsiSeanceTitre = titre || 'Séance en ligne';
   this.showJitsiModal   = true;
   this.cdr.detectChanges();
+
+  const seanceId = this.getSeanceIdFromLien(lien);
+  if (seanceId) {
+    this.seanceIdCourante = seanceId;  // ← CRUCIAL : sauvegarder pour fermerJitsiModal
+    this.enregistrerPresence(seanceId);
+  }
+
   this.chargerScriptJitsi().then(() => {
     setTimeout(() => this.lancerJitsiApprenant('jitsi-container-apprenant'), 300);
+  });
+}
+private getSeanceIdFromLien(lien: string): number | null {
+  const seance = this.seances.find((s: any) => s.lienJitsi === lien);
+  return seance ? seance.id : null;
+}
+
+private enregistrerPresence(seanceId: number) {
+  this.http.post(
+    `http://localhost:8080/api/apprenant/seances/${seanceId}/rejoindre`,
+    {},
+    { headers: this.headers() }  // ← this.headers() utilise 'token'
+  ).subscribe({ next: () => {}, error: () => {} });
+}
+
+private enregistrerDepart(seanceId: number) {
+  this.http.post(
+    `http://localhost:8080/api/apprenant/seances/${seanceId}/quitter`,
+    {},
+    { headers: this.headers() }  // ← this.headers() utilise 'token'
+  ).subscribe({
+    next: () => console.log('Départ enregistré ✅'),
+    error: (e) => console.error('Erreur départ ❌', e.status)
   });
 }
 private chargerScriptJitsi(): Promise<void> {
@@ -2770,9 +2803,21 @@ private lancerJitsiApprenant(containerId: string) {
 }
 
 fermerJitsiModal() {
-  if (this.jitsiApi) { this.jitsiApi.dispose(); this.jitsiApi = null; }
-  this.showJitsiModal = false;
+  const idAQuitter = this.seanceIdCourante; // ← copie AVANT reset
+
+  if (this.jitsiApi) {
+    this.jitsiApi.dispose();
+    this.jitsiApi = null;
+  }
+  this.showJitsiModal   = false;
+  this.seanceIdCourante = null;
   this.cdr.detectChanges();
+
+  // Appeler APRÈS la copie
+  if (idAQuitter) {
+    console.log('Enregistrement départ séance', idAQuitter);
+    this.enregistrerDepart(idAQuitter);
+  }
 }
 
 getStatutClass(statut: string): string {

@@ -87,6 +87,22 @@ public class SeanceRepositoryAdapter implements SeanceRepositoryPort {
     public void deleteById(Long id) {
         seanceJpaRepository.deleteById(id);
     }
+    @Override
+    @Transactional(readOnly = true)
+    public List<SeanceEnLigne> findAll() {
+        return seanceJpaRepository.findAll()
+                .stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public List<SeanceEnLigne> saveAll(List<SeanceEnLigne> seances) {
+        return seances.stream()
+                .map(this::save)
+                .collect(Collectors.toList());
+    }
 
     private SeanceEnLigne toDomain(SeanceEntity e) {
         SeanceEnLigne s = SeanceEnLigne.builder()

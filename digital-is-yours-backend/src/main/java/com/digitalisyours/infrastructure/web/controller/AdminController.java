@@ -164,4 +164,36 @@ public class AdminController {
         return ResponseEntity.ok(Map.of(
                 "message", "Formateur refusé et supprimé", "success", true));
     }
+    // ── NOUVEAU — apprenants avec statut dans formation ──────────
+    @GetMapping("/apprenants-statut")
+    public ResponseEntity<?> getApprenantsAvecStatut() {
+        try {
+            return ResponseEntity.ok(adminUseCase.getApprenantsAvecStatut());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+    // ── NOUVEAU — infractions ────────────────────────────────────
+
+    @GetMapping("/infractions/stats")
+    public ResponseEntity<?> getInfractionsStats() {
+        try {
+            return ResponseEntity.ok(adminUseCase.getInfractionsStats());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/infractions")
+    public ResponseEntity<?> getInfractions(
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "")   String search,
+            @RequestParam(defaultValue = "ALL") String type) {
+        try {
+            return ResponseEntity.ok(adminUseCase.getInfractions(page, size, search, type));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 }

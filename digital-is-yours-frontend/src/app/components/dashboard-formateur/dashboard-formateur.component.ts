@@ -10,7 +10,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 })
 export class DashboardFormateurComponent implements OnInit, OnDestroy {
 
-  activeSection: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' | 'forum' | 'seances' = 'dashboard';
+ activeSection: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' | 'forum' | 'seances' | 'mes-apprenants' | 'mes-infractions' = 'dashboard';
   formateurUser: any = null;
   formations: any[] = [];
   stats: any = { totalApprenants: 0, tauxReussite: 0, nouveauxInscrits: 0, noteMoyenne: 0 };
@@ -160,9 +160,51 @@ showJitsiModal   = false;
 jitsiRoomName    = '';
 jitsiSeanceTitre = '';
 private jitsiApi: any = null;
+// ── Enregistrement local ──
+isRecording      = false;
+private mediaRecorder: MediaRecorder | null = null;
+private recordedChunks: Blob[] = [];
+recordingDuration = 0;
+private recordingTimer: any = null;
 // ── Forum : fichier joint ──────────────────────────────────
 reponseFile: File | null = null;
 reponseFileSelected = false;
+presences: any[] = [];
+presencesLoading = false;
+showPresenceModal = false;
+presenceSeanceTitre = '';
+private presenceSeanceId: number | null = null;
+private presenceInterval: any = null;
+// ══════════════════════════════════════════════════
+// MES APPRENANTS
+// ══════════════════════════════════════════════════
+mesApprenants: any[]       = [];
+apprenantsTotalPages       = 0;
+apprenantsTotal            = 0;
+apprenantsPage             = 0;
+apprenantSearch            = '';
+apprenantFiltreStatut      = 'ALL';
+apprenantFiltreFormation   = '';
+apprenantLoading           = false;
+
+// ══════════════════════════════════════════════════
+// MES INFRACTIONS
+// ══════════════════════════════════════════════════
+mesInfractions: any[]      = [];
+infraTotal                 = 0;
+infraTotalPages            = 0;
+infraPage                  = 0;
+infraSearch                = '';
+infraFiltreType            = 'ALL';
+infraFiltreFormation       = '';
+infraLoading               = false;
+infraSelected: any         = null;
+infraDetail: any[]         = [];
+// KPI totaux
+kpiApprenants: { total:number; certifie:number; aRisque:number; enCours:number; aFaire:number; termine:number } =
+  { total:0, certifie:0, aRisque:0, enCours:0, aFaire:0, termine:0 };
+kpiInfractions: { suspects:number; totalInfractions:number; miniQuiz:number; quizFinal:number } =
+  { suspects:0, totalInfractions:0, miniQuiz:0, quizFinal:0 };
 // ══════════════════════════════════════════════════
 // SÉANCES EN LIGNE
 // ══════════════════════════════════════════════════
@@ -263,7 +305,8 @@ seanceForm = {
 }
 
   ngOnDestroy() {
-    if (this.pollingInterval) clearInterval(this.pollingInterval);
+  if (this.pollingInterval) clearInterval(this.pollingInterval);
+  if (this.presenceInterval) clearInterval(this.presenceInterval); // ← AJOUTER
     this.uploadXhr?.abort();
     this.uploadXhr = null;
   }
@@ -301,7 +344,7 @@ seanceForm = {
     });
   }
 
-  setSection(section: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' | 'forum' | 'seances') {
+ setSection(section: 'dashboard' | 'mes-formations' | 'profil' | 'cours' | 'quiz-final' | 'forum' | 'seances' | 'mes-apprenants' | 'mes-infractions') {
     this.activeSection = section;
     if (section === 'mes-formations') this.loadFormations();
     if (section === 'profil') this.loadProfil();
@@ -325,7 +368,8 @@ seanceForm = {
   this.loadForumStats();
 }
 if (section === 'seances') { this.loadSeances(); }
-
+if (section === 'mes-apprenants')  { this.loadMesApprenants(); this.loadKpiApprenants(); }
+if (section === 'mes-infractions') { this.loadMesInfractions(); this.loadKpiInfractions(); }
     this.closeNotifPanel();
 
   }
@@ -1822,6 +1866,179 @@ reagirReponse(r: any, emoji: string, event: Event) {
   });
 }
 // ══════════════════════════════════════════════════
+// MES APPRENANTS
+// ══════════════════════════════════════════════════
+loadMesApprenants(p = 0) {
+  this.apprenantLoading = true;
+  const params = new URLSearchParams({
+    page:        String(p),
+    size:        '10',
+    search:      this.apprenantSearch,
+    statut:      this.apprenantFiltreStatut,
+    formationId: this.apprenantFiltreFormation
+  });
+  this.http.get<any>(`${this.api}/mes-apprenants?${params}`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        this.mesApprenants       = d.apprenants    || [];
+        this.apprenantsTotal     = d.total         || 0;
+        this.apprenantsTotalPages= d.totalPages    || 0;
+        this.apprenantsPage      = d.currentPage   || 0;
+        this.apprenantLoading    = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.apprenantLoading = false; }
+    });
+}
+
+changerPageApprenants(p: number) {
+  if (p < 0 || p >= this.apprenantsTotalPages) return;
+  this.loadMesApprenants(p);
+}
+loadKpiApprenants() {
+  this.http.get<any>(`${this.api}/mes-apprenants?page=0&size=9999&search=&statut=ALL&formationId=`,
+    { headers: this.headers() })
+    .subscribe({
+      next: (res) => {
+        const all = res.apprenants || res.content || [];
+        this.kpiApprenants.total    = res.total || res.totalElements || all.length;
+        this.kpiApprenants.certifie = all.filter((a:any) => a.statutEnrichi === 'CERTIFIE').length;
+        this.kpiApprenants.aRisque  = all.filter((a:any) => a.statutEnrichi === 'A_RISQUE').length;
+        this.kpiApprenants.enCours  = all.filter((a:any) => a.statutEnrichi === 'EN_COURS').length;
+        this.kpiApprenants.aFaire   = all.filter((a:any) => a.statutEnrichi === 'A_FAIRE').length;
+        this.kpiApprenants.termine  = all.filter((a:any) => a.statutEnrichi === 'TERMINE').length;
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+}
+
+loadKpiInfractions() {
+  this.http.get<any>(`${this.api}/mes-infractions?page=0&size=9999&search=&type=ALL&formationId=`,
+    { headers: this.headers() })
+    .subscribe({
+      next: (res) => {
+        const all = res.infractions || res.content || [];
+        this.kpiInfractions.suspects         = res.total || res.totalElements || all.length;
+        this.kpiInfractions.totalInfractions = all.reduce((acc:number, i:any) => acc + (i.nbInfractions||0), 0);
+        this.kpiInfractions.miniQuiz         = all.filter((i:any) => i.typeQuiz === 'MINI_QUIZ').length;
+        this.kpiInfractions.quizFinal        = all.filter((i:any) => i.typeQuiz === 'QUIZ_FINAL').length;
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+}
+
+countApprenantStatut(statut: string): number {
+  return this.mesApprenants.filter(a => a.statutEnrichi === statut).length;
+}
+
+getStatutEnrichiLabel(s: string): string {
+  const map: any = {
+    'CERTIFIE': 'Certifié', 'A_RISQUE': 'À risque',
+    'TERMINE': 'Terminé',   'EN_COURS': 'En cours', 'A_FAIRE': 'À faire'
+  };
+  return map[s] || '—';
+}
+
+getStatutEnrichiColor(s: string): string {
+  const map: any = {
+    'CERTIFIE': '#7C3AED', 'A_RISQUE': '#c0392b',
+    'TERMINE':  '#2e7d32', 'EN_COURS': '#4A7C7E', 'A_FAIRE': '#9B8B6E'
+  };
+  return map[s] || '#6B5F52';
+}
+
+getStatutEnrichiBg(s: string): string {
+  const map: any = {
+    'CERTIFIE': 'rgba(139,92,246,.12)', 'A_RISQUE': '#fce4e4',
+    'TERMINE':  '#e8f5e9',              'EN_COURS': 'rgba(74,124,126,.12)',
+    'A_FAIRE':  'rgba(155,139,110,.1)'
+  };
+  return map[s] || '#F5F1EB';
+}
+
+getProgressionColor(p: number): string {
+  if (p >= 80) return '#27ae60';
+  if (p >= 40) return '#f39c12';
+  return '#e74c3c';
+}
+
+// ══════════════════════════════════════════════════
+// MES INFRACTIONS
+// ══════════════════════════════════════════════════
+loadMesInfractions(p = 0) {
+  this.infraLoading = true;
+  const params = new URLSearchParams({
+    page:        String(p),
+    size:        '10',
+    search:      this.infraSearch,
+    type:        this.infraFiltreType,
+    formationId: this.infraFiltreFormation
+  });
+  this.http.get<any>(`${this.api}/mes-infractions?${params}`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        this.mesInfractions   = d.infractions  || [];
+        this.infraTotal       = d.total        || 0;
+        this.infraTotalPages  = d.totalPages   || 0;
+        this.infraPage        = d.currentPage  || 0;
+        this.infraLoading     = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.infraLoading = false; }
+    });
+}
+
+changerPageInfractions(p: number) {
+  if (p < 0 || p >= this.infraTotalPages) return;
+  this.loadMesInfractions(p);
+}
+
+ouvrirInfraDetail(item: any) {
+  this.infraSelected = item;
+  this.infraDetail   = [];
+  if (item.detailInfractions) {
+    try { this.infraDetail = JSON.parse(item.detailInfractions); }
+    catch { this.infraDetail = []; }
+  }
+}
+
+fermerInfraDetail() { this.infraSelected = null; this.infraDetail = []; }
+
+getNiveauInfra(nb: number): string {
+  if (nb >= 3) return 'ELEVE'; if (nb >= 1) return 'MOYEN'; return 'FAIBLE';
+}
+
+getTypeInfraLabel(t: string): string {
+  const map: any = {
+    'onglet_quitte': '🔀 Onglet quitté', 'copie': '📋 Copie tentée',
+    'raccourci': '⌨️ Raccourci',          'plein_ecran': '⛶ Plein écran',
+    'absence_visage': '👤 Absence visage','visages_multiples': '👥 Multi-visages',
+    'camera_refusee': '📷 Caméra refusée'
+  };
+  return map[t] || t;
+}
+
+getTypeInfraColor(t: string): string {
+  const map: any = {
+    'onglet_quitte': '#f39c12', 'copie': '#e74c3c',
+    'raccourci': '#8B3A3A',     'plein_ecran': '#9B8B6E',
+    'absence_visage': '#7C3AED','visages_multiples': '#e74c3c',
+    'camera_refusee': '#6B5F52'
+  };
+  return map[t] || '#6B5F52';
+}
+
+formatInfraDate(d: string): string {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('fr-FR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+// ══════════════════════════════════════════════════
 // SÉANCES EN LIGNE
 // ══════════════════════════════════════════════════
 
@@ -2030,8 +2247,98 @@ this.jitsiApi.addEventListener('readyToClose', () => {
   this.fermerJitsiModal();
 });
 }
+async demarrerEnregistrement() {
+  try {
+    const stream = await (navigator.mediaDevices as any).getDisplayMedia({
+      video: { mediaSource: 'screen' },
+      audio: true
+    });
+    this.recordedChunks = [];
+    this.mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+    this.mediaRecorder.ondataavailable = (e: BlobEvent) => {
+      if (e.data.size > 0) this.recordedChunks.push(e.data);
+    };
+    this.mediaRecorder.onstop = () => {
+      const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `seance-${this.jitsiSeanceTitre}-${new Date().toISOString().slice(0,10)}.webm`;
+      a.click();
+      URL.revokeObjectURL(url);
+      stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+      this.isRecording = false;
+      this.recordingDuration = 0;
+      if (this.recordingTimer) { clearInterval(this.recordingTimer); this.recordingTimer = null; }
+      this.cdr.detectChanges();
+    };
+    this.mediaRecorder.start(1000);
+    this.isRecording = true;
+    this.recordingDuration = 0;
+    this.recordingTimer = setInterval(() => { this.recordingDuration++; this.cdr.detectChanges(); }, 1000);
+    this.cdr.detectChanges();
+  } catch(e) {
+    console.log('Enregistrement annulé ou non supporté', e);
+  }
+}
+
+arreterEnregistrement() {
+  if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+    this.mediaRecorder.stop();
+  }
+}
+voirPresences(seance: any) {
+  this.presenceSeanceTitre = seance.titre;
+  this.presenceSeanceId    = seance.id;
+  this.showPresenceModal   = true;
+  this.chargerPresences(seance.id);
+
+  if (this.presenceInterval) clearInterval(this.presenceInterval);
+  this.presenceInterval = setInterval(() => {
+    if (this.showPresenceModal && this.presenceSeanceId) {
+      this.chargerPresences(this.presenceSeanceId);
+    }
+  }, 10000);
+}
+private chargerPresences(seanceId: number) {
+  this.presencesLoading = true;
+  this.cdr.detectChanges();
+  this.http.get<any[]>(
+    `http://localhost:8080/api/formateur/seances/${seanceId}/presences`,
+    { headers: this.headers() }
+  ).subscribe({
+    next: d => {
+      this.presences = d || [];
+      this.presencesLoading = false;
+      this.cdr.detectChanges();
+    },
+    error: () => { this.presencesLoading = false; this.cdr.detectChanges(); }
+  });
+}
+
+actualiserPresences() {
+  if (this.presenceSeanceId) {
+    this.chargerPresences(this.presenceSeanceId);
+  }
+}
+
+fermerPresenceModal() {
+  this.showPresenceModal = false;
+  if (this.presenceInterval) {
+    clearInterval(this.presenceInterval);
+    this.presenceInterval = null;
+  }
+  this.cdr.detectChanges();
+}
+
+formatRecordingTime(seconds: number): string {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
 
 fermerJitsiModal() {
+  if (this.isRecording) this.arreterEnregistrement();  // ← AJOUTER
   if (this.jitsiApi) { this.jitsiApi.dispose(); this.jitsiApi = null; }
   this.showJitsiModal = false;
   this.cdr.detectChanges();

@@ -5,13 +5,19 @@ import com.digitalisyours.domain.model.SeanceEnLigne;
 import com.digitalisyours.domain.port.in.SeanceUseCase;
 import com.digitalisyours.domain.port.out.*;
 import com.digitalisyours.infrastructure.persistence.entity.InscriptionEntity;
+import com.digitalisyours.infrastructure.persistence.entity.SeanceEntity;
 import com.digitalisyours.infrastructure.persistence.repository.InscriptionJpaRepository;
 import com.digitalisyours.infrastructure.persistence.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -162,5 +168,35 @@ public class SeanceService implements SeanceUseCase {
     @Override
     public void supprimerSeance(Long seanceId, String emailFormateur) {
         seanceRepository.deleteById(seanceId);
+    }
+    @Scheduled(fixedRate = 60000)
+    @Transactional
+    public void mettreAJourStatuts() {
+        LocalDateTime maintenant = ZonedDateTime.now(ZoneId.of("Africa/Tunis"))
+                .toLocalDateTime();
+        List<SeanceEnLigne> seances = seanceRepository.findAll();
+
+        for (SeanceEnLigne seance : seances) {
+            if ("ANNULEE".equals(seance.getStatut())) continue;
+
+            LocalDateTime debut = seance.getDateSeance();
+            LocalDateTime fin   = debut.plusMinutes(seance.getDureeMinutes());
+
+            String nouveauStatut;
+            if (maintenant.isAfter(fin)) {
+                nouveauStatut = "TERMINEE";
+            } else if (!maintenant.isBefore(debut)) {
+                // Exactement à l'heure ou après → EN_COURS
+                nouveauStatut = "EN_COURS";
+            } else {
+                nouveauStatut = "PLANIFIEE";
+            }
+
+            if (!nouveauStatut.equals(seance.getStatut())) {
+                seance.setStatut(nouveauStatut);
+                log.info("Séance {} → {}", seance.getId(), nouveauStatut);
+            }
+        }
+        seanceRepository.saveAll(seances);
     }
 }

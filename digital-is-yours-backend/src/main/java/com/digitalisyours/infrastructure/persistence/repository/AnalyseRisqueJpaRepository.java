@@ -44,4 +44,27 @@ public interface AnalyseRisqueJpaRepository
             @Param("apprenantId") Long apprenantId,
             @Param("formationId") Long formationId,
             @Param("depuis") LocalDateTime depuis);
+
+    // ── NOUVEAU — dernière analyse par apprenant+formation ───────
+    @Query("SELECT a.apprenantId, a.formationId, a.niveauRisque, " +
+            "a.scoreRisque, a.joursInactivite, a.dateAnalyse " +
+            "FROM AnalyseRisqueEntity a " +
+            "WHERE a.dateAnalyse = (" +
+            "  SELECT MAX(a2.dateAnalyse) FROM AnalyseRisqueEntity a2 " +
+            "  WHERE a2.apprenantId = a.apprenantId " +
+            "  AND a2.formationId = a.formationId" +
+            ")")
+    List<Object[]> findDernieresAnalyses();
+    // ── NOUVEAU — pour dashboard formateur ───────────────────────
+    @Query("SELECT a.apprenantId, a.formationId, a.niveauRisque, " +
+            "a.scoreRisque, a.joursInactivite, a.dateAnalyse " +
+            "FROM AnalyseRisqueEntity a " +
+            "WHERE a.formationId IN :formationIds " +
+            "AND a.dateAnalyse = (" +
+            "  SELECT MAX(a2.dateAnalyse) FROM AnalyseRisqueEntity a2 " +
+            "  WHERE a2.apprenantId = a.apprenantId " +
+            "  AND a2.formationId = a.formationId" +
+            ")")
+    List<Object[]> findDernieresAnalysesForFormations(
+            @Param("formationIds") List<Long> formationIds);
 }

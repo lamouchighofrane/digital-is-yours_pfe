@@ -11,4 +11,6 @@ public interface SeanceRepositoryPort {
     List<SeanceEnLigne> findByFormationId(Long formationId);
     List<SeanceEnLigne> findSeancesForApprenant(String email);
     void deleteById(Long id);
+    List<SeanceEnLigne> findAll();
+    List<SeanceEnLigne> saveAll(List<SeanceEnLigne> seances);
 }

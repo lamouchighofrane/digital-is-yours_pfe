@@ -1,4 +1,5 @@
 package com.digitalisyours.infrastructure.web.controller;
+
 import com.digitalisyours.infrastructure.persistence.entity.CoursEntity;
 import com.digitalisyours.infrastructure.persistence.repository.*;
 import com.digitalisyours.infrastructure.web.security.JwtUtil;
@@ -20,19 +21,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ProgressionFormationController {
 
-    private final ProgressionCoursJpaRepository   progressionRepository;
-    private final InscriptionJpaRepository        inscriptionRepository;
+    private final ProgressionCoursJpaRepository        progressionRepository;
+    private final InscriptionJpaRepository             inscriptionRepository;
     private final ConsulterCoursFormationJpaRepository coursRepository;
-    private final JwtUtil                         jwtUtil;
+    private final ApprenantJpaRepository               apprenantRepository;
+    private final JwtUtil                              jwtUtil;
 
-    /**
-     * GET /api/apprenant/formations/{formationId}/progression
-     *
-     * Retourne la progression calculée selon la formule :
-     * Progression = ((vidéos vues / total) × 50)
-     *             + ((documents ouverts / total) × 20)
-     *             + ((mini-quiz passés / total) × 30)
-     */
     @GetMapping
     public ResponseEntity<?> getProgression(
             @PathVariable Long formationId,
@@ -45,41 +39,63 @@ public class ProgressionFormationController {
                 .existsByApprenantEmailAndFormationIdAndStatutPaiement(email, formationId, "PAYE");
         if (!inscrit) return ResponseEntity.status(403).build();
 
-        // Total cours publiés dans la formation
         int totalCours = coursRepository.findCoursPubiesByFormationId(formationId).size();
-        if (totalCours == 0) return ResponseEntity.ok(Map.of("progression", 0.0, "totalCours", 0));
+        if (totalCours == 0)
+            return ResponseEntity.ok(Map.of("progression", 0.0, "totalCours", 0));
 
-        // Compteurs
         int videosVues       = progressionRepository.countVideosVues(email, formationId);
         int documentsOuverts = progressionRepository.countDocumentsOuverts(email, formationId);
         int quizPasses       = progressionRepository.countQuizPasses(email, formationId);
         int coursTermines    = progressionRepository.countCoursTermines(email, formationId);
 
-        // Formule :
-        // ((vidéos vues / total) × 50) + ((documents ouverts / total) × 20) + ((quiz passés / total) × 30)
         double progression = ((double) videosVues       / totalCours * 50)
                 + ((double) documentsOuverts / totalCours * 20)
                 + ((double) quizPasses       / totalCours * 30);
-
-        // Arrondir à 1 décimale
         progression = Math.round(progression * 10.0) / 10.0;
 
-        // Récupérer tous les cours publiés de la formation
-        List<CoursEntity> tousLesCours = coursRepository.findCoursPubiesByFormationId(formationId);
+        // ── NOUVEAU : mettre à jour progression dans inscriptions ──────────
+        try {
+            Long apprenantId = apprenantRepository.findByEmail(email)
+                    .map(a -> a.getId())
+                    .orElse(null);
 
-// Récupérer les progressions existantes en base
-        List<com.digitalisyours.infrastructure.persistence.entity.ProgressionCoursEntity> progressionsExistantes =
+            if (apprenantId != null) {
+                // Déterminer le statut apprenant
+                String nouveauStatut;
+                if (progression >= 100) {
+                    nouveauStatut = "TERMINE";
+                } else if (progression > 0) {
+                    nouveauStatut = "EN_COURS";
+                } else {
+                    nouveauStatut = "A_FAIRE";
+                }
+
+                inscriptionRepository.updateProgressionEtStatut(
+                        apprenantId,
+                        formationId,
+                        (float) progression,
+                        nouveauStatut
+                );
+            }
+        } catch (Exception e) {
+            log.warn("Mise à jour progression inscription non bloquante : {}", e.getMessage());
+        }
+        // ──────────────────────────────────────────────────────────────────
+
+        List<CoursEntity> tousLesCours =
+                coursRepository.findCoursPubiesByFormationId(formationId);
+
+        List<com.digitalisyours.infrastructure.persistence.entity.ProgressionCoursEntity>
+                progressionsExistantes =
                 progressionRepository.findByEmailAndFormationId(email, formationId);
 
-// Créer une map coursId → progression pour lookup rapide
-        Map<Long, com.digitalisyours.infrastructure.persistence.entity.ProgressionCoursEntity> progressionMap =
-                progressionsExistantes.stream()
-                        .collect(Collectors.toMap(
-                                p -> p.getCours().getId(),
-                                p -> p
-                        ));
+        Map<Long, com.digitalisyours.infrastructure.persistence.entity.ProgressionCoursEntity>
+                progressionMap = progressionsExistantes.stream()
+                .collect(Collectors.toMap(
+                        p -> p.getCours().getId(),
+                        p -> p
+                ));
 
-// Pour CHAQUE cours (même sans entrée en BD), construire le détail
         List<Map<String, Object>> detailCours = tousLesCours.stream()
                 .map(cours -> {
                     Map<String, Object> m = new HashMap<>();
@@ -97,7 +113,6 @@ public class ProgressionFormationController {
                         m.put("dateDebut",      p.getDateDebut());
                         m.put("dateFin",        p.getDateFin());
                     } else {
-                        // Cours pas encore commencé → A_FAIRE
                         m.put("statut",         "A_FAIRE");
                         m.put("videoVue",       false);
                         m.put("documentOuvert", false);

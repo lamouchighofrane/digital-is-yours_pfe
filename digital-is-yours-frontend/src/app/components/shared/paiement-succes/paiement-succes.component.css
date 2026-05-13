@@ -20,6 +20,8 @@
 /* ── Checkmark animé ── */
 .icone-succes {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
 }
 
 .checkmark {

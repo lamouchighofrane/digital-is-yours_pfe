@@ -401,3 +401,164 @@
   .topbar { padding: 12px 18px; }
   .mini-stats { flex-wrap: wrap; }
 }
+/* ══════════════════════════════════════════
+   STATUTS FORMATIONS DANS LISTE APPRENANTS
+══════════════════════════════════════════ */
+.formation-statut-row {
+  padding: 5px 0;
+  border-bottom: 1px solid #F0EDE8;
+}
+.formation-statut-row:last-child {
+  border-bottom: none;
+}
+.formation-titre-small {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1A1612;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.statut-enrichi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.se-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.se-certifie {
+  background: rgba(139,92,246,.12);
+  color: #7C3AED;
+}
+.se-certifie .se-dot { background: #7C3AED; }
+
+.se-risque {
+  background: #fce4e4;
+  color: #c0392b;
+}
+.se-risque .se-dot {
+  background: #c0392b;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+.se-termine {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.se-termine .se-dot { background: #2e7d32; }
+
+.se-encours {
+  background: rgba(74,124,126,.12);
+  color: #4A7C7E;
+}
+.se-encours .se-dot { background: #4A7C7E; }
+
+.se-afaire {
+  background: rgba(155,139,110,.1);
+  color: #9B8B6E;
+}
+.se-afaire .se-dot { background: #9B8B6E; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .4; transform: scale(1.4); }
+}
+/* ══════════════════════════════════════════
+   LIGNE STATUTS FORMATIONS
+══════════════════════════════════════════ */
+.ms-formations-row {
+  background: #FFFFFF;
+  border: 1px solid #E8E3DB;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 6px rgba(26,22,18,.04);
+}
+
+.ms-formations-titre {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #9B8B6E;
+  margin-bottom: 12px;
+}
+
+.ms-formations-cards {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ms-card-f {
+  flex: 1;
+  min-width: 80px;
+  background: #F5F1EB;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all .18s;
+  text-align: center;
+}
+
+.ms-card-f:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26,22,18,.1);
+}
+
+.ms-f-num {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+  color: #1A1612;
+}
+
+.ms-f-lbl {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B5F52;
+  white-space: nowrap;
+}
+
+/* Couleurs par statut */
+.ms-card-f-certifie:hover,
+.ms-card-f-certifie.ms-card-f-active { background: rgba(139,92,246,.1); border-color: #7C3AED; }
+.ms-card-f-certifie.ms-card-f-active .ms-f-num { color: #7C3AED; }
+
+.ms-card-f-risque:hover,
+.ms-card-f-risque.ms-card-f-active { background: #fce4e4; border-color: #c0392b; }
+.ms-card-f-risque.ms-card-f-active .ms-f-num { color: #c0392b; }
+
+.ms-card-f-termine:hover,
+.ms-card-f-termine.ms-card-f-active { background: #e8f5e9; border-color: #2e7d32; }
+.ms-card-f-termine.ms-card-f-active .ms-f-num { color: #2e7d32; }
+
+.ms-card-f-encours:hover,
+.ms-card-f-encours.ms-card-f-active { background: rgba(74,124,126,.1); border-color: #4A7C7E; }
+.ms-card-f-encours.ms-card-f-active .ms-f-num { color: #4A7C7E; }
+
+.ms-card-f-afaire:hover,
+.ms-card-f-afaire.ms-card-f-active { background: rgba(155,139,110,.12); border-color: #9B8B6E; }
+.ms-card-f-afaire.ms-card-f-active .ms-f-num { color: #9B8B6E; }
+
+/* Card "Tous" active */
+.ms-card-f.ms-card-f-active:not([class*='-certifie']):not([class*='-risque']):not([class*='-termine']):not([class*='-encours']):not([class*='-afaire']) {
+  background: rgba(26,22,18,.07);
+  border-color: #1A1612;
+}
+

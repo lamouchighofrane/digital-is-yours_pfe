@@ -8,10 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 
@@ -62,5 +59,41 @@ public class FormateurController {
 
     private ResponseEntity<?> unauthorized() {
         return ResponseEntity.status(401).body(Map.of("message", "Non autorisé"));
+    }
+    // ── NOUVEAU — apprenants avec statut ─────────────────────────
+    @GetMapping("/mes-apprenants")
+    public ResponseEntity<?> getMesApprenants(
+            HttpServletRequest request,
+            @RequestParam(defaultValue = "0")   int page,
+            @RequestParam(defaultValue = "10")  int size,
+            @RequestParam(defaultValue = "")    String search,
+            @RequestParam(defaultValue = "ALL") String statut,
+            @RequestParam(required = false)     Long formationId) {
+        String email = extractEmail(request);
+        if (email == null) return unauthorized();
+        try {
+            return ResponseEntity.ok(formateurUseCase.getMesApprenants(
+                    email, page, size, search, statut, formationId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/mes-infractions")
+    public ResponseEntity<?> getMesInfractions(
+            HttpServletRequest request,
+            @RequestParam(defaultValue = "0")   int page,
+            @RequestParam(defaultValue = "10")  int size,
+            @RequestParam(defaultValue = "")    String search,
+            @RequestParam(defaultValue = "ALL") String type,
+            @RequestParam(required = false)     Long formationId) {
+        String email = extractEmail(request);
+        if (email == null) return unauthorized();
+        try {
+            return ResponseEntity.ok(formateurUseCase.getMesInfractions(
+                    email, page, size, search, type, formationId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }

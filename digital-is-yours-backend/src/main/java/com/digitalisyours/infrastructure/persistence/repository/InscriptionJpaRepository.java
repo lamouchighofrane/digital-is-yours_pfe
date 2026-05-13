@@ -91,5 +91,46 @@ public interface InscriptionJpaRepository extends JpaRepository<InscriptionEntit
             "AND i.statutApprenant != 'CERTIFIE'")  // ← EXCLURE les certifiés
     List<InscriptionEntity> findAllPayeesAvecApprenantEtFormation();
 
+    // ── NOUVEAU — pour le dashboard admin ────────────────────────
+    @Query("SELECT " +
+            "a.id, a.prenom, a.nom, a.email, a.telephone, a.active, a.dateInscription, " +
+            "f.id, f.titre, " +
+            "i.progression, i.statutApprenant, i.dateInscription, i.dernierActivite " +
+            "FROM InscriptionEntity i " +
+            "JOIN i.apprenant a " +
+            "JOIN i.formation f " +
+            "WHERE i.statutPaiement = 'PAYE' " +
+            "ORDER BY a.nom ASC, a.prenom ASC, f.titre ASC")
+    List<Object[]> findApprenantsAvecInscription();
+
+    // ── NOUVEAU — met à jour progression + statut apprenant ──────
+    @Modifying
+    @Transactional
+    @Query("UPDATE InscriptionEntity i SET " +
+            "i.progression = :progression, " +
+            "i.statutApprenant = :statut " +
+            "WHERE i.apprenant.id = :apprenantId " +
+            "AND i.formation.id = :formationId " +
+            "AND i.statutPaiement = 'PAYE' " +
+            "AND i.statutApprenant != 'CERTIFIE'")
+    void updateProgressionEtStatut(
+            @Param("apprenantId") Long apprenantId,
+            @Param("formationId") Long formationId,
+            @Param("progression") Float progression,
+            @Param("statut") String statut);
+    // ── NOUVEAU — pour dashboard formateur ───────────────────────
+    @Query("SELECT " +
+            "a.id, a.prenom, a.nom, a.email, a.telephone, a.active, a.dateInscription, " +
+            "f.id, f.titre, " +
+            "i.progression, i.statutApprenant, i.dateInscription, i.dernierActivite " +
+            "FROM InscriptionEntity i " +
+            "JOIN i.apprenant a " +
+            "JOIN i.formation f " +
+            "WHERE i.statutPaiement = 'PAYE' " +
+            "AND f.id IN :formationIds " +
+            "ORDER BY a.nom ASC, a.prenom ASC")
+    List<Object[]> findApprenantsAvecInscriptionByFormations(
+            @Param("formationIds") List<Long> formationIds);
+
 
 }

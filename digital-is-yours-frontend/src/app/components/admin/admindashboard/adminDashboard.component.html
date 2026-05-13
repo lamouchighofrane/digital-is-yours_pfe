@@ -136,6 +136,20 @@
   </button>
 </div>
 
+<div class="sb-group">
+  <span class="sb-group-label">Surveillance</span>
+  <button class="sb-item" [class.sb-active]="activeSection==='infractions'"
+          (click)="setSection('infractions')">
+    <span class="sb-item-icon">
+      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-width="1.6" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </span>
+    <span class="sb-item-label">Infractions</span>
+  </button>
+</div>
+
+
     </nav>
 
     <button class="sb-logout" (click)="logout()">
@@ -166,6 +180,7 @@
             <ng-container *ngIf="activeSection==='competences'">Compétences</ng-container>
             <ng-container *ngIf="activeSection==='certificats'">Certificats</ng-container>
             <ng-container *ngIf="activeSection==='forum'">Forum</ng-container>
+            <ng-container *ngIf="activeSection==='infractions'">Infractions</ng-container>
           </span>
         </p>
         <h1 class="topbar-title">
@@ -178,6 +193,7 @@
           <ng-container *ngIf="activeSection==='competences'">Compétences</ng-container>
           <ng-container *ngIf="activeSection==='certificats'">Certificats délivrés</ng-container>
           <ng-container *ngIf="activeSection==='forum'">Forum — Modération</ng-container>
+          <ng-container *ngIf="activeSection==='infractions'">Infractions — Surveillance Quiz</ng-container>
         </h1>
       </div>
       <div class="topbar-right">
@@ -358,44 +374,109 @@
 <section *ngIf="activeSection==='forum'" class="page-content">
   <app-forum-admin></app-forum-admin>
 </section>
+<section *ngIf="activeSection==='infractions'" class="page-content">
+  <app-infractions-admin></app-infractions-admin>
+</section>
+
 
   </main>
 </div>
 
 <!-- TEMPLATE UTILISATEURS -->
 <ng-template #tplUsers let-list="list">
-  <div class="mini-stats">
-    <div class="ms-card"><span class="ms-num">{{ list.length }}</span><span class="ms-lbl">Total</span></div>
-    <div class="ms-card"><span class="ms-num" style="color:#2e7d32">{{ countActive(list) }}</span><span class="ms-lbl">Actifs</span></div>
-    <div class="ms-card"><span class="ms-num" style="color:#e67e22">{{ countPending(list) }}</span><span class="ms-lbl">En attente</span></div>
-    <div class="ms-card"><span class="ms-num" style="color:#c0392b">{{ countInactive(list) }}</span><span class="ms-lbl">Désactivés</span></div>
-  </div>
-  <div class="ctrl-row">
-    <div class="ctrl-search">
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"/><path stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
-      <input placeholder="Rechercher nom, email..." [(ngModel)]="searchTerm"/>
+ <!-- Ligne 1 : stats compte (toujours visibles) -->
+<div class="mini-stats">
+  <div class="ms-card"><span class="ms-num">{{ list.length }}</span><span class="ms-lbl">Total apprenants</span></div>
+  <div class="ms-card"><span class="ms-num" style="color:#2e7d32">{{ countActive(list) }}</span><span class="ms-lbl">Comptes actifs</span></div>
+  <div class="ms-card"><span class="ms-num" style="color:#e67e22">{{ countPending(list) }}</span><span class="ms-lbl">Email non vérifié</span></div>
+  <div class="ms-card"><span class="ms-num" style="color:#c0392b">{{ countInactive(list) }}</span><span class="ms-lbl">Comptes désactivés</span></div>
+</div>
+
+<!-- Ligne 2 : statuts formations (uniquement apprenants) -->
+<div *ngIf="activeSection==='apprenants'" class="ms-formations-row">
+  <p class="ms-formations-titre">Statut dans les formations</p>
+  <div class="ms-formations-cards">
+
+    <div class="ms-card-f" (click)="filtreStatutForm='ALL'"
+         [class.ms-card-f-active]="filtreStatutForm==='ALL'">
+      <span class="ms-f-num">{{ apprenantsStatut.length }}</span>
+      <span class="ms-f-lbl">Tous</span>
     </div>
-    <select class="ctrl-sel" [(ngModel)]="filterStatus">
-      <option value="ALL">Tous les statuts</option>
-      <option value="ACTIF">Actifs</option>
-      <option value="DESACTIVE">Désactivés</option>
-      <option value="ATTENTE">En attente</option>
-    </select>
-    <button class="ctrl-export" (click)="exportCSV()">
-      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-      CSV
-    </button>
-    <button class="ctrl-export ctrl-export-pdf" (click)="exportPDF()">
-      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline stroke-width="2" points="14 2 14 8 20 8"/></svg>
-      PDF
-    </button>
+
+    <div class="ms-card-f ms-card-f-certifie" (click)="filtreStatutForm='CERTIFIE'"
+         [class.ms-card-f-active]="filtreStatutForm==='CERTIFIE'">
+      <span class="ms-f-num">{{ countStatutFormation('CERTIFIE') }}</span>
+      <span class="ms-f-lbl"> Certifiés</span>
+    </div>
+
+    <div class="ms-card-f ms-card-f-risque" (click)="filtreStatutForm='A_RISQUE'"
+         [class.ms-card-f-active]="filtreStatutForm==='A_RISQUE'">
+      <span class="ms-f-num">{{ countStatutFormation('A_RISQUE') }}</span>
+      <span class="ms-f-lbl"> À risque</span>
+    </div>
+
+    <div class="ms-card-f ms-card-f-termine" (click)="filtreStatutForm='TERMINE'"
+         [class.ms-card-f-active]="filtreStatutForm==='TERMINE'">
+      <span class="ms-f-num">{{ countStatutFormation('TERMINE') }}</span>
+      <span class="ms-f-lbl"> Terminés</span>
+    </div>
+
+    <div class="ms-card-f ms-card-f-encours" (click)="filtreStatutForm='EN_COURS'"
+         [class.ms-card-f-active]="filtreStatutForm==='EN_COURS'">
+      <span class="ms-f-num">{{ countStatutFormation('EN_COURS') }}</span>
+      <span class="ms-f-lbl"> En cours</span>
+    </div>
+
+    <div class="ms-card-f ms-card-f-afaire" (click)="filtreStatutForm='A_FAIRE'"
+         [class.ms-card-f-active]="filtreStatutForm==='A_FAIRE'">
+      <span class="ms-f-num">{{ countStatutFormation('A_FAIRE') }}</span>
+      <span class="ms-f-lbl"> À faire</span>
+    </div>
+
   </div>
+</div>
+  <div class="ctrl-row">
+  <div class="ctrl-search">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"/><path stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
+    <input placeholder="Rechercher nom, email..." [(ngModel)]="searchTerm"/>
+  </div>
+  <select class="ctrl-sel" [(ngModel)]="filterStatus">
+    <option value="ALL">Tous les statuts</option>
+    <option value="ACTIF">Actifs</option>
+    <option value="DESACTIVE">Désactivés</option>
+    <option value="ATTENTE">En attente</option>
+  </select>
+  <select *ngIf="activeSection==='apprenants'" class="ctrl-sel" [(ngModel)]="filtreStatutForm">
+    <option value="ALL">Toutes formations</option>
+    <option value="CERTIFIE"> Certifiés</option>
+    <option value="A_RISQUE"> À risque</option>
+    <option value="TERMINE"> Terminés</option>
+    <option value="EN_COURS"> En cours</option>
+    <option value="A_FAIRE"> À faire</option>
+  </select>
+  <button class="ctrl-export" (click)="exportCSV()">
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    CSV
+  </button>
+  <button class="ctrl-export ctrl-export-pdf" (click)="exportPDF()">
+    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline stroke-width="2" points="14 2 14 8 20 8"/></svg>
+    PDF
+  </button>
+</div>
   <div class="table-wrap">
     <div *ngIf="isLoading" class="loading-state"><div class="spinner"></div>&nbsp;Chargement...</div>
     <table *ngIf="!isLoading" class="users-table">
       <thead>
-        <tr><th>Utilisateur</th><th>Email</th><th>Téléphone</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr>
-      </thead>
+  <tr>
+    <th>Utilisateur</th>
+    <th>Email</th>
+    <th>Téléphone</th>
+    <th>Rôle</th>
+    <th>Statut compte</th>
+    <th *ngIf="activeSection==='apprenants'">Formations</th>
+    <th>Actions</th>
+  </tr>
+</thead>
       <tbody>
         <tr *ngFor="let u of list" [class.row-dim]="!u.active">
           <td>
@@ -411,6 +492,34 @@
           <td class="td-muted">{{ u.telephone || '—' }}</td>
           <td><span class="role-chip" [class.rc-formateur]="u.role==='FORMATEUR'" [class.rc-apprenant]="u.role==='APPRENANT'">{{ getRoleLabel(u.role) }}</span></td>
           <td><span class="status-chip" [class]="getStatusClass(u)">{{ getStatusLabel(u) }}</span></td>
+          <td *ngIf="activeSection==='apprenants'">
+  <ng-container *ngIf="getStatutFormation(u.id).length > 0; else aucuneFormation">
+    <div *ngFor="let f of getStatutFormation(u.id)" class="formation-statut-row">
+      <p class="formation-titre-small">{{ f.formationTitre }}</p>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <div style="width:80px">
+          <div style="height:5px;background:#E8E3DB;border-radius:4px;overflow:hidden">
+            <div [style.width]="(f.progression || 0) + '%'"
+                 [style.background]="getProgressionColor(f.progression || 0)"
+                 style="height:100%;border-radius:4px">
+            </div>
+          </div>
+        </div>
+        <span style="font-size:10px;color:#6B5F52;font-weight:600;white-space:nowrap">
+          {{ f.progression | number:'1.0-0' }}%
+        </span>
+        <span class="statut-enrichi-chip" [class]="getStatutEnrichiClass(f.statutEnrichi)">
+          <span class="se-dot"></span>
+          {{ getStatutEnrichiLabel(f.statutEnrichi) }}
+        </span>
+      </div>
+    </div>
+  </ng-container>
+  <ng-template #aucuneFormation>
+    <span style="font-size:12px;color:#9B8B6E">Aucune formation</span>
+  </ng-template>
+</td>
+
           <td>
             <div class="act-row">
               <button class="act" (click)="openEditModal(u)" title="Modifier">
