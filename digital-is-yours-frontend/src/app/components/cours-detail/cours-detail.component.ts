@@ -52,6 +52,7 @@ private mqFraudeSubscription: any  = null;
 mqEtatCamera: EtatCamera | null           = null;
 mqShowModaleCamera                        = false;
 mqInfractionCamera: EvenementCamera | null = null;
+mqShowModaleCameraAutorisation = false;
 private mqCameraSubscription: any         = null;
 private mqCameraInfraSubscription: any    = null;
 
@@ -337,22 +338,27 @@ private mqCameraInfraSubscription: any    = null;
     if (etat.niveau === 'rouge') this.mqShowModaleRouge = true;
   });
 
-  // ── Caméra ──────────────────────────────────────────────────
-  setTimeout(() => {
-    const videoEl = document.getElementById('mq-camera-video') as HTMLVideoElement;
-    if (videoEl) {
-      this.camera.demarrer(videoEl);
+  // APRÈS — abonnement demandeAutorisation$ PUIS demarrer()
+this.camera.demandeAutorisation$.subscribe(() => {
+  this.mqShowModaleCameraAutorisation = true;
+});
 
-      this.mqCameraSubscription = this.camera.etat$.subscribe((etat: EtatCamera) => {
-        this.mqEtatCamera = etat;
-      });
+// Abonnement état caméra
+this.mqCameraSubscription = this.camera.etat$.subscribe((etat: EtatCamera) => {
+  this.mqEtatCamera = etat;
+});
 
-      this.mqCameraInfraSubscription = this.camera.infra$.subscribe((inf: EvenementCamera) => {
-        this.mqInfractionCamera  = inf;
-        this.mqShowModaleCamera  = inf.type !== 'camera_refusee';
-      });
-    }
-  }, 400);
+// Abonnement infractions caméra
+this.mqCameraInfraSubscription = this.camera.infra$.subscribe((inf: EvenementCamera) => {
+  this.mqInfractionCamera = inf;
+  this.mqShowModaleCamera = inf.type !== 'camera_refusee';
+});
+
+// Démarrer la caméra (affichera la modale)
+setTimeout(() => {
+  const videoEl = document.getElementById('mq-camera-video') as HTMLVideoElement;
+  if (videoEl) this.camera.demarrer(videoEl);
+}, 400);
 }
 
   private demarrerChrono() {
@@ -490,6 +496,15 @@ private mqCameraInfraSubscription: any    = null;
   }
   fermerModaleCameraMiniquiz(): void {
   this.mqShowModaleCamera = false;
+}
+async autoriserCameraMiniquiz(): Promise<void> {
+  this.mqShowModaleCameraAutorisation = false;
+  await this.camera.demarrerApresAutorisation();
+}
+
+refuserCameraAutorisationMiniquiz(): void {
+  this.mqShowModaleCameraAutorisation = false;
+  this.camera.refuserCamera();
 }
 
  fermerMiniQuiz() {

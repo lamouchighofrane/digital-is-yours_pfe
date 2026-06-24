@@ -6,10 +6,7 @@ import com.digitalisyours.domain.port.in.CategorieUseCase;
 import com.digitalisyours.domain.port.in.FormationUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -28,6 +25,18 @@ public class PublicFormationController {
                 .filter(f -> "PUBLIE".equals(f.getStatut()))
                 .collect(java.util.stream.Collectors.toList());
         return ResponseEntity.ok(publiees);
+    }
+    @GetMapping("/formations/{id}")
+    public ResponseEntity<?> getFormationById(@PathVariable Long id) {
+        try {
+            Formation f = formationUseCase.getFormationById(id);
+            if (!"PUBLIE".equals(f.getStatut())) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(f);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/categories")

@@ -42,4 +42,5 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Long> {
 
     // ⚠️ NOUVEAU — nécessaire pour les stats "désactivés"
     long countByActiveFalse();
+    List<UserEntity> findByRoleAndActiveTrueAndEmailVerifieTrue(Role role);
 }

@@ -80,7 +80,7 @@
 .page-content{padding:28px 32px;flex:1}
 
 /* ── KPI ── */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
 .kpi{background:#FFF;border-radius:18px;border:1px solid #E8E3DB;border-top:3px solid var(--accent,#8B3A3A);padding:22px;box-shadow:0 2px 12px rgba(26,22,18,.05)}
 .kpi-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
 .kpi-val{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;color:#1A1612;line-height:1;margin-bottom:4px}

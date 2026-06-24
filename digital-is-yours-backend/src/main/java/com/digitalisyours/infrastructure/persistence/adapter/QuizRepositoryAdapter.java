@@ -280,6 +280,8 @@ public class QuizRepositoryAdapter implements QuizRepositoryPort {
         return count != null && count > 0;
     }
 
+
+
     @Override
     @Transactional(readOnly = true)
     public boolean coursExistsInFormation(Long coursId, Long formationId) {

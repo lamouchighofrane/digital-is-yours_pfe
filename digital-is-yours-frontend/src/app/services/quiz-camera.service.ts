@@ -42,6 +42,8 @@ export class QuizCameraService implements OnDestroy {
   private infractions:         EvenementCamera[] = [];
   private cameraRefusee        = false;
   private faceApiCharge        = false;
+  private demandeAutorisationSubject = new Subject<void>();
+  demandeAutorisation$ = this.demandeAutorisationSubject.asObservable();
 
   // ── SEUILS ─────────────────────────────────────────────────────
   readonly INTERVALLE_MS    = 3000;  // analyse toutes les 3s
@@ -57,68 +59,70 @@ export class QuizCameraService implements OnDestroy {
   // ════════════════════════════════════════════════════════════════
 
   async demarrer(videoElement: HTMLVideoElement): Promise<void> {
-    await this.arreterAsync();
+  await this.arreterAsync();
+  this.actif   = true;
+  this.videoEl = videoElement;
+  this.reinitialiser();
+  this.majStatut('demande');
 
-    this.actif   = true;
-    this.videoEl = videoElement;
-    this.reinitialiser();
-    this.majStatut('demande');
+  // Émet l'événement → affiche la modale personnalisée
+  this.demandeAutorisationSubject.next();
+}
+async demarrerApresAutorisation(): Promise<void> {
+  try {
+    await this.chargerFaceApi();
 
-    try {
-      await this.chargerFaceApi();
-
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width:      { ideal: 320 },
-          height:     { ideal: 240 },
-          facingMode: 'user'
-        }
-      });
-
-      this.videoEl.srcObject = this.stream;
-      await this.videoEl.play();
-      this.majStatut('active');
-
-      // Attendre que la vidéo soit prête
-      await new Promise<void>(resolve => {
-        const check = setInterval(() => {
-          if (this.videoEl && this.videoEl.readyState >= 2) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 100);
-      });
-
-      // Première analyse immédiate pour confirmer la détection
-      await this.analyser();
-
-      this.zone.runOutsideAngular(() => {
-        this.analyseInterval = setInterval(
-          () => this.analyser(),
-          this.INTERVALLE_MS
-        );
-      });
-
-    } catch (err: any) {
-      if (
-        err.name === 'NotAllowedError'       ||
-        err.name === 'PermissionDeniedError'  ||
-        err.name === 'SecurityError'
-      ) {
-        this.cameraRefusee = true;
-        this.majStatut('refusee');
-        this.enregistrerInfraction({
-          type:       'camera_refusee',
-          message:    'Accès à la caméra refusé. La surveillance vidéo est désactivée.',
-          horodatage: new Date().toISOString(),
-          nbVisages:  0,
-        });
-      } else {
-        this.majStatut('erreur');
-        console.error('Erreur caméra:', err);
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width:      { ideal: 320 },
+        height:     { ideal: 240 },
+        facingMode: 'user'
       }
+    });
+
+    this.videoEl!.srcObject = this.stream;
+    await this.videoEl!.play();
+    this.majStatut('active');
+
+    await new Promise<void>(resolve => {
+      const check = setInterval(() => {
+        if (this.videoEl && this.videoEl.readyState >= 2) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 100);
+    });
+
+    await this.analyser();
+
+    this.zone.runOutsideAngular(() => {
+      this.analyseInterval = setInterval(
+        () => this.analyser(),
+        this.INTERVALLE_MS
+      );
+    });
+
+  } catch (err: any) {
+    if (
+      err.name === 'NotAllowedError'       ||
+      err.name === 'PermissionDeniedError'  ||
+      err.name === 'SecurityError'
+    ) {
+      this.cameraRefusee = true;
+this.majStatut('refusee');
+console.info('Accès caméra refusé par le navigateur — transmis sans malus');
+    } else {
+      this.majStatut('erreur');
     }
   }
+}
+
+refuserCamera(): void {
+  this.cameraRefusee = true;
+  this.majStatut('refusee');
+  // Simple information, pas une infraction
+  console.info('Caméra refusée par l\'apprenant — transmis au formateur sans malus');
+}
 
   // ════════════════════════════════════════════════════════════════
   // ARRÊTER

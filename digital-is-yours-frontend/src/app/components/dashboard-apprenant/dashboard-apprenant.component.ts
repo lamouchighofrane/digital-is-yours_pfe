@@ -96,6 +96,7 @@ qfShowModaleCamera                       = false;
 qfInfractionCamera: EvenementCamera | null = null;
 private qfCameraSubscription: any        = null;
 private qfCameraInfraSubscription: any   = null;
+showModaleCameraAutorisation = false;
 
 // ── US-048 : Certificats ──           // ← ajouter ici
 certificats: any[]     = [];
@@ -609,12 +610,11 @@ retourFormations() {
   // ══════════════════════════════════════════════════════
 
   loadDashboardData() {
-    this.loadFormations();
-    this.loadRecommandations();
-     this.loadRisqueAnalyses();
-    this.http.get<any>(`${this.api}/stats`, { headers: this.headers() })
-      .subscribe({ next: d => { this.stats = d; this.cdr.detectChanges(); }, error: () => {} });
-  }
+  this.loadFormations(); // ← calcule aussi les stats
+  this.loadRecommandations();
+  this.loadRisqueAnalyses();
+  // Plus d'appel HTTP stats ici
+}
 
   // ══════════════════════════════════════════════════════
   // RECOMMANDATIONS IA
@@ -823,21 +823,32 @@ retourFormations() {
   // ══════════════════════════════════════════════════════
 
   loadFormations() {
-    this.formationsLoading = true;
-    this.http.get<any[]>(`${this.api}/formations/mes-inscriptions`, { headers: this.headers() })
-      .subscribe({
-        next: d => {
-          this.formations        = d || [];
-          this.formationsLoading = false;
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          this.formations        = [];
-          this.formationsLoading = false;
-          this.cdr.detectChanges();
-        }
-      });
-  }
+  this.formationsLoading = true;
+  this.http.get<any[]>(`${this.api}/formations/mes-inscriptions`, { headers: this.headers() })
+    .subscribe({
+      next: d => {
+        this.formations = d || [];
+        this.formationsLoading = false;
+
+        // Calculer les stats ici directement
+        this.stats = {
+          formationsEnCours:   this.formations.filter(f => f.statutApprenant === 'EN_COURS').length,
+          formationsTerminees: this.formations.filter(f => f.statutApprenant === 'TERMINE' || f.statutApprenant === 'CERTIFIE').length,
+          certificatsObtenus:  this.formations.filter(f => f.statutApprenant === 'CERTIFIE').length,
+          progressionGlobale:  this.formations.length > 0
+            ? Math.round(this.formations.reduce((sum, f) => sum + (f.progression || 0), 0) / this.formations.length)
+            : 0
+        };
+
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.formations = [];
+        this.formationsLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+}
 
   get filteredFormations(): any[] {
     return this.formations.filter(f => {
@@ -1326,10 +1337,12 @@ pollNotifCount() {
   // ══════════════════════════════════════════════════════
 
   logout() {
-    if (this.pollingInterval) clearInterval(this.pollingInterval);
-    localStorage.clear();
-    this.router.navigate(['/login']);
-  }
+  if (this.pollingInterval) clearInterval(this.pollingInterval);
+  const draft = localStorage.getItem(this.forumDraftKey);
+  localStorage.clear();
+  if (draft) localStorage.setItem(this.forumDraftKey, draft);
+  this.router.navigate(['/login']);
+}
   // ══════════════════════════════════════════════════════
 // CALENDRIER — MÉTHODES
 // ══════════════════════════════════════════════════════
@@ -1846,26 +1859,30 @@ demarrerQuizFinal(): void {
     this.cdr.detectChanges();
   });
 
-  // ── Caméra ───────────────────────────────────────────────────
-  setTimeout(() => {
-    const videoEl = document.getElementById('qf-camera-video') as HTMLVideoElement;
-    if (videoEl) {
-      this.camera.demarrer(videoEl);
+  // APRÈS — abonnement demandeAutorisation$ PUIS demarrer()
+this.camera.demandeAutorisation$.subscribe(() => {
+  this.showModaleCameraAutorisation = true;
+  this.cdr.detectChanges();
+});
 
-      // Abonnement état caméra
-      this.qfCameraSubscription = this.camera.etat$.subscribe((etat: EtatCamera) => {
-        this.qfEtatCamera = etat;
-        this.cdr.detectChanges();
-      });
+// Abonnement état caméra
+this.qfCameraSubscription = this.camera.etat$.subscribe((etat: EtatCamera) => {
+  this.qfEtatCamera = etat;
+  this.cdr.detectChanges();
+});
 
-      // Abonnement infractions caméra
-      this.qfCameraInfraSubscription = this.camera.infra$.subscribe((inf: EvenementCamera) => {
-        this.qfInfractionCamera  = inf;
-        this.qfShowModaleCamera  = inf.type !== 'camera_refusee';
-        this.cdr.detectChanges();
-      });
-    }
-  }, 500);
+// Abonnement infractions caméra
+this.qfCameraInfraSubscription = this.camera.infra$.subscribe((inf: EvenementCamera) => {
+  this.qfInfractionCamera = inf;
+  this.qfShowModaleCamera = inf.type !== 'camera_refusee';
+  this.cdr.detectChanges();
+});
+
+// Démarrer la caméra (affichera la modale)
+setTimeout(() => {
+  const videoEl = document.getElementById('qf-camera-video') as HTMLVideoElement;
+  if (videoEl) this.camera.demarrer(videoEl);
+}, 500);
 
   this.cdr.detectChanges();
 }
@@ -1987,6 +2004,15 @@ retenterQuizFinal() {
 fermerModaleCamera(): void {
   this.qfShowModaleCamera = false;
   this.cdr.detectChanges();
+}
+async autoriserCamera(): Promise<void> {
+  this.showModaleCameraAutorisation = false;
+  await this.camera.demarrerApresAutorisation();
+}
+
+refuserCameraAutorisation(): void {
+  this.showModaleCameraAutorisation = false;
+  this.camera.refuserCamera();
 }
 
 fermerQuizFinal(): void {

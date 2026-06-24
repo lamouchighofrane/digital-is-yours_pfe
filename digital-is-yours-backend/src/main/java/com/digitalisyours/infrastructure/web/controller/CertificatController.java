@@ -5,6 +5,7 @@ import com.digitalisyours.domain.port.in.CertificatUseCase;
 import com.digitalisyours.domain.port.in.ProfilApprenantUseCase;
 import com.digitalisyours.application.service.CertificatEmailService;
 import com.digitalisyours.infrastructure.persistence.repository.CertificatJpaRepository;
+import com.digitalisyours.infrastructure.persistence.repository.PortfolioJpaRepository;
 import com.digitalisyours.infrastructure.web.security.JwtUtil;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -40,12 +41,14 @@ public class CertificatController {
     private final JwtUtil                   jwtUtil;
     private final CertificatEmailService    certificatEmailService;
     private final CertificatJpaRepository   certificatJpaRepository;
+    private final PortfolioJpaRepository portfolioJpaRepository;
 
     @Value("${app.base-url:http://localhost:4200}")
     private String baseUrl;
 
     // URL backend fixe pour le QR Code (scannable depuis téléphone sur le même WiFi)
-    private static final String BACKEND_URL = "http://192.168.1.16:8080";
+    @Value("${app.backend-url:http://192.168.1.16:8080}")
+    private String backendUrl;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     private String extractEmail(HttpServletRequest request) {
@@ -265,14 +268,24 @@ public class CertificatController {
         String email = extractEmail(request);
         if (email == null) return unauthorized();
         try {
-            Long       apprenantId = getApprenantId(email);
-            Certificat cert        = certificatUseCase.getCertificatById(id, apprenantId);
+            Long apprenantId = getApprenantId(email);
+            certificatUseCase.getCertificatById(id, apprenantId);
 
-            // URL avec IP réelle → scannable depuis téléphone sur le même WiFi
-            String certUrl = BACKEND_URL + "/api/apprenant/certificats/" + cert.getId() + "/download";
+            // QR code pointe vers le portfolio GitHub Pages
+            var portfolio = portfolioJpaRepository.findByApprenantId(apprenantId);
 
-            QRCodeWriter writer    = new QRCodeWriter();
-            BitMatrix    bitMatrix = writer.encode(certUrl, BarcodeFormat.QR_CODE, 200, 200);
+            String urlQrCode;
+            if (portfolio.isPresent()
+                    && portfolio.get().getEstPublie()
+                    && portfolio.get().getUrlGithubPages() != null) {
+                urlQrCode = portfolio.get().getUrlGithubPages();
+            } else {
+                urlQrCode = backendUrl
+                        + "/api/apprenant/certificats/" + id + "/download";
+            }
+
+            QRCodeWriter writer = new QRCodeWriter();
+            BitMatrix bitMatrix = writer.encode(urlQrCode, BarcodeFormat.QR_CODE, 200, 200);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MatrixToImageWriter.writeToStream(bitMatrix, "PNG", baos);
@@ -280,7 +293,7 @@ public class CertificatController {
 
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_PNG)
-                    .header(HttpHeaders.CACHE_CONTROL, "max-age=3600")
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
                     .body(pngBytes);
 
         } catch (Exception e) {

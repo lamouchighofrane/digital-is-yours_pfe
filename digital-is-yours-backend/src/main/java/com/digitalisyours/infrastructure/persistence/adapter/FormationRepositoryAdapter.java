@@ -71,7 +71,7 @@ public class FormationRepositoryAdapter implements FormationRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public List<User> findAllFormateursActifs() {
-        return userJpaRepository.findByRoleAndActiveTrue(Role.FORMATEUR)
+        return userJpaRepository.findByRoleAndActiveTrueAndEmailVerifieTrue(Role.FORMATEUR)
                 .stream().map(this::userToDomain).collect(Collectors.toList());
     }
 

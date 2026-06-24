@@ -98,7 +98,31 @@ public class PortfolioHtmlGenerator {
                 .append("</div>\n");
         html.append("  <div class=\"footer-verified\">")
                 .append("✓ Portfolio vérifié et certifié par Digital Is Yours</div>\n");
-        html.append("</div>\n\n</body>\n</html>");
+        html.append("</div>\n\n");
+        html.append("<div class=\"cip-overlay\" id=\"cipOverlay\" onclick=\"closeCertZoom()\"></div>\n");
+        html.append("<script>\n");
+        html.append("function toggleCertZoom(el) {\n");
+        html.append("  var overlay = document.getElementById('cipOverlay');\n");
+        html.append("  if (el.classList.contains('cert-image-zoomed')) {\n");
+        html.append("    el.classList.remove('cert-image-zoomed');\n");
+        html.append("    overlay.classList.remove('active');\n");
+        html.append("  } else {\n");
+        html.append("    var prev = document.querySelector('.cert-image-zoomed');\n");
+        html.append("    if (prev) prev.classList.remove('cert-image-zoomed');\n");
+        html.append("    el.classList.add('cert-image-zoomed');\n");
+        html.append("    overlay.classList.add('active');\n");
+        html.append("  }\n");
+        html.append("}\n");
+        html.append("function closeCertZoom() {\n");
+        html.append("  var el = document.querySelector('.cert-image-zoomed');\n");
+        html.append("  if (el) el.classList.remove('cert-image-zoomed');\n");
+        html.append("  document.getElementById('cipOverlay').classList.remove('active');\n");
+        html.append("}\n");
+        html.append("document.addEventListener('keydown', function(e) {\n");
+        html.append("  if (e.key === 'Escape') closeCertZoom();\n");
+        html.append("});\n");
+        html.append("</script>\n");
+        html.append("</body>\n</html>");
 
         return html.toString();
     }
@@ -256,7 +280,6 @@ body {
   transition: all .22s; display: flex;
 }
 .cert-card:hover {
-  transform: translateY(-3px);
   box-shadow: 0 8px 28px rgba(26,22,18,.1);
   border-color: var(--teal);
 }
@@ -357,6 +380,190 @@ body {
   .cert-card { flex-direction: column; }
   .cert-accent { width: 100%; height: 5px; }
 }
+/* ── APERÇU IMAGE CERTIFICAT ── */
+.cert-image-preview {
+  position: relative;
+  margin-bottom: 18px;
+  cursor: pointer;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 16px rgba(15,30,80,.12);
+  transition: box-shadow .2s;
+}
+.cert-image-preview:hover { box-shadow: 0 6px 24px rgba(15,30,80,.2); }
+
+/* Overlay sombre quand zoom actif */
+.cip-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 9998;
+}
+.cip-overlay.active { display: block; }
+
+/* Zoomed — certificat plein écran stable */
+.cert-image-zoomed {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(860px, 92vw) !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  z-index: 9999 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5) !important;
+  cursor: default !important;
+}
+.cert-image-zoomed .cip-zoom-hint { display: none; }
+
+.cip-inner {
+  background: #F8F6F0;
+  border: 2px solid #0F1E50;
+  border-radius: 10px;
+  overflow: hidden;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.cip-header {
+  background: #0F1E50;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cip-logo { display: flex; align-items: center; gap: 7px; }
+.cip-jr {
+  font-size: 18px; font-weight: 800;
+  color: #4A7C7E;
+  font-family: 'Cormorant Garamond', serif;
+}
+.cip-digital {
+  display: block; font-size: 10px;
+  font-weight: 700; color: #B48C32; letter-spacing: .06em;
+}
+.cip-isyours {
+  display: block; font-size: 8px;
+  color: rgba(200,180,150,.8); letter-spacing: .04em;
+}
+.cip-official {
+  font-size: 8px; font-weight: 700;
+  color: #B48C32; letter-spacing: .08em;
+  border: 1px solid rgba(180,140,50,.5);
+  padding: 3px 9px; border-radius: 3px;
+}
+.cip-gold-bar {
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #B48C32, #f0c84a, #B48C32, transparent);
+}
+.cip-body {
+  padding: 18px 24px 14px;
+  text-align: center;
+}
+.cip-title {
+  font-size: 26px; font-weight: 700;
+  color: #0F1E50; margin: 4px 0 4px;
+  font-family: 'Cormorant Garamond', serif;
+  letter-spacing: .04em;
+}
+.cip-reussite {
+  display: inline-block;
+  background: #B48C32; color: #FFF;
+  font-size: 10px; font-weight: 700;
+  padding: 4px 20px; border-radius: 2px;
+  letter-spacing: .06em; margin: 4px 0 8px;
+}
+.cip-intro { font-size: 10px; color: #6B5F52; margin: 0 0 4px; }
+.cip-nom {
+  font-size: 22px; font-weight: 700;
+  color: #1A1612; font-style: italic;
+  font-family: 'Cormorant Garamond', serif;
+  margin: 0 0 3px;
+}
+.cip-nom-line {
+  height: 1.5px; background: #0F1E50;
+  width: 55%; margin: 3px auto 8px;
+}
+.cip-formation-label { font-size: 10px; color: #6B5F52; margin: 0 0 3px; }
+.cip-formation-titre {
+  font-size: 13px; font-weight: 700;
+  color: #4A7C7E; margin: 0 0 4px;
+}
+.cip-meta-line {
+  font-size: 10px; color: #6B5F52; margin: 0 0 10px;
+}
+.cip-separator {
+  height: 1px;
+  background: rgba(200,190,180,.5);
+  margin: 8px 0 12px;
+}
+/* Zone note + attestation côte à côte */
+.cip-bottom-zone {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  text-align: left;
+}
+.cip-score-box {
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #0F1E50;
+  padding: 10px 16px;
+  border-radius: 4px;
+  min-width: 90px;
+}
+.cip-score-val {
+  font-size: 22px; font-weight: 800; color: #FFF; line-height: 1;
+}
+.cip-score-lbl {
+  font-size: 8px; color: #B48C32;
+  font-weight: 700; margin-top: 3px;
+}
+.cip-attestation {
+  font-size: 10px; color: #6B5F52;
+  line-height: 1.6; margin: 0;
+  flex: 1;
+}
+.cip-footer {
+  background: #0F1E50;
+  padding: 8px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.cip-footer-sig-line {
+  display: block; height: 1px;
+  background: #B48C32; width: 80px;
+  margin-bottom: 4px;
+}
+.cip-footer-role {
+  display: block; font-size: 9px;
+  font-weight: 700; color: #FFF;
+}
+.cip-footer-org {
+  display: block; font-size: 8px;
+  color: rgba(255,255,255,.55);
+}
+.cip-date-delivrance {
+  font-size: 8px; color: rgba(200,180,150,.7);
+}
+.cip-num-lbl {
+  display: block; font-size: 8px;
+  color: #B48C32; font-weight: 700;
+}
+.cip-num-val {
+  display: block; font-size: 9px;
+  color: #FFF; font-weight: 700;
+  font-family: monospace;
+}
+.cip-zoom-hint {
+  text-align: center; font-size: 11px;
+  color: var(--gray); padding: 5px 0;
+  background: rgba(74,124,126,.06);
+  cursor: pointer;
+}
+.cip-zoom-hint:hover { background: rgba(74,124,126,.12); }
 """;
     }
 
@@ -437,6 +644,9 @@ body {
                     ? cert.getFormationDuree() + "h" : "";
             String urlVerif = "http://localhost:8080/api/apprenant/certificats/"
                     + cert.getId() + "/download";
+
+// Image du certificat générée en SVG inline (aperçu visuel comme l'exemple)
+            String certImageHtml = buildCertificatImageHtml(cert, score, dateStr, niveau, duree, numero);
             String titre    = cert.getFormationTitre() != null
                     ? escapeHtml(cert.getFormationTitre()) : "";
 
@@ -449,6 +659,8 @@ body {
             sb.append("<div class=\"cert-card\">")
                     .append("<div class=\"cert-accent\"></div>")
                     .append("<div class=\"cert-body\">")
+                    // ── Image aperçu du certificat ──
+                    .append(certImageHtml)
                     .append("<div class=\"cert-top-row\">")
                     .append("<h3 class=\"cert-titre\">").append(titre).append("</h3>")
                     .append("<div class=\"cert-score-badge\">")
@@ -470,6 +682,82 @@ body {
                     .append("</div></div>");
         }
         return sb.toString();
+    }
+    private String buildCertificatImageHtml(Certificat cert, String score,
+                                            String dateStr, String niveau,
+                                            String duree, String numero) {
+        String prenom = safe(cert.getApprenantPrenom());
+        String nom    = safe(cert.getApprenantNom());
+        String titre  = cert.getFormationTitre() != null
+                ? escapeHtml(cert.getFormationTitre()) : "";
+
+        // Texte attestation complet (comme dans le PDF)
+        String attestation = "Ce certificat atteste que "
+                + escapeHtml(prenom + " " + nom)
+                + " a d&eacute;montr&eacute; les comp&eacute;tences requises"
+                + " et a compl&eacute;t&eacute; avec succ&egrave;s l&apos;int&eacute;gralit&eacute;"
+                + " du programme sur la plateforme Digital Is Yours.";
+
+        String dureeChip = duree.isBlank() ? "" : "&nbsp;&bull;&nbsp;" + duree;
+        String niveauLine = (niveau != null && !niveau.isBlank())
+                ? "<p class=\"cip-meta-line\">Niveau " + escapeHtml(niveau)
+                + "&nbsp;&bull;&nbsp;Formation certifiante" + dureeChip + "</p>"
+                : "";
+
+        return "<div class=\"cert-image-preview\">"
+                + "<div class=\"cip-inner\">"
+                // Header marine
+                + "<div class=\"cip-header\">"
+                + "<div class=\"cip-logo\"><span class=\"cip-jr\">JR</span>"
+                + "<div><span class=\"cip-digital\">DIGITAL</span>"
+                + "<span class=\"cip-isyours\">is yours</span></div></div>"
+                + "<span class=\"cip-official\">CERTIFICAT OFFICIEL</span>"
+                + "</div>"
+                + "<div class=\"cip-gold-bar\"></div>"
+                // Corps principal
+                + "<div class=\"cip-body\">"
+                + "<p class=\"cip-title\">CERTIFICAT</p>"
+                + "<div class=\"cip-reussite\">DE R&Eacute;USSITE</div>"
+                + "<p class=\"cip-intro\">est d&eacute;cern&eacute; avec distinction &agrave;</p>"
+                + "<p class=\"cip-nom\">" + escapeHtml(prenom + " " + nom) + "</p>"
+                + "<div class=\"cip-nom-line\"></div>"
+                + "<p class=\"cip-formation-label\">qui a compl&eacute;t&eacute; avec succ&egrave;s la formation</p>"
+                + "<p class=\"cip-formation-titre\">" + titre + "</p>"
+                + niveauLine
+                // Séparateur
+                + "<div class=\"cip-separator\"></div>"
+                // Zone note + attestation côte à côte
+                + "<div class=\"cip-bottom-zone\">"
+                + "<div class=\"cip-score-box\">"
+                + "<span class=\"cip-score-val\">" + score + "%</span>"
+                + "<span class=\"cip-score-lbl\">NOTE FINALE</span>"
+                + "</div>"
+                + "<p class=\"cip-attestation\">" + attestation + "</p>"
+                + "</div>"
+                + "</div>"
+                // Barre or bas
+                + "<div class=\"cip-gold-bar\"></div>"
+                // Footer
+                + "<div class=\"cip-footer\">"
+                + "<div>"
+                + "<span class=\"cip-footer-sig-line\"></span>"
+                + "<span class=\"cip-footer-role\">Directeur P&eacute;dagogique</span>"
+                + "<span class=\"cip-footer-org\">Digital Is Yours | Acad&eacute;mie en ligne</span>"
+                + "</div>"
+                + "<div>"
+                + "<span class=\"cip-date-delivrance\">"
+                + (!dateStr.isBlank() ? "D&eacute;livr&eacute; le " + escapeHtml(dateStr) : "")
+                + "</span>"
+                + "</div>"
+                + "<div style=\"text-align:right\">"
+                + "<span class=\"cip-num-lbl\">N&deg; DE CERTIFICAT</span>"
+                + "<span class=\"cip-num-val\">" + escapeHtml(numero) + "</span>"
+                + "</div>"
+                + "</div>"
+                + "</div>"
+                // Hint zoom
+                + "<div class=\"cip-zoom-hint\" onclick=\"toggleCertZoom(this.parentElement)\">🔍 Cliquer pour agrandir</div>"
+                + "</div>";
     }
 
     private String buildCompetencesHtml(Long formationId,

@@ -173,8 +173,14 @@ public class RisqueAbandonService implements RisqueAbandonUseCase {
                 LocalDateTime.now().minusHours(24)
         );
 
-        if (!dejaNotifie) {
+        if (!dejaNotifie && saved.getScoreRisque() != null
+                && saved.getScoreRisque() > 0) {
             envoyerNotificationEtEmail(apprenant, saved);
+        } else if (saved.getScoreRisque() == null
+                || saved.getScoreRisque() == 0) {
+            log.info("Score = 0 → apprenant {} parfaitement actif " +
+                            "sur formation={} — aucune notification envoyée",
+                    email, formationId);
         } else {
             log.info("Déjà notifié dans les 24h : {} formation={}",
                     email, formationId);

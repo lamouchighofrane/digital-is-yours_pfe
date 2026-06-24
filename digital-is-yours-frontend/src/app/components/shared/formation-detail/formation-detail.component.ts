@@ -38,6 +38,7 @@ export class FormationDetailComponent implements OnInit {
 
   private api           = 'http://localhost:8080/api/apprenant/formations';
   private formationsApi = 'http://localhost:8080/api/admin/formations';
+  private formationsPublic = 'http://localhost:8080/api/public/formations';  // ← AJOUT
 
   constructor(
     private route: ActivatedRoute,
@@ -62,7 +63,10 @@ export class FormationDetailComponent implements OnInit {
 
   loadFormation(id: number) {
     this.isLoading = true;
-    this.http.get<any>(`${this.formationsApi}/${id}`, { headers: this.headers() })
+    const url = this.isConnected()
+    ? `${this.formationsApi}/${id}`
+    : `${this.formationsPublic}/${id}`;          // ← endpoint public
+    this.http.get<any>(url, { headers: this.headers() })
       .subscribe({
         next: f => {
           this.formation = f;

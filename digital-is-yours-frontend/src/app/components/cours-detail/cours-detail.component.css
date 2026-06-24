@@ -395,7 +395,7 @@
 @keyframes mqPulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.08); opacity: .7; } }
 .mq-intro-titre { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; color: #1A1612; margin: 0 0 6px; }
 .mq-intro-cours { font-size: 13px; color: #6B5F52; font-weight: 500; margin: 0 0 28px; padding: 5px 14px; background: #F5F1EB; border-radius: 20px; display: inline-block; }
-.mq-intro-stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; width: 100%; margin-bottom: 24px; }
+.mq-intro-stats-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; width: 100%; margin-bottom: 24px; }
 .mq-intro-stat { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 12px; background: #FAFAF7; border: 1.5px solid #E8E3DB; border-radius: 14px; }
 .mq-intro-stat-val { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: #4A7C7E; line-height: 1; }
 .mq-intro-stat-label { font-size: 11px; color: #9B8B6E; font-weight: 500; }
@@ -859,7 +859,7 @@
 .qf-camera-widget {
   position: absolute;
   top: 10px;
-  right: 60px;      /* à gauche du bouton fermer (X) */
+  right: 160px;      /* à gauche du bouton fermer (X) */
   width: 150px;
   background: #1A1612;
   border-radius: 12px;

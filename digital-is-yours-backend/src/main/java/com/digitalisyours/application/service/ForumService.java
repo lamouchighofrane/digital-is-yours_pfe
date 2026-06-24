@@ -98,7 +98,7 @@ public class ForumService implements ForumUseCase {
                         String nomAuteur = auteurUser != null
                                 ? auteurUser.getPrenom() + " " + auteurUser.getNom()
                                 : "Un apprenant";
-
+// Créer la notification
                         NotificationEntity notif = NotificationEntity.builder()
                                 .user(formation.getFormateur())
                                 .type("NOUVELLE_QUESTION_FORUM")
